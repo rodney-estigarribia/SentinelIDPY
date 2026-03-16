@@ -1,0 +1,34 @@
+name: Uptime Monitor
+
+on:
+  schedule:
+    # Se ejecuta en el minuto 0 y 30 de cada hora (cada 30 minutos)
+    - cron: '*/30 * * * *'
+  
+  # Permite ejecutar el workflow de manera manual desde la interfaz de GitHub Actions
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar script de monitoreo
+        env:
+          # Inyecta los secretos configurados en GitHub como variables de entorno
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
