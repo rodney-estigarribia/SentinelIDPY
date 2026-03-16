@@ -21,6 +21,8 @@ URLS = [
     "https://synexa.com.py",
 ]
 
+RETRY_TIMEOUT = 30  # segundos
+
 
 def send_telegram_message(message):
     """Envía un mensaje a través de Telegram usando la API del Bot."""
@@ -54,9 +56,9 @@ def check_urls():
     for url in URLS:
         print(f"Revisando {url}...")
         try:
-            # Petición GET con timeout de 10 segundos y User-Agent
+            # Petición GET con timeout de X segundos y User-Agent
             response = requests.get(
-                url, headers={'User-Agent': USER_AGENT}, timeout=10)
+                url, headers={'User-Agent': USER_AGENT}, timeout=RETRY_TIMEOUT)
 
             # Verificar si el código de estado NO es 200
             if response.status_code != 200:
@@ -67,8 +69,8 @@ def check_urls():
                 print("  ✅ OK")
 
         except requests.exceptions.Timeout:
-            # Atrapa casos donde tarda más de 10 segundos
-            error_msg = "Timeout (tardó más de 10 segundos en responder)"
+            # Atrapa casos donde tarda más de X segundos
+            error_msg = f"Timeout (tardó más de {RETRY_TIMEOUT} segundos en responder)"
             failed_sites.append((url, error_msg))
             print(f"  ❌ Falló: {error_msg}")
 
