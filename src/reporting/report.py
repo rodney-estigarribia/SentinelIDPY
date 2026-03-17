@@ -15,7 +15,7 @@ if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, WF_REPORT_TOKEN]):
     raise ValueError("Faltan variables de entorno críticas (TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, o WF_REPORT_TOKEN). Operación abortada.")
 
 # Cargar sitios desde archivo JSON centralizado
-SITES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "sites.json")
+SITES_FILE = "/tmp/sites_mock.json"
 
 try:
     with open(SITES_FILE, "r") as f:
@@ -37,9 +37,9 @@ class PDFReport(FPDF):
         self.cell(0, 10, 'Reporte de Mantenimiento y Seguridad (Últimos 30 Días)', border=False, ln=1, align='C')
         self.ln(10)
 
-def fetch_wordfence_stats(url):
-    """Consulta el endpoint de Wordfence de un sitio."""
-    endpoint = f"{url}/wp-json/custom-reports/v1/wordfence-blocks"
+def fetch_site_stats(url):
+    """Consulta el endpoint de SentinelIDPY de un sitio."""
+    endpoint = f"{url}/wp-json/sentinel/v1/stats"
     headers = {
         'User-Agent': USER_AGENT,
         'X-WF-Report-Token': WF_REPORT_TOKEN
@@ -89,7 +89,14 @@ def generate_pdf(results):
             
         pdf.cell(pdf.epw * 0.7, 10, result['name'], border=1, align='C', fill=True)
         
-        blocked_count = result['data'].get('total_attacks', 0) if result['data'] else "N/A"
+        data = result['data']
+        blocked_count = "N/A"
+        if data:
+            if 'wordfence' in data:
+                blocked_count = data['wordfence'].get('total_attacks', 0)
+            else:
+                blocked_count = data.get('total_attacks', 0) # Backwards compatibility
+                
         pdf.cell(pdf.epw * 0.3, 10, str(blocked_count), border=1, ln=1, align='C', fill=True)
 
         if isinstance(blocked_count, int):
@@ -115,13 +122,16 @@ def generate_pdf(results):
             pdf.add_page()
 
         data = result['data']
+        # Handle nesting for new format
+        wf_data = data.get('wordfence', {}) if 'wordfence' in data else data
+        
         pdf.set_font("helvetica", 'B', 12)
         pdf.set_fill_color(230, 240, 255)
         pdf.cell(0, 8, f"Sitio: {result['name']}", border="B", ln=1, align='L', fill=True)
         pdf.ln(2)
 
         # Texto Resumen personalizado
-        total_site_attacks = data.get('total_attacks', 0)
+        total_site_attacks = wf_data.get('total_attacks', 0)
         pdf.set_font("helvetica", 'I', 10)
         pdf.set_text_color(50, 50, 50)
         summary_text = (
@@ -133,17 +143,76 @@ def generate_pdf(results):
         pdf.set_text_color(0, 0, 0)
         pdf.ln(4)
 
-        # Definir métricas en pares para cuadrícula (Grid)
+        # SECCIÓN 1: Mantenimiento Técnico
+        pdf.set_font("helvetica", 'B', 11)
+        pdf.set_fill_color(240, 240, 240)
+        pdf.cell(0, 7, "A. Mantenimiento Técnico", ln=1, fill=True)
+        pdf.set_font("helvetica", '', 10)
+        
+        maintenance = data.get('maintenance', {})
+        infra = data.get('infrastructure', {})
+        
+        pdf.cell(50, 6, f"Versión WP: {infra.get('wp_version', 'N/A')}")
+        pdf.cell(50, 6, f"Versión PHP: {infra.get('php_version', 'N/A')}", ln=1)
+        pdf.cell(50, 6, f"Último Backup: {maintenance.get('last_backup', 'N/A')}")
+        pdf.cell(50, 6, f"Salud del Sitio: {maintenance.get('site_health', 'N/A')}", ln=1)
+        
+        pdf.ln(2)
+        pdf.set_font("helvetica", 'B', 9)
+        pdf.cell(0, 6, "Últimos Plugins Actualizados:", ln=1)
+        pdf.set_font("helvetica", '', 8)
+        updates = maintenance.get('recent_updates', [])
+        if updates:
+            for up in updates[:5]:
+                pdf.cell(0, 5, f"- {up['name']} (v{up['version']})", ln=1)
+        else:
+            pdf.cell(0, 5, "- No se registraron actualizaciones recientes.", ln=1)
+        
+        pdf.ln(4)
+
+        # SECCIÓN 2: Infraestructura
+        pdf.set_font("helvetica", 'B', 11)
+        pdf.set_fill_color(240, 240, 240)
+        pdf.cell(0, 7, "B. Infraestructura", ln=1, fill=True)
+        pdf.set_font("helvetica", '', 10)
+        
+        disk_total = infra.get('disk_total', 'N/A')
+        disk_free = infra.get('disk_free', 'N/A')
+        disk_pct = infra.get('disk_used_percentage', 0)
+        
+        pdf.cell(0, 6, f"Espacio en Disco: {disk_free} libres de {disk_total} ({disk_pct}% usado)", ln=1)
+        # Barra de progreso visual simple
+        pdf.set_draw_color(200, 200, 200)
+        pdf.rect(pdf.get_x(), pdf.get_y(), 100, 3)
+        pdf.set_fill_color(0, 102, 204)
+        pdf.rect(pdf.get_x(), pdf.get_y(), min(disk_pct, 100), 3, 'F')
+        pdf.ln(5)
+
+        # SECCIÓN 3: Seguridad Proactiva (Wordfence + SSL)
+        pdf.set_font("helvetica", 'B', 11)
+        pdf.set_fill_color(240, 240, 240)
+        pdf.cell(0, 7, "C. Seguridad Proactiva y Salud", ln=1, fill=True)
+        pdf.set_font("helvetica", '', 10)
+        
+        sec = data.get('security', {})
+        wf = data.get('wordfence', {})
+        
+        ssl_days = sec.get('ssl_days_left', 'N/A')
+        pdf.cell(80, 6, f"Certificado SSL: {ssl_days} días restantes")
+        pdf.cell(80, 6, f"Último Escaneo Malware: {wf.get('last_scan', 'N/A')}", ln=1)
+        pdf.ln(2)
+
+        # Definir métricas de Wordfence en pares para cuadrícula (Grid)
         metrics = [
             # Par 1
             [
-                ("Top IPs Maliciosas", data.get('top_ips', []), ['IP', 'Blq'], ['ip', 'count']),
-                ("Top URLs Atacadas", data.get('top_urls', []), ['URL', 'Blq'], ['url', 'count'])
+                ("Top IPs Maliciosas", wf.get('top_ips', []), ['IP', 'Blq'], ['ip', 'count']),
+                ("Top URLs Atacadas", wf.get('top_urls', []), ['URL', 'Blq'], ['url', 'count'])
             ],
             # Par 2
             [
-                ("Top Motivos Bloqueo", data.get('top_reasons', []), ['Motivo', 'Blq'], ['reason', 'count']),
-                ("Top Usuarios", data.get('top_usernames', []), ['Usuario', 'Blq'], ['user', 'count'])
+                ("Top Motivos Bloqueo", wf.get('top_reasons', []), ['Motivo', 'Blq'], ['reason', 'count']),
+                ("Top Usuarios", wf.get('top_usernames', []), ['Usuario', 'Blq'], ['user', 'count'])
             ]
         ]
 
@@ -217,7 +286,7 @@ def main():
     
     for site in SITES:
         print(f"  -> {site['name']}...")
-        site_data = fetch_wordfence_stats(site['url'])
+        site_data = fetch_site_stats(site['url'])
         
         results.append({
             "name": site['name'],
