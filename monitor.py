@@ -1,10 +1,14 @@
 import os
 import requests
 import sys
+import html
 
 # Constantes de Entorno
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+
+if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
+    raise ValueError("Faltan variables de entorno críticas (TELEGRAM_TOKEN o TELEGRAM_CHAT_ID). Operación abortada.")
 
 # Browser User-Agent to avoid being blocked by strict servers
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -26,11 +30,6 @@ RETRY_TIMEOUT = 30  # segundos
 
 def send_telegram_message(message):
     """Envía un mensaje a través de Telegram usando la API del Bot."""
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print(
-            "Error: Las variables TELEGRAM_TOKEN o TELEGRAM_CHAT_ID no están configuradas.")
-        return
-
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -39,7 +38,7 @@ def send_telegram_message(message):
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=10, verify=True)
         response.raise_for_status()
         print("Notificación enviada a Telegram exitosamente.")
     except requests.exceptions.RequestException as e:
@@ -48,17 +47,14 @@ def send_telegram_message(message):
 
 def check_urls():
     """Revisa la lista de URLs buscando códigos distintos de 200 o timeouts mayores a 10s."""
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print("Advertencia: No se han configurado credenciales de Telegram. Las notificaciones no se enviarán.\n")
-
     failed_sites = []
 
     for url in URLS:
         print(f"Revisando {url}...")
         try:
-            # Petición GET con timeout de X segundos y User-Agent
+            # Petición GET con timeout de X segundos, User-Agent explícito y validación estricta de SSL
             response = requests.get(
-                url, headers={'User-Agent': USER_AGENT}, timeout=RETRY_TIMEOUT)
+                url, headers={'User-Agent': USER_AGENT}, timeout=RETRY_TIMEOUT, verify=True)
 
             # Verificar si el código de estado NO es 200
             if response.status_code != 200:
@@ -75,8 +71,8 @@ def check_urls():
             print(f"  ❌ Falló: {error_msg}")
 
         except requests.exceptions.RequestException as e:
-            # Atrapa errores de conexión (ej. dominio no existe, rechazo de conexión)
-            error_msg = f"Error de conexión"
+            # Atrapa errores de conexión (ej. dominio no existe, rechazo de conexión, SSL)
+            error_msg = f"Error de red: {str(e)}"
             failed_sites.append((url, error_msg))
             print(f"  ❌ Falló: {error_msg}")
 
@@ -87,7 +83,9 @@ def check_urls():
         message += "Los siguientes sitios están experimentando problemas:\n\n"
 
         for url, error in failed_sites:
-            message += f"• <code>{url}</code>\n  <i>{error}</i>\n"
+            safe_url = html.escape(url)
+            safe_error = html.escape(error)
+            message += f"• <code>{safe_url}</code>\n  <i>{safe_error}</i>\n"
 
         send_telegram_message(message)
     else:
