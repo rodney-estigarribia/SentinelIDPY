@@ -2,9 +2,9 @@ name: Uptime Monitor
 
 on:
   schedule:
-    # Se ejecuta en el minuto 0 y 30 de cada hora (cada 30 minutos)
-    - cron: '*/30 * * * *'
-  
+    # Se ejecuta en el minuto 0 y 0 cada 1 hora
+    - cron: "0 */1 * * *"
+
   # Permite ejecutar el workflow de manera manual desde la interfaz de GitHub Actions
   workflow_dispatch:
 
@@ -19,7 +19,7 @@ jobs:
       - name: Configurar Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Instalar dependencias
         run: |

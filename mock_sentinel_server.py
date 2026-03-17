@@ -52,6 +52,7 @@ class MockHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    server = HTTPServer(('localhost', 8081), MockHandler)
-    print("Mock server v2 running on port 8081...")
+    port = 8081
+    server = HTTPServer(('localhost', port), MockHandler)
+    print("Mock server v2 running on port {}...".format(port))
     server.serve_forever()

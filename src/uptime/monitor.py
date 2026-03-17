@@ -66,7 +66,8 @@ def check_urls():
                 url, headers={'User-Agent': USER_AGENT}, timeout=RETRY_TIMEOUT, verify=True)
 
             # Verificar si el código de estado NO es 200
-            if response.status_code != 200:
+            SUCCESS_STATUS = [200, 301]
+            if response.status_code not in SUCCESS_STATUS:
                 error_msg = f"Código de estado: {response.status_code}"
                 failed_sites.append((url, error_msg))
                 print(f"  ❌ Falló: {error_msg}")
