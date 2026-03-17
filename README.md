@@ -18,25 +18,78 @@ URLS = [
     # ...
 ]
 ```
+# Monitor Uptime & Security Reporter
 
-### 2. Obtener Token y Chat ID de Telegram
-Si aún no los tienes, necesitas crear un bot en Telegram para enviar las alertas:
-1. Habla con [@BotFather](https://t.me/botfather) en Telegram.
-2. Usa el comando `/newbot` y sigue las instrucciones. BotFather te dará un **Token** (ej: `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`).
-3. Envía un mensaje cualquiera a tu nuevo bot desde tu Telegram.
-4. Para obtener tu **Chat ID**, visita en tu navegador: `https://api.telegram.org/bot<TU_TOKEN_AQUI>/getUpdates` y busca la propiedad `"chat": {"id": 123456789}`.
+Este repositorio contiene dos herramientas esenciales para el mantenimiento de sitios web:
+1. **Uptime Monitor**: Un script en Python que revisa el estado de una lista de dominios cada 30 minutos y alerta por Telegram si alguno está caído.
+2. **Wordfence Security Reporter**: Un sistema compuesto por un snippet PHP para WordPress y un script Python que genera un reporte PDF mensual sobre ataques bloqueados.
 
-### 3. Configurar Secretos en GitHub Actions
-Este paso es crucial para que GitHub Actions pueda ejecutar el script y enviar los mensajes de Telegram. **Nunca subas tus tokens directamente al código.**
+---
 
-1. Sube este código a tu repositorio de GitHub.
-2. Ve a la pestaña **Settings** de tu repositorio.
-3. En la barra lateral izquierda, despliega **Secrets and variables** y haz clic en **Actions**.
-4. Haz clic en el botón verde **New repository secret**.
-5. Crea un secreto con el nombre `TELEGRAM_TOKEN` y pega el token de tu bot de Telegram como valor.
-6. Crea otro secreto con el nombre `TELEGRAM_CHAT_ID` y pega tu ID de chat como valor.
+## Estructura del Proyecto
 
-### 4. Listo para ejecutar ✅
-Una vez configurado todo, GitHub Actions comenzará a ejecutar el script `monitor.py` cada 30 minutos automáticamente, y recibirás alertas en Telegram sólo cuando una de tus URLs esté caída.
+```bash
+📦 monitor-uptime
+ ┣ 📂 .github
+ ┃ ┗ 📂 workflows
+ ┃   ┣ 📜 main.yml     # Cron job para el Uptime Monitor (cada 30 min)
+ ┃   ┗ 📜 report.yml   # Cron job para el Reporte PDF (1 vez al mes)
+ ┣ 📂 src
+ ┃ ┣ 📂 uptime
+ ┃ ┃ ┗ 📜 monitor.py   # Motor principal del monitor de sitios caídos
+ ┃ ┣ 📂 reporting
+ ┃ ┃ ┗ 📜 report.py    # Motor generador del reporte PDF mensual (vía fpdf2)
+ ┃ ┗ 📂 wordpress-plugin
+ ┃   ┗ 📜 wordfence-api-snippet.php # Snippet para exponer métricas de WP
+ ┣ 📜 requirements.txt # Dependencias de Python
+ ┗ 📜 README.md
+```
 
-Si deseas probarlo inmediatamente, ve a la pestaña **Actions** en tu repositorio de GitHub, selecciona el workflow **Uptime Monitor** en el menú de la izquierda y haz clic en **Run workflow**.
+---
+
+## 🚀 1. Configuración: Uptime Monitor
+
+Este módulo revisa tu lista de sitios y alerta **solo** si hay fallos (Timeout, Código 500, o Errores SSL).
+
+### Requisitos Locales (Pruebas)
+Solo necesitas definir dos variables de entorno usando tu bot de Telegram:
+```bash
+export TELEGRAM_TOKEN="tu_token_recibido_de_botfather"
+export TELEGRAM_CHAT_ID="tu_chat_id_numerico"
+```
+
+### Configuración de Sitios
+Abre `src/uptime/monitor.py` y edita la lista `URLS` con los sitios que deseas monitorear.
+
+---
+
+## 🛡️ 2. Configuración: Wordfence Security Reporter
+
+Este módulo extrae métricas de ataques directamente desde la tabla `wp_wfHits` de Wordfence, arma un PDF, y lo envía por Telegram. Posee un fuerte **Security Hardening** contra ataques Man-In-The-Middle y Fuerza Bruta.
+
+### A. Lado WordPress (Tus Sitios)
+Este script debe instalarse en **cada** sitio WordPress que quieras auditar.
+
+1. Instala el archivo `src/wordpress-plugin/wordfence-api-snippet.php` como un plugin o mediante un gestor de Snippets (ej: Code Snippets).
+2. Genera un Hash largo o [UUID v4](https://www.uuidgenerator.net/) seguro (Ej: `f47ac10b-58cc-4372-a567-0e02b2c3d479`). El código php rechazará matemáticamente cualquier token menor a 32 caracteres.
+3. Edita el archivo `wp-config.php` de *cada* sitio WordPress y añade la constante con el token que has generado:
+   ```php
+   define( 'WF_REPORT_TOKEN', 'tu_uuid_generado_aqui_f47ac10b...' );
+   ```
+
+### B. Lado Python (Este repositorio)
+Revisa `src/reporting/report.py` y asegúrate de que el diccionario `SITES` cuenta exactactamente con el nombre y URL de los dominios en los que instalaste el Snippet.
+
+---
+
+## ⚙️ 3. Despliegue Automatizado (GitHub Actions)
+
+Para que el proyecto se ejecute solo (sin necesidad de tener un servidor), ambos modulos usan GitHub Actions. 
+
+Dirígete a **Settings > Secrets and variables > Actions** en este repositorio de GitHub y crea los siguientes 3 Secrets obligatorios:
+
+- `TELEGRAM_TOKEN`: El token de tu bot de Telegram.
+- `TELEGRAM_CHAT_ID`: El ID numérico donde recibirás los reportes.
+- `WF_REPORT_TOKEN`: El Token de 32+ caracteres definido en tus WordPress `wp-config.php`.
+
+Las automatizaciones funcionarán automáticamente según el horario cron en los YML. Si quieres ejecutar un reporte *ahora mismo*, ve a la pestaña **Actions**, selecciona "Monthly Wordfence Report" o "Uptime Monitor" y haz click en "Run Workflow".

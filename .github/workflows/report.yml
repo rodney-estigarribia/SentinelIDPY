@@ -30,4 +30,4 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           WF_REPORT_TOKEN: ${{ secrets.WF_REPORT_TOKEN }}
         run: |
-          python report.py
+          python src/reporting/report.py

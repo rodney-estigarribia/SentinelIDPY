@@ -31,4 +31,4 @@ jobs:
           # Inyecta los secretos configurados en GitHub como variables de entorno
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python monitor.py
+        run: python src/uptime/monitor.py
