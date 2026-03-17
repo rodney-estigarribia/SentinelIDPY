@@ -18,7 +18,7 @@ URLS = [
     # ...
 ]
 ```
-# Monitor Uptime & Security Reporter
+# SentinelIDPY
 
 Este repositorio contiene dos herramientas esenciales para el mantenimiento de sitios web:
 1. **Uptime Monitor**: Un script en Python que revisa el estado de una lista de dominios cada 30 minutos y alerta por Telegram si alguno está caído.
@@ -29,7 +29,7 @@ Este repositorio contiene dos herramientas esenciales para el mantenimiento de s
 ## Estructura del Proyecto
 
 ```bash
-📦 monitor-uptime
+📦 SentinelIDPY
  ┣ 📂 .github
  ┃ ┗ 📂 workflows
  ┃   ┣ 📜 main.yml     # Cron job para el Uptime Monitor (cada 30 min)
