@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Wordfence Reports API
+ * Plugin Name: Wordfence Reports IDPY API
  * Description: Crea un endpoint REST protegido para consultar estadísticas de ataques bloqueados en Wordfence.
- * Author: Tu Nombre
+ * Author: Rodney Estigarribia - Impulsos Digitales
  * Version: 1.0
  */
 
@@ -20,28 +20,26 @@ add_action( 'rest_api_init', function () {
 } );
 
 /**
- * Verifica que el header X-WF-Report-Token coincida con la constante definida en wp-config.php.
+ * Define el hash interno de seguridad.
+ * IMPORTANTE: Recuerda mantener este mismo hash en tu script de Python central.
+ * Longitud mínima recomendada: 32 caracteres.
  */
-function verify_wf_report_token( WP_REST_Request $request ) {
-    // Si la constante WF_REPORT_TOKEN no está expuesta en wp-config.php, bloqueamos por seguridad.
-    if ( ! defined( 'WF_REPORT_TOKEN' ) ) {
-        return new WP_Error( 
-            'rest_forbidden', 
-            esc_html__( 'El token de seguridad no está configurado en el servidor.', 'text-domain' ), 
-            array( 'status' => 500 ) 
-        );
-    }
-    
+define('WF_REPORT_TOKEN_INTERNAL', 'your_32_character_secure_hash_here_123');
+
+/**
+ * Verifica que el header X-WF-Report-Token coincida con la constante interna.
+ */
+function verify_wf_report_token( WP_REST_Request $request ) {    
     // Forzamos que el token sea fuerte (ej. un UUID o Hash SHA de 32+ caracteres) para evitar fuerza bruta.
-    if ( strlen( WF_REPORT_TOKEN ) < 32 ) {
+    if ( strlen( WF_REPORT_TOKEN_INTERNAL ) < 32 ) {
         return new WP_Error( 
             'rest_forbidden', 
-            esc_html__( 'El token de seguridad es demasiado corto. Usa al menos 32 caracteres (ej. UUIDv4).', 'text-domain' ), 
+            esc_html__( 'El token de seguridad es demasiado corto. Asegúrate de modificar el código del plugin para usar al menos 32 caracteres.', 'text-domain' ), 
             array( 'status' => 500 ) 
         );
     }
     
-    $secret_token = WF_REPORT_TOKEN;
+    $secret_token = WF_REPORT_TOKEN_INTERNAL;
     $provided_token = $request->get_header( 'x_wf_report_token' );
 
     if ( $provided_token === $secret_token ) {

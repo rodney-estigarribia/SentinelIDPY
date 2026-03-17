@@ -2,6 +2,7 @@ import os
 import requests
 import sys
 import html
+import json
 
 # Constantes de Entorno
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -13,17 +14,19 @@ if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
 # Browser User-Agent to avoid being blocked by strict servers
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-# Reemplaza estas URLs con tu lista de 10 URLs reales.
-# He incluido algunas URLs de prueba estandarizadas (httpstat.us) para simular fallos.
-URLS = [
-    "https://cga.com.py",
-    "https://copemarketdeli.com.py",
-    "https://dagda.com.py",
-    "https://genesur.com.py",
-    "https://naviosargentina.com",
-    "https://portal.cga.com.py",
-    "https://synexa.com.py",
-]
+# Cargar sitios desde archivo JSON centralizado
+SITES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "sites.json")
+
+try:
+    with open(SITES_FILE, "r") as f:
+        SITES = json.load(f)
+except FileNotFoundError:
+    print(f"Error: No se encontró el archivo de configuración de sitios en {SITES_FILE}.")
+    print("Asegúrate de crear 'sites.json' en la raíz del proyecto.")
+    sys.exit(1)
+except json.JSONDecodeError:
+    print(f"Error: El archivo {SITES_FILE} no tiene un formato JSON válido.")
+    sys.exit(1)
 
 RETRY_TIMEOUT = 30  # segundos
 
@@ -49,8 +52,14 @@ def check_urls():
     """Revisa la lista de URLs buscando códigos distintos de 200 o timeouts mayores a 10s."""
     failed_sites = []
 
-    for url in URLS:
-        print(f"Revisando {url}...")
+    for site in SITES:
+        name = site.get("name", "Desconocido")
+        url = site.get("url")
+        
+        if not url:
+             continue
+             
+        print(f"Revisando {name} ({url})...")
         try:
             # Petición GET con timeout de X segundos, User-Agent explícito y validación estricta de SSL
             response = requests.get(
@@ -83,9 +92,12 @@ def check_urls():
         message += "Los siguientes sitios están experimentando problemas:\n\n"
 
         for url, error in failed_sites:
+            # Re-buscar el nombre del sitio correspondiente (solución simple para evitar modificar la tupla)
+            site_name = next((s.get("name", "Desconocido") for s in SITES if s.get("url") == url), "Desconocido")
+            safe_name = html.escape(site_name)
             safe_url = html.escape(url)
             safe_error = html.escape(error)
-            message += f"• <code>{safe_url}</code>\n  <i>{safe_error}</i>\n"
+            message += f"• <b>{safe_name}</b> (<code>{safe_url}</code>)\n  <i>{safe_error}</i>\n"
 
         send_telegram_message(message)
     else:

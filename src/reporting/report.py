@@ -2,6 +2,9 @@ import os
 import requests
 from fpdf import FPDF
 from datetime import datetime
+import sys
+
+import json
 
 # Constantes de Entorno
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -11,15 +14,19 @@ WF_REPORT_TOKEN = os.environ.get("WF_REPORT_TOKEN")
 if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, WF_REPORT_TOKEN]):
     raise ValueError("Faltan variables de entorno críticas (TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, o WF_REPORT_TOKEN). Operación abortada.")
 
-# Lista de tus sitios (Asegúrate de que tengan el plugin/snippet instalado)
-SITES = [
-    {"name": "CGA", "url": "https://cga.com.py"},
-    {"name": "Cope Market Deli", "url": "https://copemarketdeli.com.py"},
-    {"name": "Dagda", "url": "https://dagda.com.py"},
-    {"name": "GeneSur", "url": "https://genesur.com.py"},
-    {"name": "Navíos Argentina", "url": "https://naviosargentina.com"},
-    {"name": "Synexa", "url": "https://synexa.com.py"},
-]
+# Cargar sitios desde archivo JSON centralizado
+SITES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "sites.json")
+
+try:
+    with open(SITES_FILE, "r") as f:
+        SITES = json.load(f)
+except FileNotFoundError:
+    print(f"Error: No se encontró el archivo de configuración de sitios en {SITES_FILE}.")
+    print("Asegúrate de crear 'sites.json' en la raíz del proyecto.")
+    sys.exit(1)
+except json.JSONDecodeError:
+    print(f"Error: El archivo {SITES_FILE} no tiene un formato JSON válido.")
+    sys.exit(1)
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
