@@ -61,9 +61,16 @@ def check_urls():
              
         print(f"Revisando {name} ({url})...")
         try:
-            # Petición GET con timeout de X segundos, User-Agent explícito y validación estricta de SSL
-            response = requests.get(
-                url, headers={'User-Agent': USER_AGENT}, timeout=RETRY_TIMEOUT, verify=True)
+            # Petición GET con headers de navegador para evitar bloqueos por seguridad (err 415/403)
+            headers = {
+                'User-Agent': USER_AGENT,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            response = requests.get(url, headers=headers, timeout=RETRY_TIMEOUT, verify=True)
 
             # Verificar si el código de estado NO es 200
             SUCCESS_STATUS = [200, 301]
