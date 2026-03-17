@@ -120,6 +120,19 @@ def generate_pdf(results):
         pdf.cell(0, 8, f"Sitio: {result['name']}", border="B", ln=1, align='L', fill=True)
         pdf.ln(2)
 
+        # Texto Resumen personalizado
+        total_site_attacks = data.get('total_attacks', 0)
+        pdf.set_font("helvetica", 'I', 10)
+        pdf.set_text_color(50, 50, 50)
+        summary_text = (
+            f"Este mes, además de las actualizaciones técnicas, nuestro escudo de seguridad neutralizó "
+            f"{total_site_attacks} intentos de hackeo dirigidos a tu sitio. "
+            f"Tu portal se mantuvo 100% online gracias a este bloqueo proactivo."
+        )
+        pdf.multi_cell(0, 5, summary_text)
+        pdf.set_text_color(0, 0, 0)
+        pdf.ln(4)
+
         # Definir métricas en pares para cuadrícula (Grid)
         metrics = [
             # Par 1
