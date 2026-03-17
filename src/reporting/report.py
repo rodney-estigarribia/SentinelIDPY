@@ -48,10 +48,10 @@ def fetch_wordfence_stats(url):
         response = requests.get(endpoint, headers=headers, timeout=15, verify=True)
         response.raise_for_status()
         data = response.json()
-        return data.get('blocked_attacks', 0)
+        return data
     except requests.exceptions.RequestException as e:
         print(f"Error consultando {url}: {e}")
-        return "N/A" # No disponible
+        return None # No disponible
 
 def generate_pdf(results):
     """Genera un archivo PDF con los resultados."""
@@ -65,16 +65,14 @@ def generate_pdf(results):
     pdf.ln(5)
 
     # Cabeceras de tabla
-    col_width = pdf.epw / 3
     pdf.set_font("helvetica", 'B', 11)
     
     # Colores de cabecera (Azul oscuro)
     pdf.set_fill_color(0, 51, 102)
     pdf.set_text_color(255, 255, 255)
     
-    pdf.cell(col_width, 10, "Sitio Web", border=1, align='C', fill=True)
-    pdf.cell(col_width, 10, "Actualizaciones (v2 dev)", border=1, align='C', fill=True)
-    pdf.cell(col_width, 10, "Ataques Bloqueados", border=1, ln=1, align='C', fill=True)
+    pdf.cell(pdf.epw * 0.7, 10, "Sitio Web", border=1, align='C', fill=True)
+    pdf.cell(pdf.epw * 0.3, 10, "Ataques Bloqueados", border=1, ln=1, align='C', fill=True)
 
     # Restaurar colores para las filas
     pdf.set_text_color(0, 0, 0)
@@ -89,16 +87,93 @@ def generate_pdf(results):
         else:
             pdf.set_fill_color(255, 255, 255)
             
-        pdf.cell(col_width, 10, result['name'], border=1, align='C', fill=True)
-        pdf.cell(col_width, 10, result['updates'], border=1, align='C', fill=True)
-        pdf.cell(col_width, 10, str(result['blocked']), border=1, ln=1, align='C', fill=True)
+        pdf.cell(pdf.epw * 0.7, 10, result['name'], border=1, align='C', fill=True)
+        
+        blocked_count = result['data'].get('total_attacks', 0) if result['data'] else "N/A"
+        pdf.cell(pdf.epw * 0.3, 10, str(blocked_count), border=1, ln=1, align='C', fill=True)
 
-        if isinstance(result['blocked'], int):
-            total_attacks += result['blocked']
+        if isinstance(blocked_count, int):
+            total_attacks += blocked_count
 
     pdf.ln(10)
     pdf.set_font("helvetica", 'B', 12)
     pdf.cell(0, 10, f"Total de ataques bloqueados en la red: {total_attacks}", border=False, ln=1, align='L')
+    pdf.ln(10)
+
+    # Detalle por Sitio (Sección avanzada compacta)
+    pdf.add_page()
+    pdf.set_font("helvetica", 'B', 15)
+    pdf.cell(0, 10, "Detalle de Seguridad por Sitio", border=False, ln=1, align='C')
+    pdf.ln(3)
+
+    for result in results:
+        if not result['data']:
+            continue
+            
+        # Verificar espacio restante para evitar huérfanos
+        if pdf.get_y() > 220:
+            pdf.add_page()
+
+        data = result['data']
+        pdf.set_font("helvetica", 'B', 12)
+        pdf.set_fill_color(230, 240, 255)
+        pdf.cell(0, 8, f"Sitio: {result['name']}", border="B", ln=1, align='L', fill=True)
+        pdf.ln(2)
+
+        # Definir métricas en pares para cuadrícula (Grid)
+        metrics = [
+            # Par 1
+            [
+                ("Top IPs Maliciosas", data.get('top_ips', []), ['IP', 'Blq'], ['ip', 'count']),
+                ("Top URLs Atacadas", data.get('top_urls', []), ['URL', 'Blq'], ['url', 'count'])
+            ],
+            # Par 2
+            [
+                ("Top Motivos Bloqueo", data.get('top_reasons', []), ['Motivo', 'Blq'], ['reason', 'count']),
+                ("Top Usuarios", data.get('top_usernames', []), ['Usuario', 'Blq'], ['user', 'count'])
+            ]
+        ]
+
+        for pair in metrics:
+            start_y = pdf.get_y()
+            max_y = start_y
+            
+            # Dibujar par de tablas Lado a Lado
+            for i, (title, rows, headers, keys) in enumerate(pair):
+                if not rows: continue
+                
+                col_x = 10 + (i * 95)
+                pdf.set_xy(col_x, start_y)
+                pdf.set_font("helvetica", 'B', 9)
+                pdf.cell(90, 6, title, ln=1)
+                
+                # Header
+                pdf.set_x(col_x)
+                pdf.set_font("helvetica", 'B', 8)
+                pdf.set_fill_color(210, 210, 210)
+                pdf.cell(70, 5, headers[0], border=1, fill=True)
+                pdf.cell(20, 5, headers[1], border=1, ln=1, align='C', fill=True)
+                
+                # Filas
+                pdf.set_font("helvetica", size=7.5)
+                for r in rows:
+                    pdf.set_x(col_x)
+                    val = r.get(keys[0], 'N/A')
+                    count = r.get(keys[1], 0)
+                    
+                    # Truncar más agresivamente para el grid
+                    if len(str(val)) > 45:
+                        val = str(val)[:42] + "..."
+                        
+                    pdf.cell(70, 5, str(val), border=1)
+                    pdf.cell(20, 5, str(count), border=1, ln=1, align='C')
+                
+                if pdf.get_y() > max_y:
+                    max_y = pdf.get_y()
+            
+            pdf.set_y(max_y + 3)
+        
+        pdf.ln(4)
 
     filename = f"Reporte_Seguridad_{datetime.now().strftime('%Y-%m-%d')}.pdf"
     
@@ -129,15 +204,11 @@ def main():
     
     for site in SITES:
         print(f"  -> {site['name']}...")
-        attacks = fetch_wordfence_stats(site['url'])
-        
-        # Placeholder manual para updates en esta versión v2
-        updates_text = "Core, Plugins & Theme"
+        site_data = fetch_wordfence_stats(site['url'])
         
         results.append({
             "name": site['name'],
-            "updates": updates_text,
-            "blocked": attacks
+            "data": site_data
         })
         
     print("\nGenerando PDF...")
