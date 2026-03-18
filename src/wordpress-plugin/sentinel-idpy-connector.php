@@ -17,6 +17,12 @@ add_action( 'rest_api_init', function () {
         'callback' => 'get_wordfence_blocked_stats',
         'permission_callback' => 'verify_wf_report_token'
     ) );
+    // Debug endpoint - no auth required
+    register_rest_route( 'sentinel/v1', '/debug-headers', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_debug_headers',
+        'permission_callback' => '__return_true'
+    ) );
 } );
 
 /**
@@ -90,6 +96,7 @@ function verify_wf_report_token( WP_REST_Request $request ) {
 
     // Forzamos que el token sea fuerte (ej. un UUID o Hash SHA de 32+ caracteres) para evitar fuerza bruta.
     if ( strlen( $secret_token ) < 32 ) {
+        error_log('Sentinel: Token no configurado o muy corto. Longitud: ' . strlen($secret_token));
         return new WP_Error(
             'rest_forbidden',
             esc_html__( 'El token de seguridad no está configurado o es demasiado corto. Configúralo en Configuración → SentinelIDPY con al menos 32 caracteres.', 'text-domain' ),
@@ -97,7 +104,30 @@ function verify_wf_report_token( WP_REST_Request $request ) {
         );
     }
 
+    // Try multiple ways to get the header since Docker/proxy might handle it differently
     $provided_token = $request->get_header( 'x_wf_report_token' );
+
+    // Fallback: Try with hyphen format
+    if ( ! $provided_token ) {
+        $provided_token = $request->get_header( 'x-wf-report-token' );
+    }
+
+    // Fallback: Try direct $_SERVER access
+    if ( ! $provided_token ) {
+        $provided_token = isset( $_SERVER['HTTP_X_WF_REPORT_TOKEN'] ) ? sanitize_text_field( $_SERVER['HTTP_X_WF_REPORT_TOKEN'] ) : null;
+    }
+
+    // Fallback: Try query parameter (useful if headers are stripped by proxy/WAF)
+    if ( ! $provided_token ) {
+        $provided_token = $request->get_param( 'token' );
+        if ( $provided_token ) {
+            $provided_token = sanitize_text_field( $provided_token );
+        }
+    }
+
+    error_log('Sentinel: Provided token: ' . ($provided_token ? substr($provided_token, 0, 10) . '...' : 'NULL'));
+    error_log('Sentinel: Expected token: ' . substr($secret_token, 0, 10) . '...');
+    error_log('Sentinel: Token match: ' . ($provided_token === $secret_token ? 'YES' : 'NO'));
 
     if ( $provided_token === $secret_token ) {
         return true;
@@ -295,6 +325,25 @@ function get_wordfence_blocked_stats() {
         ),
         'security' => array(
             'ssl_days_left' => $ssl_days_left
+        )
+    );
+}
+
+/**
+ * Debug endpoint to show all headers received by the server
+ */
+function sentinel_debug_headers( WP_REST_Request $request ) {
+    return array(
+        'message' => 'Headers Debug Info',
+        'request_headers' => $request->get_headers(),
+        'server_http_vars' => array_filter($_SERVER, function($key) {
+            return strpos($key, 'HTTP_') === 0;
+        }, ARRAY_FILTER_USE_KEY),
+        'php_headers' => function_exists('getallheaders') ? getallheaders() : 'N/A',
+        'wf_report_token_vars' => array(
+            'request_get_header_underscore' => $request->get_header('x_wf_report_token'),
+            'request_get_header_hyphen' => $request->get_header('x-wf-report-token'),
+            'server_var' => $_SERVER['HTTP_X_WF_REPORT_TOKEN'] ?? 'NOT SET',
         )
     );
 }

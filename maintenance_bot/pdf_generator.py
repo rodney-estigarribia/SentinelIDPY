@@ -48,14 +48,19 @@ class PDFGenerator:
 
     def _draw_storage_progress_bar(self):
         """Dibuja una barra de progreso visual para el almacenamiento."""
+        logger.info(f"_draw_storage_progress_bar called with infra_data: {self.infra_data}")
         if not self.infra_data:
+            logger.warning("No infrastructure data available, skipping storage progress bar")
             return
 
         percentage = self.infra_data.get('disk_used_percentage', 0)
         used_gb = self.infra_data.get('disk_used_gb', 0)
         total_gb = self.infra_data.get('disk_total_gb', 0)
 
+        logger.info(f"Storage metrics - Used: {used_gb}GB / Total: {total_gb}GB ({percentage}%)")
+
         if total_gb == 0:
+            logger.warning("Total GB is 0, skipping storage progress bar")
             return
 
         self.pdf.ln(5)
@@ -92,11 +97,16 @@ class PDFGenerator:
 
         self.pdf.ln(8)
 
-        # Texto de advertencia si es necesario
+        # Mensaje descriptivo según porcentaje de uso
+        self.pdf.set_font(self.font_family, '', 9)
         if percentage >= 80:
             self.pdf.set_text_color(*self.ROJO_ALERTA)
             self.pdf.set_font(self.font_family, 'B', 9)
-            self.pdf.cell(0, 5, "⚠️ Espacio en disco crítico. Recomendamos una limpieza o ampliación.", 0, 1, 'L')
+            self.pdf.multi_cell(0, 5, f"{used_gb} GB usados de {total_gb} GB totales - Tu espacio en disco esta llegando al limite. Recomendamos una limpieza o ampliacion proximamente.", 0, 'L')
+            self.pdf.set_text_color(0, 0, 0)
+        else:
+            self.pdf.set_text_color(*self.GRIS_TEXT)
+            self.pdf.multi_cell(0, 5, f"{used_gb} GB usados de {total_gb} GB totales - Contas con muy buen espacio disponible.", 0, 'L')
             self.pdf.set_text_color(0, 0, 0)
 
         self.pdf.ln(3)

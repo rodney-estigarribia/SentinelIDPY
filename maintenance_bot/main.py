@@ -88,6 +88,7 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Consultar datos de infraestructura del cliente
     loop = asyncio.get_running_loop()
     infra_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_infrastructure_data, client['url'])
+    logger.info(f"Infrastructure data retrieved: {infra_data}")
     context.user_data['infrastructure_data'] = infra_data
 
     await query.edit_message_text(
@@ -181,18 +182,20 @@ async def skip_despues(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("📄 Generando PDF Premium...")
-    
+
     client = context.user_data['client']
     text = context.user_data['final_text']
     antes = context.user_data.get('antes_img')
     despues = context.user_data.get('despues_img')
     infra_data = context.user_data.get('infrastructure_data')
+    logger.info(f"Generating report with infrastructure_data: {infra_data}")
     pdf_path = None
 
     try:
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
         pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data)
+        logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
         loop = asyncio.get_running_loop()

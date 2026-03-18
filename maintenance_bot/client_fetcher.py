@@ -21,14 +21,34 @@ class ClientDataFetcher:
             'User-Agent': 'SentinelIDPY-MaintenanceBot/1.0',
             'X-WF-Report-Token': WF_REPORT_TOKEN
         }
+        params = {
+            'token': WF_REPORT_TOKEN
+        }
 
         try:
-            response = requests.get(endpoint, headers=headers, timeout=15, verify=True)
+            logger.info(f"Fetching infrastructure data from: {endpoint}")
+            logger.info(f"Token length: {len(WF_REPORT_TOKEN)}")
+            logger.info(f"Headers being sent: {headers}")
+            logger.info(f"Query params being sent: token={WF_REPORT_TOKEN[:10]}...")
+
+            response = requests.get(endpoint, headers=headers, params=params, timeout=15, verify=False)
+            logger.info(f"Response status code: {response.status_code}")
+            logger.info(f"Response headers: {dict(response.headers)}")
+
             response.raise_for_status()
             data = response.json()
-            return data.get('infrastructure', {})
+            logger.info(f"Full response data: {data}")
+            infra_data = data.get('infrastructure', {})
+            logger.info(f"Successfully fetched infrastructure data: {infra_data}")
+            return infra_data
         except requests.exceptions.RequestException as e:
             logger.error(f"Error consultando infraestructura de {client_url}: {e}")
+            logger.error(f"Response text: {e.response.text if hasattr(e, 'response') and e.response is not None else 'N/A'}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error fetching infrastructure from {client_url}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
 
     @staticmethod
