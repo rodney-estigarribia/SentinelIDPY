@@ -85,11 +85,14 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Generar un ID unico para esta sesion de reporte
     context.user_data['session_id'] = uuid.uuid4().hex[:8]
 
-    # Consultar datos de infraestructura del cliente
+    # Consultar datos de infraestructura y SSL del cliente
     loop = asyncio.get_running_loop()
     infra_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_infrastructure_data, client['url'])
+    ssl_days = await loop.run_in_executor(None, ClientDataFetcher.obtener_dias_ssl, client['url'])
     logger.info(f"Infrastructure data retrieved: {infra_data}")
+    logger.info(f"SSL days remaining: {ssl_days}")
     context.user_data['infrastructure_data'] = infra_data
+    context.user_data['ssl_days'] = ssl_days
 
     await query.edit_message_text(
         f"📋 Mantenimiento para *{client['nombre']}*\n\n¿Qué mejoras manuales de SEO/Accesibilidad/Rendimiento hiciste hoy?",
@@ -188,14 +191,15 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     antes = context.user_data.get('antes_img')
     despues = context.user_data.get('despues_img')
     infra_data = context.user_data.get('infrastructure_data')
-    logger.info(f"Generating report with infrastructure_data: {infra_data}")
+    ssl_days = context.user_data.get('ssl_days')
+    logger.info(f"Generating report with infrastructure_data: {infra_data}, ssl_days: {ssl_days}")
     pdf_path = None
 
     try:
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data)
-        logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}")
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days)
+        logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
         loop = asyncio.get_running_loop()

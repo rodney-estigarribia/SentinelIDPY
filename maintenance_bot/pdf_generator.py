@@ -7,7 +7,7 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 class PDFGenerator:
-    def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None, infra_data=None):
+    def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None, infra_data=None, ssl_days=None):
         self.pdf = FPDF()
         # Try to use Montserrat, fallback to Helvetica
         font_path = "Montserrat.ttf"
@@ -27,12 +27,15 @@ class PDFGenerator:
         self.antes_path = antes_img
         self.despues_path = despues_img
         self.infra_data = infra_data or {}
+        self.ssl_days = ssl_days
 
         # Estilo Premium Colores
         self.AZUL_NAVY = (26, 35, 126)   # #1A237E
         self.GRIS_HEAD = (245, 245, 245) # #F5F5F5
         self.GRIS_TEXT = (100, 100, 100)
         self.ROJO_ALERTA = (220, 53, 69)  # #DC3545
+        self.VERDE_OK = (40, 167, 69)     # #28A745
+        self.AMARILLO_WARN = (255, 193, 7) # #FFC107
     
     def _header(self):
         self.pdf.set_fill_color(*self.AZUL_NAVY)
@@ -121,30 +124,90 @@ class PDFGenerator:
     def _add_security_uptime(self):
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 10, "Resumen de Infraestructura", 0, 1, 'L')
-        
+        self.pdf.cell(0, 10, "Salud de Identidad Digital", 0, 1, 'L')
+
         self.pdf.set_fill_color(*self.GRIS_HEAD)
         self.pdf.set_font(self.font_family, '', 10)
         self.pdf.set_text_color(0, 0, 0)
-        
-        y_ini = self.pdf.get_y()
-        self.pdf.rect(10, y_ini, 90, 20, 'F')
-        self.pdf.set_xy(15, y_ini+5)
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.cell(80, 5, "Escudo de Seguridad", 0, 1, 'C')
-        self.pdf.set_x(15)
-        self.pdf.set_font(self.font_family, 'B', 11)
-        self.pdf.cell(80, 5, "Wordfence Activo", 0, 0, 'C')
 
-        self.pdf.set_xy(110, y_ini)
-        self.pdf.rect(110, y_ini, 90, 20, 'F')
-        self.pdf.set_xy(115, y_ini+5)
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.cell(80, 5, "Disponibilidad", 0, 1, 'C')
-        self.pdf.set_x(115)
-        self.pdf.set_font(self.font_family, 'B', 11)
-        self.pdf.cell(80, 5, "100% Operativo", 0, 1, 'C')
-        self.pdf.ln(10)
+        y_ini = self.pdf.get_y()
+
+        # Card 1: Escudo de Seguridad
+        self.pdf.rect(10, y_ini, 60, 20, 'F')
+        self.pdf.set_xy(10, y_ini + 5)
+        self.pdf.set_font(self.font_family, '', 9)
+        self.pdf.cell(60, 5, "Escudo de Seguridad", 0, 1, 'C')
+        self.pdf.set_x(10)
+        self.pdf.set_font(self.font_family, 'B', 10)
+        self.pdf.cell(60, 5, "Wordfence Activo", 0, 0, 'C')
+
+        # Card 2: Disponibilidad
+        self.pdf.rect(75, y_ini, 60, 20, 'F')
+        self.pdf.set_xy(75, y_ini + 5)
+        self.pdf.set_font(self.font_family, '', 9)
+        self.pdf.cell(60, 5, "Disponibilidad", 0, 1, 'C')
+        self.pdf.set_x(75)
+        self.pdf.set_font(self.font_family, 'B', 10)
+        self.pdf.cell(60, 5, "100% Operativo", 0, 0, 'C')
+
+        # Card 3: Certificado SSL
+        self._draw_ssl_card(140, y_ini)
+
+        self.pdf.set_y(y_ini + 25)
+        self.pdf.ln(5)
+
+    def _draw_ssl_card(self, x, y):
+        """Dibuja la tarjeta de estado SSL con colores segun dias para renovar."""
+        card_w = 60
+        card_h = 20
+
+        if self.ssl_days is None:
+            # No se pudo verificar
+            self.pdf.set_fill_color(*self.GRIS_HEAD)
+            self.pdf.rect(x, y, card_w, card_h, 'F')
+            self.pdf.set_xy(x, y + 5)
+            self.pdf.set_font(self.font_family, '', 9)
+            self.pdf.set_text_color(*self.GRIS_TEXT)
+            self.pdf.cell(card_w, 5, "Certificado SSL", 0, 1, 'C')
+            self.pdf.set_x(x)
+            self.pdf.set_font(self.font_family, 'B', 10)
+            self.pdf.cell(card_w, 5, "No verificado", 0, 0, 'C')
+        elif self.ssl_days < 5:
+            # Critico - Rojo
+            self.pdf.set_fill_color(253, 232, 234)  # Rojo claro de fondo
+            self.pdf.rect(x, y, card_w, card_h, 'F')
+            self.pdf.set_xy(x, y + 3)
+            self.pdf.set_font(self.font_family, '', 9)
+            self.pdf.set_text_color(*self.ROJO_ALERTA)
+            self.pdf.cell(card_w, 5, "SSL CRITICO", 0, 1, 'C')
+            self.pdf.set_x(x)
+            self.pdf.set_font(self.font_family, 'B', 10)
+            self.pdf.cell(card_w, 5, f"{self.ssl_days} dias para renovar", 0, 0, 'C')
+        elif self.ssl_days < 15:
+            # Advertencia - Amarillo
+            self.pdf.set_fill_color(255, 243, 205)  # Amarillo claro de fondo
+            self.pdf.rect(x, y, card_w, card_h, 'F')
+            self.pdf.set_xy(x, y + 3)
+            self.pdf.set_font(self.font_family, '', 9)
+            self.pdf.set_text_color(133, 100, 0)  # Amarillo oscuro texto
+            self.pdf.cell(card_w, 5, "SSL: Renovar pronto", 0, 1, 'C')
+            self.pdf.set_x(x)
+            self.pdf.set_font(self.font_family, 'B', 10)
+            self.pdf.cell(card_w, 5, f"{self.ssl_days} dias para renovar", 0, 0, 'C')
+        else:
+            # Seguro - Verde
+            self.pdf.set_fill_color(212, 237, 218)  # Verde claro de fondo
+            self.pdf.rect(x, y, card_w, card_h, 'F')
+            self.pdf.set_xy(x, y + 3)
+            self.pdf.set_font(self.font_family, '', 9)
+            self.pdf.set_text_color(*self.VERDE_OK)
+            self.pdf.cell(card_w, 5, "SSL Activo y Seguro", 0, 1, 'C')
+            self.pdf.set_x(x)
+            self.pdf.set_font(self.font_family, 'B', 10)
+            self.pdf.cell(card_w, 5, f"{self.ssl_days} dias para renovar", 0, 0, 'C')
+
+        # Reset text color
+        self.pdf.set_text_color(0, 0, 0)
 
     def _add_manual_tasks(self):
         self.pdf.ln(5)
