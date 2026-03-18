@@ -20,11 +20,13 @@ add_action( 'rest_api_init', function () {
 } );
 
 /**
- * Define el hash interno de seguridad.
+ * Obtiene el token de seguridad desde WordPress options.
  * Se lee desde la opción WordPress 'sentinel_idpy_report_token' (configurable en Admin).
  * Longitud mínima recomendada: 32 caracteres.
  */
-define('WF_REPORT_TOKEN_INTERNAL', get_option('sentinel_idpy_report_token', ''));
+function get_wf_report_token() {
+    return get_option('sentinel_idpy_report_token', '');
+}
 
 // Admin Settings Page
 add_action('admin_menu', 'sentinel_add_settings_page');
@@ -83,27 +85,28 @@ function sentinel_render_token_field() {
 /**
  * Verifica que el header X-WF-Report-Token coincida con la constante interna.
  */
-function verify_wf_report_token( WP_REST_Request $request ) {    
+function verify_wf_report_token( WP_REST_Request $request ) {
+    $secret_token = get_wf_report_token();
+
     // Forzamos que el token sea fuerte (ej. un UUID o Hash SHA de 32+ caracteres) para evitar fuerza bruta.
-    if ( strlen( WF_REPORT_TOKEN_INTERNAL ) < 32 ) {
+    if ( strlen( $secret_token ) < 32 ) {
         return new WP_Error(
             'rest_forbidden',
             esc_html__( 'El token de seguridad no está configurado o es demasiado corto. Configúralo en Configuración → SentinelIDPY con al menos 32 caracteres.', 'text-domain' ),
             array( 'status' => 500 )
         );
     }
-    
-    $secret_token = WF_REPORT_TOKEN_INTERNAL;
+
     $provided_token = $request->get_header( 'x_wf_report_token' );
 
     if ( $provided_token === $secret_token ) {
         return true;
     }
 
-    return new WP_Error( 
-        'rest_forbidden', 
-        esc_html__( 'Token inválido o faltante.', 'text-domain' ), 
-        array( 'status' => 403 ) 
+    return new WP_Error(
+        'rest_forbidden',
+        esc_html__( 'Token inválido o faltante.', 'text-domain' ),
+        array( 'status' => 403 )
     );
 }
 
