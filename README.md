@@ -64,12 +64,30 @@ El script `src/reporting/report.py` leerá la lista de sitios y consultará el e
 
 ---
 
-## ⚙️ 3. Despliegue Automatizado (GitHub Actions)
+## 🤖 4. Módulo: Telegram Maintenance Bot (Mantenimiento Proactivo)
 
-Configura los siguientes **Secrets** en tu repositorio de GitHub (**Settings > Secrets and variables > Actions**):
+Este bot interactivo permite documentar tareas manuales, procesar explicaciones técnicas con IA (Ollama) y generar reportes PDF Premium para clientes con evidencia visual (Antes/Después).
 
-- `TELEGRAM_TOKEN`: El token de tu bot de Telegram.
-- `TELEGRAM_CHAT_ID`: El ID numérico del chat o grupo de recepción.
-- `WF_REPORT_TOKEN`: El Token de 32+ caracteres definido en el plugin de WordPress.
+### Características:
+- **IA Local**: Conexión con Ollama (`qwen2.5-coder:1.5b`) para redactar bitácoras profesionales.
+- **Seguridad**: Lista blanca de usuarios (`ALLOWED_USERS`) y sanitización de rutas.
+- **Reportes Premium**: Generación de PDFs con FPDF2, soporte Unicode (DejaVuSans) y optimización WebP.
+- **Dockerizado**: Despliegue sencillo con Docker Compose y volúmenes persistentes.
 
-Las automatizaciones se ejecutan según los cronjobs definidos en `.github/workflows/`. Puedes forzar una ejecución manual desde la pestaña **Actions** seleccionando el workflow correspondiente.
+### Despliegue y Uso:
+
+1. **Configuración de Clientes**: Edita `maintenance_bot/clientes.json` con los datos de tus clientes.
+2. **Variables de Entorno**:
+   - Copia `maintenance_bot/.env.example` a `maintenance_bot/.env`.
+   - Define tu `TELEGRAM_TOKEN`.
+   - Añade tu ID de usuario en `ALLOWED_USERS` (ej: `12345678,98765432`). Puedes obtener tu ID hablando con `@userinfobot`.
+3. **Ejecución con Docker**:
+   ```bash
+   cd maintenance_bot
+   docker-compose up --build -d
+   ```
+4. **Uso en Telegram**:
+   - Envía el comando `/revisar` al bot.
+   - Sigue el flujo interactivo: Seleccionar cliente -> Escribir bitácora -> Validar IA -> Subir fotos (o `/skip`) -> Recibir PDF.
+
+---

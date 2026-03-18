@@ -1,0 +1,14 @@
+# Environment variables
+.env
+.env.local
+
+# Generated files
+reportes/
+*.pdf
+*.pyc
+__pycache__/
+
+# Cache
+.DS_Store
+*.swp
+*.swo

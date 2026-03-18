@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  maintenance_bot:
+    build: .
+    container_name: sentinel_maintenance_bot
+    restart: unless-stopped
+    volumes:
+      - ./reportes:/app/reportes
+      - ./clientes.json:/app/clientes.json
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - ALLOWED_USERS=${ALLOWED_USERS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

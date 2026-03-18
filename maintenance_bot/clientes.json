@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "nombre": "IDPY",
+    "url": "https://impulsosdigitales.com.py",
+    "email": "[EMAIL_ADDRESS]"
+  },
+  {
+    "id": 2,
+    "nombre": "CGA",
+    "url": "https://cga.com.py",
+    "email": "info@cga.com.py"
+  },
+  {
+    "id": 3,
+    "nombre": "CGA Portal",
+    "url": "https://portal.cga.com.py",
+    "email": "info@cga.com.py"
+  },
+  {
+    "id": 4,
+    "nombre": "Cope Market Deli",
+    "url": "https://copemarketdeli.com.py",
+    "email": "info@copemarketdeli.com.py"
+  },
+  {
+    "id": 5,
+    "nombre": "Dagda",
+    "url": "https://dagda.com.py",
+    "email": "info@dagda.com.py"
+  },
+  {
+    "id": 6,
+    "nombre": "GeneSur",
+    "url": "https://genesur.com.py",
+    "email": "info@genesur.com.py"
+  },
+  {
+    "id": 7,
+    "nombre": "Navíos Argentina",
+    "url": "https://naviosargentina.com",
+    "email": "info@naviosargentina.com"
+  },
+  {
+    "id": 8,
+    "nombre": "Synexa",
+    "url": "https://synexa.com.py",
+    "email": "info@synexa.com.py"
+  }
+]
