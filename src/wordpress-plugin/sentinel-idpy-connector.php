@@ -112,80 +112,86 @@ function verify_wf_report_token( WP_REST_Request $request ) {
  */
 function get_wordfence_blocked_stats() {
     global $wpdb;
-    
+
     $table_name = $wpdb->prefix . 'wfHits';
-    
-    // Si la tabla no existe, devolvemos un estado básico.
-    if( $wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name ) {
-         return array(
-            'status' => 'success',
-            'total_attacks' => 0,
-            'note' => 'Tabla de Wordfence no encontrada.'
-        );
-    }
+    $wordfence_available = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
 
     $thirty_days_ago = time() - (30 * 24 * 60 * 60);
 
-    // 1. Total de ataques (Existing)
-    $total_query = $wpdb->prepare(
-        "SELECT COUNT(*) FROM {$table_name} WHERE ctime > %f AND action = %s",
-        $thirty_days_ago, 'blocked'
-    );
-    $total_attacks = (int) $wpdb->get_var( $total_query );
-
-    // 2. Top 5 Malicious IPs
-    $top_ips_query = $wpdb->prepare(
-        "SELECT IP, COUNT(*) as count FROM {$table_name} 
-         WHERE ctime > %f AND action = %s 
-         GROUP BY IP ORDER BY count DESC LIMIT 5",
-        $thirty_days_ago, 'blocked'
-    );
-    $top_ips_raw = $wpdb->get_results( $top_ips_query );
+    // Wordfence data (only if available)
+    $total_attacks = 0;
     $top_ips = array();
-    foreach($top_ips_raw as $row) {
-        $top_ips[] = array(
-            'ip' => (function_exists('inet_ntop') && strlen($row->IP) > 4) ? inet_ntop($row->IP) : $row->IP,
-            'count' => (int)$row->count
-        );
-    }
-
-    // 3. Top 5 targeted URLs
-    $top_urls_query = $wpdb->prepare(
-        "SELECT URL, COUNT(*) as count FROM {$table_name} 
-         WHERE ctime > %f AND action = %s 
-         GROUP BY URL ORDER BY count DESC LIMIT 5",
-        $thirty_days_ago, 'blocked'
-    );
-    $top_urls_raw = $wpdb->get_results( $top_urls_query );
     $top_urls = array();
-    foreach($top_urls_raw as $row) {
-        $top_urls[] = array('url' => $row->URL, 'count' => (int)$row->count);
-    }
-
-    // 4. Top 5 Block Reasons
-    $top_reasons_query = $wpdb->prepare(
-        "SELECT actionDescription as reason, COUNT(*) as count FROM {$table_name} 
-         WHERE ctime > %f AND action = %s 
-         GROUP BY actionDescription ORDER BY count DESC LIMIT 5",
-        $thirty_days_ago, 'blocked'
-    );
-    $top_reasons = $wpdb->get_results( $top_reasons_query );
-
-    // 5. Top 5 Attempted Usernames (Extrayendo de actionData si existe)
-    // Nota: 'actionData' es JSON serializado. Intentamos buscar patrones comunes.
-    $top_users_query = $wpdb->prepare(
-        "SELECT actionData, COUNT(*) as count FROM {$table_name} 
-         WHERE ctime > %f AND action = %s AND actionDescription LIKE %s 
-         GROUP BY actionData ORDER BY count DESC LIMIT 5",
-        $thirty_days_ago, 'blocked', '%login%'
-    );
-    $top_users_raw = $wpdb->get_results( $top_users_query );
+    $top_reasons = array();
     $top_usernames = array();
-    foreach($top_users_raw as $row) {
-        $data = json_decode($row->actionData, true);
-        $user = isset($data['username']) ? $data['username'] : (isset($data['user']) ? $data['user'] : 'Desconocido');
-        if($user !== 'Desconocido') {
-            $top_usernames[] = array('user' => $user, 'count' => (int)$row->count);
+    $last_scan = 'No disponible';
+
+    if ($wordfence_available) {
+        // 1. Total de ataques
+        $total_query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE ctime > %f AND action = %s",
+            $thirty_days_ago, 'blocked'
+        );
+        $total_attacks = (int) $wpdb->get_var( $total_query );
+
+        // 2. Top 5 Malicious IPs
+        $top_ips_query = $wpdb->prepare(
+            "SELECT IP, COUNT(*) as count FROM {$table_name}
+             WHERE ctime > %f AND action = %s
+             GROUP BY IP ORDER BY count DESC LIMIT 5",
+            $thirty_days_ago, 'blocked'
+        );
+        $top_ips_raw = $wpdb->get_results( $top_ips_query );
+        foreach($top_ips_raw as $row) {
+            $top_ips[] = array(
+                'ip' => (function_exists('inet_ntop') && strlen($row->IP) > 4) ? inet_ntop($row->IP) : $row->IP,
+                'count' => (int)$row->count
+            );
+        }
+
+        // 3. Top 5 targeted URLs
+        $top_urls_query = $wpdb->prepare(
+            "SELECT URL, COUNT(*) as count FROM {$table_name}
+             WHERE ctime > %f AND action = %s
+             GROUP BY URL ORDER BY count DESC LIMIT 5",
+            $thirty_days_ago, 'blocked'
+        );
+        $top_urls_raw = $wpdb->get_results( $top_urls_query );
+        foreach($top_urls_raw as $row) {
+            $top_urls[] = array('url' => $row->URL, 'count' => (int)$row->count);
+        }
+
+        // 4. Top 5 Block Reasons
+        $top_reasons_query = $wpdb->prepare(
+            "SELECT actionDescription as reason, COUNT(*) as count FROM {$table_name}
+             WHERE ctime > %f AND action = %s
+             GROUP BY actionDescription ORDER BY count DESC LIMIT 5",
+            $thirty_days_ago, 'blocked'
+        );
+        $top_reasons = $wpdb->get_results( $top_reasons_query );
+
+        // 5. Top 5 Attempted Usernames
+        $top_users_query = $wpdb->prepare(
+            "SELECT actionData, COUNT(*) as count FROM {$table_name}
+             WHERE ctime > %f AND action = %s AND actionDescription LIKE %s
+             GROUP BY actionData ORDER BY count DESC LIMIT 5",
+            $thirty_days_ago, 'blocked', '%login%'
+        );
+        $top_users_raw = $wpdb->get_results( $top_users_query );
+        foreach($top_users_raw as $row) {
+            $data = json_decode($row->actionData, true);
+            $user = isset($data['username']) ? $data['username'] : (isset($data['user']) ? $data['user'] : 'Desconocido');
+            if($user !== 'Desconocido') {
+                $top_usernames[] = array('user' => $user, 'count' => (int)$row->count);
+            }
+        }
+
+        // Wordfence Malware Scan
+        if (class_exists('wfConfig')) {
+            $last_scan_time = wfConfig::get('lastScanCompleted', 0);
+            if ($last_scan_time > 0) {
+                $last_scan = date('Y-m-d H:i:s', $last_scan_time);
+            }
         }
     }
 
@@ -268,14 +274,6 @@ function get_wordfence_blocked_stats() {
         $site_health_score = $status['label'] ?? 'Normal';
     }
 
-    // 11. Wordfence Malware Scan
-    $last_scan = 'No disponible';
-    if (class_exists('wfConfig')) {
-        $last_scan_time = wfConfig::get('lastScanCompleted', 0);
-        if ($last_scan_time > 0) {
-            $last_scan = date('Y-m-d H:i:s', $last_scan_time);
-        }
-    }
 
     return array(
         'status' => 'success',
