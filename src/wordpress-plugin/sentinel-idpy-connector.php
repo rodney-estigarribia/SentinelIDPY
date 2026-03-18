@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 2.0
+ * Version: 2.1
  */
 
 // Evitar acceso directo
@@ -271,10 +271,9 @@ function get_wordfence_blocked_stats() {
 
     // 10. Site Health Score
     $site_health_score = 'Good'; // Default
-    if ( class_exists( 'WP_Site_Health' ) ) {
-        $site_health = WP_Site_Health::get_instance();
-        $status = $site_health->get_test_status();
-        $site_health_score = $status['label'] ?? 'Normal';
+    if ( function_exists( 'get_site_status' ) ) {
+        $status = get_site_status();
+        $site_health_score = $status['status'] ?? 'Good';
     }
 
 
