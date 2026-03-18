@@ -15,6 +15,7 @@ from telegram.ext import (
 )
 from ai_handler import AIHandler
 from pdf_generator import PDFGenerator
+from client_fetcher import ClientDataFetcher
 
 # Configuración del bot
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -83,7 +84,12 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['client'] = client
     # Generar un ID unico para esta sesion de reporte
     context.user_data['session_id'] = uuid.uuid4().hex[:8]
-    
+
+    # Consultar datos de infraestructura del cliente
+    loop = asyncio.get_running_loop()
+    infra_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_infrastructure_data, client['url'])
+    context.user_data['infrastructure_data'] = infra_data
+
     await query.edit_message_text(
         f"📋 Mantenimiento para *{client['nombre']}*\n\n¿Qué mejoras manuales de SEO/Accesibilidad/Rendimiento hiciste hoy?",
         parse_mode='Markdown'
@@ -180,12 +186,13 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = context.user_data['final_text']
     antes = context.user_data.get('antes_img')
     despues = context.user_data.get('despues_img')
+    infra_data = context.user_data.get('infrastructure_data')
     pdf_path = None
-    
+
     try:
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues)
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data)
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
         loop = asyncio.get_running_loop()

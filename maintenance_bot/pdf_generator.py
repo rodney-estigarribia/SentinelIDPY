@@ -7,7 +7,7 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 class PDFGenerator:
-    def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None):
+    def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None, infra_data=None):
         self.pdf = FPDF()
         # Try to use Montserrat, fallback to Helvetica
         font_path = "Montserrat.ttf"
@@ -26,11 +26,13 @@ class PDFGenerator:
         self.improved_text = improved_text
         self.antes_path = antes_img
         self.despues_path = despues_img
-        
+        self.infra_data = infra_data or {}
+
         # Estilo Premium Colores
         self.AZUL_NAVY = (26, 35, 126)   # #1A237E
         self.GRIS_HEAD = (245, 245, 245) # #F5F5F5
         self.GRIS_TEXT = (100, 100, 100)
+        self.ROJO_ALERTA = (220, 53, 69)  # #DC3545
     
     def _header(self):
         self.pdf.set_fill_color(*self.AZUL_NAVY)
@@ -43,7 +45,62 @@ class PDFGenerator:
 
         # Position cursor below header for content
         self.pdf.set_y(45)
-    
+
+    def _draw_storage_progress_bar(self):
+        """Dibuja una barra de progreso visual para el almacenamiento."""
+        if not self.infra_data:
+            return
+
+        percentage = self.infra_data.get('disk_used_percentage', 0)
+        used_gb = self.infra_data.get('disk_used_gb', 0)
+        total_gb = self.infra_data.get('disk_total_gb', 0)
+
+        if total_gb == 0:
+            return
+
+        self.pdf.ln(5)
+        self.pdf.set_font(self.font_family, 'B', 11)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.cell(0, 8, "Almacenamiento del Servidor", 0, 1, 'L')
+
+        # Etiqueta de almacenamiento
+        self.pdf.set_font(self.font_family, '', 10)
+        self.pdf.set_text_color(0, 0, 0)
+        storage_label = f"{used_gb} GB de {total_gb} GB ({percentage}%)"
+        self.pdf.cell(0, 6, storage_label, 0, 1, 'L')
+
+        # Barra de progreso
+        bar_width = 150
+        bar_height = 5
+        bar_x = 10
+        bar_y = self.pdf.get_y()
+
+        # Fondo gris
+        self.pdf.set_fill_color(200, 200, 200)
+        self.pdf.rect(bar_x, bar_y, bar_width, bar_height, 'F')
+
+        # Determinar color: Azul marino si < 80%, Rojo si >= 80%
+        if percentage >= 80:
+            fill_color = self.ROJO_ALERTA
+        else:
+            fill_color = self.AZUL_NAVY
+
+        # Relleno proporcional
+        fill_width = (percentage / 100) * bar_width
+        self.pdf.set_fill_color(*fill_color)
+        self.pdf.rect(bar_x, bar_y, fill_width, bar_height, 'F')
+
+        self.pdf.ln(8)
+
+        # Texto de advertencia si es necesario
+        if percentage >= 80:
+            self.pdf.set_text_color(*self.ROJO_ALERTA)
+            self.pdf.set_font(self.font_family, 'B', 9)
+            self.pdf.cell(0, 5, "⚠️ Espacio en disco crítico. Recomendamos una limpieza o ampliación.", 0, 1, 'L')
+            self.pdf.set_text_color(0, 0, 0)
+
+        self.pdf.ln(3)
+
     def _footer(self):
         self.pdf.set_y(-15)
         self.pdf.set_font(self.font_family, '' , 8)
@@ -99,7 +156,7 @@ class PDFGenerator:
         self.pdf.ln(5)
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 10, "Evidencia Visual del Mantenimiento", 0, 1, 'L')
+        self.pdf.cell(0, 10, "Antes & Despues", 0, 1, 'L')
         
         img_w = 90
         x1, x2 = 10, 110
@@ -122,15 +179,22 @@ class PDFGenerator:
                 wp = process_img(path)
                 if wp:
                     self.pdf.image(wp, x=x_pos, y=y_pos+5, w=img_w)
-                    self.pdf.set_xy(x_pos, y_pos+img_w/1.5 + 8)
+                    # Add background box for label visibility
+                    label_y = y_pos+img_w/1.5 + 8
+                    self.pdf.set_fill_color(*self.GRIS_HEAD)
+                    self.pdf.rect(x_pos, label_y-1, img_w, 6, 'F')
+                    self.pdf.set_xy(x_pos, label_y)
                     self.pdf.set_font(self.font_family, 'B', 9)
+                    self.pdf.set_text_color(*self.AZUL_NAVY)
                     self.pdf.cell(img_w, 5, label, 0, 0, 'C')
+                    self.pdf.set_text_color(0, 0, 0)
         
         self.pdf.ln(10)
 
     def generate(self, filename):
         self.pdf.add_page()
         self._header()
+        self._draw_storage_progress_bar()
         self._add_security_uptime()
         self._add_manual_tasks()
         self._add_visual_evidence()

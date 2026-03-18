@@ -9,10 +9,11 @@ class AIHandler:
         self.api_url = f"{host}/api/generate"
         self.model = model
         self.system_prompt = (
-            "Eres un redactor premium de una agencia de tecnología en Paraguay. "
-            "Tu objetivo es convertir notas rápidas de mantenimiento en frases profesionales, "
-            "elegantes y breves que justifiquen un servicio de alto valor. "
-            "Usa un tono de experto pero humano."
+            "Eres un redactor experto en comunicación profesional. "
+            "Convierte la nota técnica en formato directo con viñetas (bullets): "
+            "1) Una línea principal en primera persona (ej: 'Mejoramos...'), 2) Bullet points de detalles. "
+            "Usa voz activa SIEMPRE (ej: 'Optimizamos imágenes' NO 'Se optimizan imágenes'). "
+            "Máximo 4 bullets. Mantén conciso y directo."
         )
 
     def improve_text(self, raw_text: str) -> str:

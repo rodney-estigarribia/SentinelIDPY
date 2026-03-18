@@ -141,10 +141,19 @@ function get_wordfence_blocked_stats() {
     $disk_used = $disk_total - $disk_free;
     $disk_percentage = $disk_total > 0 ? round(($disk_used / $disk_total) * 100, 2) : 0;
 
+    // Convertir a GB para cálculos de barra de progreso
+    $gb_divisor = 1024 * 1024 * 1024;
+    $disk_total_gb = round($disk_total / $gb_divisor, 2);
+    $disk_free_gb = round($disk_free / $gb_divisor, 2);
+    $disk_used_gb = round($disk_used / $gb_divisor, 2);
+
     $server_info = array(
         'disk_total' => size_format($disk_total),
         'disk_free' => size_format($disk_free),
         'disk_used_percentage' => $disk_percentage,
+        'disk_total_gb' => $disk_total_gb,
+        'disk_free_gb' => $disk_free_gb,
+        'disk_used_gb' => $disk_used_gb,
         'php_version' => PHP_VERSION,
         'wp_version' => get_bloginfo('version'),
         'server_ip' => $_SERVER['SERVER_ADDR'] ?? 'Unknown'
