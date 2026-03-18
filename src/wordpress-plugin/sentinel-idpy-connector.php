@@ -21,10 +21,64 @@ add_action( 'rest_api_init', function () {
 
 /**
  * Define el hash interno de seguridad.
- * IMPORTANTE: Recuerda mantener este mismo hash en tu script de Python central.
+ * Se lee desde la opción WordPress 'sentinel_idpy_report_token' (configurable en Admin).
  * Longitud mínima recomendada: 32 caracteres.
  */
-define('WF_REPORT_TOKEN_INTERNAL', 'your_32_character_secure_hash_here_123');
+define('WF_REPORT_TOKEN_INTERNAL', get_option('sentinel_idpy_report_token', ''));
+
+// Admin Settings Page
+add_action('admin_menu', 'sentinel_add_settings_page');
+add_action('admin_init', 'sentinel_register_settings');
+
+function sentinel_add_settings_page() {
+    add_options_page(
+        'SentinelIDPY',
+        'SentinelIDPY',
+        'manage_options',
+        'sentinel-idpy',
+        'sentinel_render_settings_page'
+    );
+}
+
+function sentinel_register_settings() {
+    register_setting('sentinel_idpy_group', 'sentinel_idpy_report_token', [
+        'sanitize_callback' => 'sentinel_sanitize_token'
+    ]);
+    add_settings_section('sentinel_main', 'Configuración', null, 'sentinel-idpy');
+    add_settings_field('sentinel_token_field', 'Token de Seguridad', 'sentinel_render_token_field', 'sentinel-idpy', 'sentinel_main');
+}
+
+function sentinel_sanitize_token($value) {
+    $value = sanitize_text_field($value);
+    if (strlen($value) < 32) {
+        add_settings_error('sentinel_idpy_report_token', 'token_too_short', 'El token debe tener al menos 32 caracteres.');
+        return get_option('sentinel_idpy_report_token', '');
+    }
+    return $value;
+}
+
+function sentinel_render_settings_page() {
+    if (!current_user_can('manage_options')) return;
+    ?>
+    <div class="wrap">
+        <h1>SentinelIDPY — Configuración</h1>
+        <?php settings_errors(); ?>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('sentinel_idpy_group');
+            do_settings_sections('sentinel-idpy');
+            submit_button('Guardar Token');
+            ?>
+        </form>
+    </div>
+    <?php
+}
+
+function sentinel_render_token_field() {
+    $token = esc_attr(get_option('sentinel_idpy_report_token', ''));
+    echo '<input type="password" name="sentinel_idpy_report_token" value="' . $token . '" size="70" />';
+    echo '<p class="description">Debe coincidir con el WF_REPORT_TOKEN configurado en tu bot. Mínimo 32 caracteres.</p>';
+}
 
 /**
  * Verifica que el header X-WF-Report-Token coincida con la constante interna.
@@ -32,10 +86,10 @@ define('WF_REPORT_TOKEN_INTERNAL', 'your_32_character_secure_hash_here_123');
 function verify_wf_report_token( WP_REST_Request $request ) {    
     // Forzamos que el token sea fuerte (ej. un UUID o Hash SHA de 32+ caracteres) para evitar fuerza bruta.
     if ( strlen( WF_REPORT_TOKEN_INTERNAL ) < 32 ) {
-        return new WP_Error( 
-            'rest_forbidden', 
-            esc_html__( 'El token de seguridad es demasiado corto. Asegúrate de modificar el código del plugin para usar al menos 32 caracteres.', 'text-domain' ), 
-            array( 'status' => 500 ) 
+        return new WP_Error(
+            'rest_forbidden',
+            esc_html__( 'El token de seguridad no está configurado o es demasiado corto. Configúralo en Configuración → SentinelIDPY con al menos 32 caracteres.', 'text-domain' ),
+            array( 'status' => 500 )
         );
     }
     
