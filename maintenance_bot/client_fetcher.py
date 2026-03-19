@@ -15,10 +15,9 @@ class ClientDataFetcher:
     """Consulta datos de infraestructura y almacenamiento desde los clientes."""
 
     @staticmethod
-    def fetch_infrastructure_data(client_url: str) -> dict:
+    def fetch_all_data(client_url: str) -> dict:
         """
-        Consulta el endpoint del cliente para obtener datos de infraestructura.
-        Retorna un diccionario con los datos de almacenamiento o None si falla.
+        Consulta el endpoint del cliente y retorna el JSON completo.
         """
         endpoint = f"{client_url}/wp-json/sentinel/v1/stats"
         headers = {
@@ -30,30 +29,46 @@ class ClientDataFetcher:
         }
 
         try:
-            logger.info(f"Fetching infrastructure data from: {endpoint}")
-            logger.info(f"Token length: {len(WF_REPORT_TOKEN)}")
-            logger.info(f"Headers being sent: {headers}")
-            logger.info(f"Query params being sent: token={WF_REPORT_TOKEN[:10]}...")
-
+            logger.info(f"Fetching data from: {endpoint}")
             response = requests.get(endpoint, headers=headers, params=params, timeout=15, verify=False)
             logger.info(f"Response status code: {response.status_code}")
-            logger.info(f"Response headers: {dict(response.headers)}")
-
             response.raise_for_status()
             data = response.json()
-            logger.info(f"Full response data: {data}")
-            infra_data = data.get('infrastructure', {})
-            logger.info(f"Successfully fetched infrastructure data: {infra_data}")
-            return infra_data
+            logger.info(f"Data keys received: {list(data.keys())}")
+            return data
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error consultando infraestructura de {client_url}: {e}")
-            logger.error(f"Response text: {e.response.text if hasattr(e, 'response') and e.response is not None else 'N/A'}")
-            return None
+            logger.error(f"Error consultando {client_url}: {e}")
+            return {}
         except Exception as e:
-            logger.error(f"Unexpected error fetching infrastructure from {client_url}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Unexpected error from {client_url}: {e}")
+            return {}
+
+    @staticmethod
+    def extract_metrics(data: dict) -> dict:
+        """Extrae y normaliza metricas de Matomo del response."""
+        metricas = data.get('metricas')
+        if not metricas:
             return None
+
+        # Normalizar bounce_rate de "45%" string a float
+        bounce_raw = metricas.get('bounce_rate', '0%')
+        if isinstance(bounce_raw, str):
+            bounce_rate = float(bounce_raw.replace('%', '').strip() or 0)
+        else:
+            bounce_rate = float(bounce_raw)
+
+        avg_time_seconds = int(metricas.get('avg_time_on_site', 0))
+        top_pages = metricas.get('top_pages', [])[:3]
+
+        return {
+            'nb_visits': int(metricas.get('nb_visits', 0)),
+            'nb_uniq_visitors': int(metricas.get('nb_uniq_visitors', 0)),
+            'nb_actions': int(metricas.get('nb_actions', 0)),
+            'nb_actions_per_visit': float(metricas.get('nb_actions_per_visit', 0)),
+            'avg_time_on_site': avg_time_seconds,
+            'bounce_rate': bounce_rate,
+            'top_pages': top_pages,
+        }
 
     @staticmethod
     def obtener_dias_ssl(url: str) -> int:
