@@ -36,12 +36,15 @@ class RecommendationEngine:
         if mobile_bounce > 50 and mobile_visits > 0:
             target_bounce = 45
             recovered = int(mobile_visits * (mobile_bounce - target_bounce) / 100)
+            monthly_return = recovered * 15000  # Gs. 15k avg value per recovered visitor
             recommendations.append({
                 'title': f'Reducir bounce rate en mobile ({mobile_bounce:.0f}%)',
                 'problem': f'{mobile_visits:,} visitantes moviles/mes, {mobile_bounce:.0f}% se va sin interactuar',
                 'action': 'Auditoria UX/UI + Rediseno responsive',
                 'investment': 'Gs. 1.500.000',
-                'roi': f'Si reducimos a {target_bounce}%, ganamos +{recovered} visitantes que convierten',
+                'investment_num': 1500000,
+                'roi': f'Si reducimos a {target_bounce}%, ganamos +{recovered} visitantes = Gs. {monthly_return:,}/mes',
+                'roi_monthly_num': monthly_return,
                 'priority': 1,
             })
 
@@ -54,12 +57,15 @@ class RecommendationEngine:
             page_label = top_exit.get('label', '/pagina')
             recover_target = 20
             recovered = int(exit_count * recover_target / 100)
+            monthly_return = recovered * 50000  # Gs. 50k avg per conversion
             recommendations.append({
                 'title': f'Reducir abandono en {page_label} ({exit_rate}%)',
                 'problem': f'De {exit_visits:,} visitas, {exit_count:,} se van sin completar',
                 'action': 'Simplificar flujo + agregar recuperacion de carrito',
                 'investment': 'Gs. 300.000',
-                'roi': f'Si recuperamos {recover_target}%, ganamos +{recovered} conversiones/mes',
+                'investment_num': 300000,
+                'roi': f'Si recuperamos {recover_target}%, ganamos +{recovered} conversiones = Gs. {monthly_return:,}/mes',
+                'roi_monthly_num': monthly_return,
                 'priority': 2,
             })
 
@@ -69,12 +75,15 @@ class RecommendationEngine:
         if bounce_rate > 40 and visitors > 0:
             target = 35
             retained = int(visitors * (bounce_rate - target) / 100)
+            monthly_return = retained * 10000  # Gs. 10k avg value per retained visitor
             recommendations.append({
                 'title': f'Reducir tasa de rebote general ({bounce_rate:.1f}%)',
                 'problem': f'Rebote del {bounce_rate:.1f}% - por encima del objetivo (35%)',
                 'action': 'Mejorar contenido y llamadas a la accion en paginas principales',
                 'investment': 'Gs. 500.000',
-                'roi': f'Retener +{retained} visitantes mas por mes',
+                'investment_num': 500000,
+                'roi': f'Retener +{retained} visitantes = Gs. {monthly_return:,}/mes',
+                'roi_monthly_num': monthly_return,
                 'priority': 3,
             })
 
@@ -85,13 +94,41 @@ class RecommendationEngine:
                 'problem': 'No se miden leads ni compras actualmente',
                 'action': 'Configurar metas en Matomo para medir leads, compras y clicks en CTA',
                 'investment': 'Gs. 200.000',
+                'investment_num': 200000,
                 'roi': 'Medir impacto real de cada mejora en terminos de negocio',
+                'roi_monthly_num': 0,
                 'priority': 4,
             })
 
         # Sort by priority, return top 3
         recommendations.sort(key=lambda r: r['priority'])
         return recommendations[:3]
+
+    @staticmethod
+    def financial_summary(recommendations):
+        """Calculate total investment and projected returns."""
+        if not recommendations:
+            return None
+
+        total_investment = sum(r.get('investment_num', 0) for r in recommendations)
+        total_monthly_return = sum(r.get('roi_monthly_num', 0) for r in recommendations)
+
+        if total_monthly_return > 0 and total_investment > 0:
+            payback_months = total_investment / total_monthly_return
+        else:
+            payback_months = 0
+
+        return {
+            'total_investment': total_investment,
+            'total_monthly_return': total_monthly_return,
+            'roi_3_months': total_monthly_return * 3,
+            'roi_6_months': total_monthly_return * 6,
+            'payback_months': payback_months,
+            'items': [
+                {'action': r['action'], 'investment': r.get('investment_num', 0), 'monthly_return': r.get('roi_monthly_num', 0)}
+                for r in recommendations
+            ],
+        }
 
     @staticmethod
     def format_for_prompt(recommendations):

@@ -15,7 +15,7 @@ MESES = {
 class PDFGenerator:
     def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None,
                  infra_data=None, ssl_days=None, hoja_de_ruta=None, metrics_data=None,
-                 wordfence_data=None, maintenance_data=None):
+                 wordfence_data=None, maintenance_data=None, recommendations=None):
         self.pdf = FPDF()
         # Try to use Montserrat, fallback to Helvetica
         font_path = "Montserrat.ttf"
@@ -40,6 +40,7 @@ class PDFGenerator:
         self.metrics_data = metrics_data or {}
         self.wordfence_data = wordfence_data or {}
         self.maintenance_data = maintenance_data or {}
+        self.recommendations = recommendations or []
 
         # Colores
         self.AZUL_NAVY = (26, 35, 126)   # #1A237E
@@ -437,11 +438,84 @@ class PDFGenerator:
 
         self.pdf.ln(1)
 
-    def _draw_cta_section(self):
-        """Sección PLAN DE ACCIÓN RECOMENDADO con CTA claro."""
+    def _draw_financial_summary(self):
+        """Sección RESUMEN FINANCIERO con totales de inversión y retorno."""
+        if not self.recommendations:
+            return
+
+        from recommendation_engine import RecommendationEngine
+        summary = RecommendationEngine.financial_summary(self.recommendations)
+        if not summary or summary['total_monthly_return'] == 0:
+            return
+
         self.pdf.ln(3)
 
-        # Fondo azul claro para toda la caja
+        # Titulo
+        self.pdf.set_font(self.font_family, 'B', 11)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.cell(0, 6, "RESUMEN FINANCIERO DEL PLAN", 0, 1, 'L')
+        self.pdf.ln(1)
+
+        box_x = 10
+        box_w = 190
+
+        # Fondo gris claro
+        self.pdf.set_fill_color(*self.GRIS_HEAD)
+
+        # INVERSIÓN
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 3)
+        self.pdf.cell(box_w - 3, 5, "INVERSION TOTAL:", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        for item in summary['items']:
+            if item['investment'] > 0:
+                self.pdf.set_x(box_x + 8)
+                self.pdf.cell(box_w - 8, 3.5, f"{item['action']}:  Gs. {item['investment']:,}", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 8)
+        self.pdf.cell(box_w - 8, 5, f"TOTAL:  Gs. {summary['total_investment']:,}", 0, 1, 'L', fill=True)
+
+        # RETORNO
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.VERDE_OK)
+        self.pdf.set_x(box_x + 3)
+        self.pdf.cell(box_w - 3, 5, "RETORNO MENSUAL ESTIMADO:", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        for item in summary['items']:
+            if item['monthly_return'] > 0:
+                self.pdf.set_x(box_x + 8)
+                self.pdf.cell(box_w - 8, 3.5, f"{item['action']}:  Gs. {item['monthly_return']:,}/mes", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.VERDE_OK)
+        self.pdf.set_x(box_x + 8)
+        self.pdf.cell(box_w - 8, 5, f"TOTAL RETORNO/MES:  Gs. {summary['total_monthly_return']:,}", 0, 1, 'L', fill=True)
+
+        # Payback + ROI
+        self.pdf.set_font(self.font_family, 'B', 8)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 3)
+        payback = summary['payback_months']
+        payback_text = f"~{payback:.0f} mes" if payback <= 1.5 else f"~{payback:.0f} meses"
+        roi_3m_pct = int((summary['roi_3_months'] / summary['total_investment']) * 100) if summary['total_investment'] > 0 else 0
+        self.pdf.cell(box_w - 3, 4,
+            f"Recuperacion: {payback_text}  |  ROI a 3 meses: Gs. {summary['roi_3_months']:,} ({roi_3m_pct}%)",
+            0, 1, 'L', fill=True)
+
+        self.pdf.set_y(self.pdf.get_y() + 2)
+        self.pdf.set_text_color(0, 0, 0)
+
+    def _draw_cta_section(self):
+        """Sección PROXIMO PASO con CTA claro, precio y urgencia."""
+        self.pdf.ln(3)
+
         y_ini = self.pdf.get_y()
         box_x = 10
         box_w = 190
@@ -451,31 +525,52 @@ class PDFGenerator:
         self.pdf.set_font(self.font_family, 'B', 11)
         self.pdf.set_text_color(*self.AZUL_NAVY)
         self.pdf.set_x(box_x)
-        self.pdf.cell(box_w, 7, "PLAN DE ACCION RECOMENDADO", 0, 1, 'L', fill=True)
+        self.pdf.cell(box_w, 7, "PROXIMO PASO - AUDITORIA ESTRATEGICA", 0, 1, 'L', fill=True)
 
         # INMEDIATO
         self.pdf.set_font(self.font_family, 'B', 9)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.set_x(box_x + 3)
-        self.pdf.cell(box_w - 3, 5, "INMEDIATO (Esta semana):", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 5)
+        self.pdf.cell(box_w - 5, 5, "INMEDIATO (Esta semana):", 0, 1, 'L', fill=True)
 
         self.pdf.set_font(self.font_family, '', 8)
         self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_x(box_x + 8)
-        self.pdf.cell(box_w - 8, 4, "Contactar a Rodney para revision estrategica del sitio", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Agendar auditoria estrategica con Rodney", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Tiempo: 2-3 horas de analisis  |  Costo: Gs. 1.500.000 (plan completo)", 0, 1, 'L', fill=True)
+
+        # Urgencia
+        self.pdf.set_font(self.font_family, 'B', 8)
+        self.pdf.set_text_color(*self.ROJO_ALERTA)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "IMPORTANTE: Las mejoras en mobile impactan directamente tus ingresos.", 0, 1, 'L', fill=True)
+
+        # CORTO PLAZO
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 5)
+        self.pdf.cell(box_w - 5, 5, "CORTO PLAZO (Proximas 2 semanas):", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Recibir reporte de auditoria con puntos criticos priorizados", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Comenzar implementacion de mejoras segun impacto financiero", 0, 1, 'L', fill=True)
 
         # SEGUIMIENTO
         self.pdf.set_font(self.font_family, 'B', 9)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.set_x(box_x + 3)
-        self.pdf.cell(box_w - 3, 5, "SEGUIMIENTO (Cada 30 dias):", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 5)
+        self.pdf.cell(box_w - 5, 5, "SEGUIMIENTO (Cada 30 dias):", 0, 1, 'L', fill=True)
 
         self.pdf.set_font(self.font_family, '', 8)
         self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_x(box_x + 8)
-        self.pdf.cell(box_w - 8, 4, "Medir cambios en bounce, conversion y abandono", 0, 1, 'L', fill=True)
-        self.pdf.set_x(box_x + 8)
-        self.pdf.cell(box_w - 8, 4, "Ajustar estrategia segun datos del proximo reporte", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Medir cambios en bounce, conversion y abandono", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Ajustar estrategia segun datos del proximo reporte", 0, 1, 'L', fill=True)
 
         # Barra de acento navy al inicio
         box_h = self.pdf.get_y() - y_ini
@@ -870,6 +965,7 @@ class PDFGenerator:
         self._draw_device_breakdown()
         self._draw_conversions()
         self._draw_hoja_de_ruta()
+        self._draw_financial_summary()
         self._draw_cta_section()
         self._draw_services_this_month()
 
@@ -975,7 +1071,15 @@ if __name__ == "__main__":
             ],
             'site_health': 'Good',
             'last_backup': '2026-03-17 03:00:00'
-        }
+        },
+        recommendations=[
+            {'title': 'Reducir bounce en mobile', 'action': 'Auditoria UX/UI + Rediseno responsive',
+             'investment': 'Gs. 1.500.000', 'investment_num': 1500000, 'roi_monthly_num': 1050000},
+            {'title': 'Reducir abandono en /carrito', 'action': 'Simplificar flujo + recuperacion de carrito',
+             'investment': 'Gs. 300.000', 'investment_num': 300000, 'roi_monthly_num': 1200000},
+            {'title': 'Mejorar fotos de productos', 'action': 'Refotos profesionales + descripciones',
+             'investment': 'Gs. 800.000', 'investment_num': 800000, 'roi_monthly_num': 450000},
+        ]
     )
     gen.generate("test_executive.pdf")
     print("Reporte ejecutivo generado con exito.")

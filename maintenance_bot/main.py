@@ -300,13 +300,14 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     metrics_data = context.user_data.get('metrics_data')
     wordfence_data = context.user_data.get('wordfence_data', {})
     maintenance_data = context.user_data.get('maintenance_data', {})
+    data_recommendations = context.user_data.get('data_recommendations', [])
     logger.info(f"Generating report - infra: {infra_data}, ssl: {ssl_days}, metrics: {metrics_data}")
     pdf_path = None
 
     try:
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data)
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations)
         logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
