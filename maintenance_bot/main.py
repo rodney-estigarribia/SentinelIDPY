@@ -16,6 +16,7 @@ from telegram.ext import (
 from ai_handler import AIHandler
 from pdf_generator import PDFGenerator
 from client_fetcher import ClientDataFetcher
+from recommendation_engine import RecommendationEngine
 
 # Configuración del bot
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -28,7 +29,7 @@ ALLOWED_USERS = [int(i.strip()) for i in os.getenv("ALLOWED_USERS", "").split(",
 CLIENTS_FILE = "clientes.json"
 
 # Estados de la conversación
-INICIO, BITACORA, REVISION_IA, CAPTURA_ANTES, CAPTURA_DESPUES = range(5)
+INICIO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA = range(9)
 
 # Configurar logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -85,13 +86,19 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Generar un ID unico para esta sesion de reporte
     context.user_data['session_id'] = uuid.uuid4().hex[:8]
 
-    # Consultar datos de infraestructura y SSL del cliente
+    # Consultar datos del cliente (infraestructura, metricas, SSL)
     loop = asyncio.get_running_loop()
-    infra_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_infrastructure_data, client['url'])
+    all_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_all_data, client['url'])
+    infra_data = all_data.get('infrastructure', {}) if all_data else None
+    metrics_data = ClientDataFetcher.extract_metrics(all_data) if all_data else None
+    wordfence_data = all_data.get('wordfence', {}) if all_data else {}
+    maintenance_data = all_data.get('maintenance', {}) if all_data else {}
     ssl_days = await loop.run_in_executor(None, ClientDataFetcher.obtener_dias_ssl, client['url'])
-    logger.info(f"Infrastructure data retrieved: {infra_data}")
-    logger.info(f"SSL days remaining: {ssl_days}")
+    logger.info(f"Infrastructure: {infra_data}, Metrics: {metrics_data}, SSL: {ssl_days}")
     context.user_data['infrastructure_data'] = infra_data
+    context.user_data['metrics_data'] = metrics_data
+    context.user_data['wordfence_data'] = wordfence_data
+    context.user_data['maintenance_data'] = maintenance_data
     context.user_data['ssl_days'] = ssl_days
 
     await query.edit_message_text(
@@ -106,7 +113,7 @@ async def process_bitacora(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Seguridad: Límite de caracteres para evitar DoS en la IA
     if len(raw_text) > 1500:
-        await update.message.reply_text("⚠️ El texto es demasiado largo para un reporte premium (máx 1500 caracteres).")
+        await update.message.reply_text("El texto es demasiado largo (max 1500 caracteres).")
         return BITACORA
 
     context.user_data['raw_text'] = raw_text
@@ -121,10 +128,11 @@ async def process_bitacora(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         keyboard = [
             [InlineKeyboardButton("✅ Correcto", callback_data="confirm_ia"),
+             InlineKeyboardButton("✏️ Editar", callback_data="edit_ia"),
              InlineKeyboardButton("🔄 Usar Original", callback_data="use_raw")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
+
         await msg.edit_text(
             f"✨ *Sugerencia Profesional:*\n\n{improved_text}\n\n¿Le parece bien este texto?",
             parse_mode='Markdown',
@@ -141,15 +149,31 @@ async def process_bitacora(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def confirm_ia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    
+
     if query.data == "use_raw":
         context.user_data['final_text'] = context.user_data['raw_text']
         await query.edit_message_text("Usando texto original.")
+    elif query.data == "edit_ia":
+        await query.edit_message_text(
+            f"✏️ Enviame tu version corregida del texto.\n\nTexto actual de IA:\n_{context.user_data['improved_text']}_",
+            parse_mode='Markdown'
+        )
+        return EDITAR_IA
     else:
         context.user_data['final_text'] = context.user_data['improved_text']
         await query.edit_message_text("Texto optimizado aceptado.")
 
     await query.message.reply_text(
+        "📸 Por favor, carga una foto del *ANTES* o envía /skip para saltar.",
+        parse_mode='Markdown'
+    )
+    return CAPTURA_ANTES
+
+async def handle_edit_ia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Recibe el texto corregido por el usuario."""
+    context.user_data['final_text'] = update.message.text
+    await update.message.reply_text("Texto corregido aceptado.")
+    await update.message.reply_text(
         "📸 Por favor, carga una foto del *ANTES* o envía /skip para saltar.",
         parse_mode='Markdown'
     )
@@ -177,14 +201,94 @@ async def handle_photo_despues(update: Update, context: ContextTypes.DEFAULT_TYP
     path = f"reportes/tmp_{session_id}_desp.jpg"
     await photo_file.download_to_drive(path)
     context.user_data['despues_img'] = path
-    return await generate_report(update, context)
+    return await ask_hoja_de_ruta(update, context)
 
 async def skip_despues(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['despues_img'] = None
+    return await ask_hoja_de_ruta(update, context)
+
+async def ask_hoja_de_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Pregunta al consultor por recomendaciones estratégicas."""
+    client_name = context.user_data['client']['nombre']
+    await update.message.reply_text(
+        f"Para cerrar el reporte: Que recomendaciones estrategicas o proximos pasos sugeris para *{client_name}* este mes?\n\n(Escribi tips rapidos o /skip para omitir)",
+        parse_mode='Markdown'
+    )
+    return HOJA_DE_RUTA
+
+async def process_hoja_de_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Procesa las notas de hoja de ruta con IA."""
+    raw_notes = update.message.text
+
+    if len(raw_notes) > 1500:
+        await update.message.reply_text("El texto es demasiado largo (max 1500 caracteres).")
+        return HOJA_DE_RUTA
+
+    context.user_data['raw_roadmap'] = raw_notes
+    msg = await update.message.reply_text("Profesionalizando recomendaciones con IA...")
+
+    try:
+        # Generate data-driven recommendations from metrics
+        metrics = context.user_data.get('metrics_data')
+        data_recs = RecommendationEngine.generate(metrics) if metrics else []
+        data_context = RecommendationEngine.format_for_prompt(data_recs)
+        context.user_data['data_recommendations'] = data_recs
+
+        loop = asyncio.get_running_loop()
+        improved_roadmap = await loop.run_in_executor(None, ai_handler.improve_roadmap, raw_notes, data_context)
+        context.user_data['improved_roadmap'] = improved_roadmap
+
+        keyboard = [
+            [InlineKeyboardButton("✅ Correcto", callback_data="confirm_ruta"),
+             InlineKeyboardButton("✏️ Editar", callback_data="edit_ruta"),
+             InlineKeyboardButton("🔄 Usar Original", callback_data="use_raw_ruta")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await msg.edit_text(
+            f"✨ *Proximos pasos sugeridos:*\n\n{improved_roadmap}\n\n¿Te parece bien?",
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+        return REVISION_RUTA
+    except Exception as e:
+        logger.error(f"Error procesando hoja de ruta: {e}")
+        context.user_data['hoja_de_ruta'] = raw_notes
+        await msg.edit_text("Error con IA. Usando notas originales.")
+        return await generate_report(update, context)
+
+async def confirm_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Confirma o edita la hoja de ruta."""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "use_raw_ruta":
+        context.user_data['hoja_de_ruta'] = context.user_data['raw_roadmap']
+        await query.edit_message_text("Usando notas originales.")
+        return await generate_report(query, context)
+    elif query.data == "edit_ruta":
+        await query.edit_message_text(
+            f"✏️ Enviame tu version corregida.\n\nTexto actual de IA:\n_{context.user_data['improved_roadmap']}_",
+            parse_mode='Markdown'
+        )
+        return EDITAR_RUTA
+    else:
+        context.user_data['hoja_de_ruta'] = context.user_data['improved_roadmap']
+        await query.edit_message_text("Proximos pasos aceptados.")
+        return await generate_report(query, context)
+
+async def handle_edit_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Recibe la hoja de ruta corregida por el usuario."""
+    context.user_data['hoja_de_ruta'] = update.message.text
+    await update.message.reply_text("Proximos pasos corregidos aceptados.")
+    return await generate_report(update, context)
+
+async def skip_hoja_de_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['hoja_de_ruta'] = None
     return await generate_report(update, context)
 
 async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = await update.message.reply_text("📄 Generando PDF Premium...")
+    msg = await update.message.reply_text("Generando reporte...")
 
     client = context.user_data['client']
     text = context.user_data['final_text']
@@ -192,13 +296,17 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     despues = context.user_data.get('despues_img')
     infra_data = context.user_data.get('infrastructure_data')
     ssl_days = context.user_data.get('ssl_days')
-    logger.info(f"Generating report with infrastructure_data: {infra_data}, ssl_days: {ssl_days}")
+    hoja_de_ruta = context.user_data.get('hoja_de_ruta')
+    metrics_data = context.user_data.get('metrics_data')
+    wordfence_data = context.user_data.get('wordfence_data', {})
+    maintenance_data = context.user_data.get('maintenance_data', {})
+    logger.info(f"Generating report - infra: {infra_data}, ssl: {ssl_days}, metrics: {metrics_data}")
     pdf_path = None
 
     try:
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days)
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data)
         logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
@@ -246,6 +354,7 @@ def main():
             INICIO: [CallbackQueryHandler(client_selected)],
             BITACORA: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_bitacora)],
             REVISION_IA: [CallbackQueryHandler(confirm_ia)],
+            EDITAR_IA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edit_ia)],
             CAPTURA_ANTES: [
                 MessageHandler(filters.PHOTO, handle_photo_antes),
                 CommandHandler('skip', skip_antes)
@@ -254,6 +363,12 @@ def main():
                 MessageHandler(filters.PHOTO, handle_photo_despues),
                 CommandHandler('skip', skip_despues)
             ],
+            HOJA_DE_RUTA: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, process_hoja_de_ruta),
+                CommandHandler('skip', skip_hoja_de_ruta)
+            ],
+            REVISION_RUTA: [CallbackQueryHandler(confirm_ruta)],
+            EDITAR_RUTA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edit_ruta)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )

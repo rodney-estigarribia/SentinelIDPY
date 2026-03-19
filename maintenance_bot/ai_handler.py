@@ -42,6 +42,56 @@ class AIHandler:
             logger.error(f"AIHandler Error: {e}. Usando texto original.")
             return raw_text
 
+    def improve_roadmap(self, raw_notes: str, data_context: str = "") -> str:
+        """
+        Convierte notas rápidas del consultor en una hoja de ruta estratégica profesional.
+        Si hay data_context (de RecommendationEngine), lo combina con las notas.
+        Si falla, retorna las notas originales.
+        """
+        if raw_notes.strip() in ["-", "--", "...", "."]:
+            return "Mantenimiento preventivo completado. Continuaremos monitoreando el rendimiento."
+
+        if data_context:
+            roadmap_prompt = (
+                "Actua como estratega de negocios digitales. "
+                "Combina las notas del consultor con los datos de analytics para generar "
+                "exactamente 3 recomendaciones claras y persuasivas. "
+                "Para cada una incluye: un titulo claro, el problema con datos reales, "
+                "la accion concreta, inversion estimada y retorno esperado. "
+                "Formato: cada punto con guion al inicio, y los detalles indentados con: "
+                "'  Problema:', '  Accion:', '  Inversion:', '  Retorno:'. "
+                "Sin titulo general, solo los 3 puntos."
+            )
+        else:
+            roadmap_prompt = (
+                "Actua como estratega de negocios digitales. "
+                "Toma estas notas rapidas y convertilas en exactamente 3 puntos claros, "
+                "profesionales y persuasivos para una 'Hoja de Ruta Estrategica'. "
+                "Usa verbos de accion y enfocate en el beneficio para el cliente. "
+                "Formato: cada punto en una linea separada con guion. "
+                "Maximo 3 puntos. Mantene conciso y directo. Sin titulo, solo los 3 puntos."
+            )
+
+        prompt_text = f"Notas del consultor: {raw_notes}"
+        if data_context:
+            prompt_text += f"\n\n{data_context}"
+
+        payload = {
+            "model": self.model,
+            "prompt": f"{roadmap_prompt}\n\n{prompt_text}\n\nHoja de Ruta:",
+            "stream": False
+        }
+
+        try:
+            response = requests.post(self.api_url, json=payload, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            improved = data.get("response", "").strip()
+            return improved if improved else raw_notes
+        except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+            logger.error(f"AIHandler Roadmap Error: {e}. Usando notas originales.")
+            return raw_notes
+
 if __name__ == "__main__":
     # Prueba rápida unitaria
     handler = AIHandler(host="http://localhost:11434")

@@ -357,7 +357,7 @@ class PDFGenerator:
         self.pdf.set_text_color(0, 0, 0)
 
     def _draw_hoja_de_ruta(self):
-        """Sección HOJA DE RUTA con 3 pasos para llevar la web al próximo nivel."""
+        """Sección HOJA DE RUTA con pasos estructurados con ROI."""
         if not self.hoja_de_ruta:
             return
 
@@ -374,59 +374,116 @@ class PDFGenerator:
         self.pdf.cell(0, 5, "Para llevar tu web al siguiente nivel son:", 0, 1, 'L')
         self.pdf.ln(2)
 
-        # Parse roadmap text into max 3 priorities
+        # Structured sub-line labels for color coding
+        structured_labels = {
+            'Problema:': self.ROJO_ALERTA,
+            'Accion:': self.AZUL_NAVY,
+            'Inversion:': (133, 100, 0),
+            'Retorno:': self.VERDE_OK,
+        }
+
+        # Parse roadmap text into steps
         lines = self.hoja_de_ruta.strip().split('\n')
-        priorities = []
-        current_priority = ""
+        steps = []
+        current_step = None
         for line in lines:
-            line = line.strip()
-            if line.startswith('•') or line.startswith('-'):
-                # New item
-                if current_priority:
-                    priorities.append(current_priority)
-                current_priority = line.lstrip('•- ').strip()
-            elif line and current_priority:
-                # Continuation of current item
-                current_priority += " " + line
-        if current_priority:
-            priorities.append(current_priority)
+            stripped = line.strip()
+            if stripped.startswith('•') or (stripped.startswith('-') and not stripped.startswith('  ')):
+                if current_step:
+                    steps.append(current_step)
+                current_step = {'title': stripped.lstrip('•- ').strip(), 'details': []}
+            elif stripped and current_step:
+                # Check if it's a structured sub-line
+                current_step['details'].append(stripped)
+        if current_step:
+            steps.append(current_step)
 
-        # Limit to 3 priorities
-        priorities = priorities[:3]
+        steps = steps[:3]
 
-        for i, priority_text in enumerate(priorities):
-            # Encabezado: "Paso 1", "Paso 2", etc.
+        for i, step in enumerate(steps):
+            # Step header
             self.pdf.set_font(self.font_family, 'B', 10)
             self.pdf.set_text_color(*self.AZUL_NAVY)
-            self.pdf.cell(0, 5, f"Paso {i+1}", 0, 1, 'L')
+            self.pdf.cell(0, 5, f"Paso {i+1}: {step['title']}", 0, 1, 'L')
 
-            # Contenido del paso
-            self.pdf.set_font(self.font_family, '', 9)
-            self.pdf.set_text_color(30, 30, 30)
-            self.pdf.set_x(15)
-            self.pdf.multi_cell(175, 3.5, priority_text, border=0, align='L')
+            # Step details
+            for detail in step['details']:
+                detail_stripped = detail.strip()
+                # Check for structured label
+                label_found = False
+                for label, color in structured_labels.items():
+                    if detail_stripped.startswith(label):
+                        # Render label in color, value in dark
+                        self.pdf.set_x(18)
+                        self.pdf.set_font(self.font_family, 'B', 8)
+                        self.pdf.set_text_color(*color)
+                        label_w = self.pdf.get_string_width(label) + 2
+                        self.pdf.cell(label_w, 3.5, label, 0, 0, 'L')
+                        self.pdf.set_font(self.font_family, '', 8)
+                        self.pdf.set_text_color(30, 30, 30)
+                        value = detail_stripped[len(label):].strip()
+                        self.pdf.multi_cell(155, 3.5, value, border=0, align='L')
+                        label_found = True
+                        break
 
-            # Espacio blanco entre pasos
-            self.pdf.ln(2)
+                if not label_found:
+                    # Regular detail line
+                    self.pdf.set_font(self.font_family, '', 8)
+                    self.pdf.set_text_color(30, 30, 30)
+                    self.pdf.set_x(18)
+                    self.pdf.multi_cell(172, 3.5, detail_stripped, border=0, align='L')
 
-        # Auto-sugerencia si no hay metas de conversión configuradas
-        conversions = self.metrics_data.get('conversions') if self.metrics_data else None
-        if conversions is None and self.metrics_data:
-            self.pdf.set_font(self.font_family, 'B', 10)
-            self.pdf.set_text_color(*self.AZUL_NAVY)
-            self.pdf.cell(0, 5, f"Paso adicional", 0, 1, 'L')
-
-            self.pdf.set_font(self.font_family, '', 9)
-            self.pdf.set_text_color(30, 30, 30)
-            self.pdf.set_x(15)
-            self.pdf.multi_cell(175, 3.5,
-                "Configurar seguimiento de conversiones en Matomo para medir leads, "
-                "compras y clicks en CTA. Esto permitira medir el impacto real de cada "
-                "mejora en terminos de negocio.",
-                border=0, align='L')
             self.pdf.ln(2)
 
         self.pdf.ln(1)
+
+    def _draw_cta_section(self):
+        """Sección PLAN DE ACCIÓN RECOMENDADO con CTA claro."""
+        self.pdf.ln(3)
+
+        # Fondo azul claro para toda la caja
+        y_ini = self.pdf.get_y()
+        box_x = 10
+        box_w = 190
+        self.pdf.set_fill_color(237, 242, 251)
+
+        # Titulo
+        self.pdf.set_font(self.font_family, 'B', 11)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x)
+        self.pdf.cell(box_w, 7, "PLAN DE ACCION RECOMENDADO", 0, 1, 'L', fill=True)
+
+        # INMEDIATO
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 3)
+        self.pdf.cell(box_w - 3, 5, "INMEDIATO (Esta semana):", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        self.pdf.set_x(box_x + 8)
+        self.pdf.cell(box_w - 8, 4, "Contactar a Rodney para revision estrategica del sitio", 0, 1, 'L', fill=True)
+
+        # SEGUIMIENTO
+        self.pdf.set_font(self.font_family, 'B', 9)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 3)
+        self.pdf.cell(box_w - 3, 5, "SEGUIMIENTO (Cada 30 dias):", 0, 1, 'L', fill=True)
+
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        self.pdf.set_x(box_x + 8)
+        self.pdf.cell(box_w - 8, 4, "Medir cambios en bounce, conversion y abandono", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 8)
+        self.pdf.cell(box_w - 8, 4, "Ajustar estrategia segun datos del proximo reporte", 0, 1, 'L', fill=True)
+
+        # Barra de acento navy al inicio
+        box_h = self.pdf.get_y() - y_ini
+        self.pdf.set_fill_color(*self.AZUL_NAVY)
+        self.pdf.rect(box_x, y_ini, 3, box_h, 'F')
+
+        self.pdf.ln(2)
+        self.pdf.set_text_color(0, 0, 0)
 
     def _draw_services_this_month(self):
         """Sección SERVICIOS ESTE MES con lista detallada de servicios."""
@@ -813,6 +870,7 @@ class PDFGenerator:
         self._draw_device_breakdown()
         self._draw_conversions()
         self._draw_hoja_de_ruta()
+        self._draw_cta_section()
         self._draw_services_this_month()
 
         # PAGE 2: Technical Details (only if there's content)
@@ -849,7 +907,23 @@ if __name__ == "__main__":
         "Hemos optimizado el tiempo de respuesta del servidor.",
         infra_data={'disk_used_percentage': 36, 'disk_used_gb': 4476, 'disk_total_gb': 12336},
         ssl_days=45,
-        hoja_de_ruta="- Implementar boton de WhatsApp en la pagina principal\n- Actualizar fotos de productos para mejorar conversion\n- Revisar flujo del carrito para reducir abandono",
+        hoja_de_ruta=(
+            "- Reducir bounce rate en mobile (58%)\n"
+            "  Problema: 540 visitantes moviles/mes, 58% se va sin interactuar\n"
+            "  Accion: Auditoria UX/UI + Rediseno responsive\n"
+            "  Inversion: Gs. 1.500.000\n"
+            "  Retorno: Si reducimos a 45%, ganamos +70 visitantes que convierten\n"
+            "- Reducir abandono en /carrito (67%)\n"
+            "  Problema: De 180 visitas, 121 se van sin completar\n"
+            "  Accion: Simplificar flujo + agregar recuperacion de carrito\n"
+            "  Inversion: Gs. 300.000\n"
+            "  Retorno: Si recuperamos 20%, ganamos +24 conversiones/mes\n"
+            "- Mejorar fotos de productos\n"
+            "  Problema: 320 visitas/mes a /productos, conversion baja\n"
+            "  Accion: Refotos profesionales + descripciones mejoradas\n"
+            "  Inversion: Gs. 800.000\n"
+            "  Retorno: +15 compras/mes = Gs. 300-450k/mes"
+        ),
         metrics_data={
             'nb_visits': 1250, 'nb_uniq_visitors': 870, 'nb_actions': 3400,
             'nb_actions_per_visit': 2.7,
