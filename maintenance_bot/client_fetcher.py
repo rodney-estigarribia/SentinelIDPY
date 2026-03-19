@@ -60,6 +60,36 @@ class ClientDataFetcher:
         avg_time_seconds = int(metricas.get('avg_time_on_site', 0))
         top_pages = metricas.get('top_pages', [])[:3]
 
+        # Normalizar datos del mes anterior (para trends)
+        prev = metricas.get('prev_month', {})
+        prev_bounce_raw = prev.get('bounce_rate', '0%')
+        if isinstance(prev_bounce_raw, str):
+            prev_bounce = float(prev_bounce_raw.replace('%', '').strip() or 0)
+        else:
+            prev_bounce = float(prev_bounce_raw)
+
+        prev_month = {
+            'nb_visits': int(prev.get('nb_visits', 0)),
+            'nb_uniq_visitors': int(prev.get('nb_uniq_visitors', 0)),
+            'avg_time_on_site': int(prev.get('avg_time_on_site', 0)),
+            'bounce_rate': prev_bounce,
+            'nb_actions_per_visit': float(prev.get('nb_actions_per_visit', 0)),
+        } if prev else {}
+
+        # Normalizar bounce_rate de dispositivos
+        devices = []
+        for dev in metricas.get('devices', []):
+            br = dev.get('bounce_rate', '0%')
+            if isinstance(br, str):
+                br = float(br.replace('%', '').strip() or 0)
+            else:
+                br = float(br)
+            devices.append({
+                'label': dev.get('label', ''),
+                'nb_visits': int(dev.get('nb_visits', 0)),
+                'bounce_rate': br,
+            })
+
         return {
             'nb_visits': int(metricas.get('nb_visits', 0)),
             'nb_uniq_visitors': int(metricas.get('nb_uniq_visitors', 0)),
@@ -68,6 +98,10 @@ class ClientDataFetcher:
             'avg_time_on_site': avg_time_seconds,
             'bounce_rate': bounce_rate,
             'top_pages': top_pages,
+            'prev_month': prev_month,
+            'devices': devices,
+            'exit_pages': metricas.get('exit_pages', [])[:5],
+            'conversions': metricas.get('conversions'),
         }
 
     @staticmethod

@@ -161,8 +161,8 @@ class PDFGenerator:
         self.pdf.set_text_color(30, 30, 30)
         self.pdf.multi_cell(w - 2, 3, label, border=0, align='C')
 
-    def _draw_metric_card(self, x, y, w, h, big_value, label, color):
-        """Dibuja una tarjeta de metrica con valor grande arriba y etiqueta abajo."""
+    def _draw_metric_card(self, x, y, w, h, big_value, label, color, trend=None):
+        """Dibuja una tarjeta de metrica con valor grande arriba, etiqueta abajo, y trend opcional."""
         # Fondo
         self.pdf.set_fill_color(*self.GRIS_HEAD)
         self.pdf.rect(x, y, w, h, 'F')
@@ -171,16 +171,25 @@ class PDFGenerator:
         self.pdf.rect(x, y, w, 3, 'F')
 
         # Valor grande (arriba)
-        self.pdf.set_xy(x, y + 5)
+        self.pdf.set_xy(x, y + 4)
         self.pdf.set_font(self.font_family, 'B', 14)
         self.pdf.set_text_color(*color)
         self.pdf.cell(w, 7, big_value, 0, 1, 'C')
 
-        # Etiqueta (abajo)
-        self.pdf.set_xy(x, y + 14)
+        # Etiqueta (medio)
+        self.pdf.set_xy(x, y + 12)
         self.pdf.set_font(self.font_family, '', 8)
         self.pdf.set_text_color(30, 30, 30)
         self.pdf.multi_cell(w - 2, 3, label, border=0, align='C')
+
+        # Trend (abajo, si existe)
+        if trend is not None:
+            trend_text = f"+{trend:.0f}%" if trend >= 0 else f"{trend:.0f}%"
+            trend_color = self.VERDE_OK if trend >= 0 else self.ROJO_ALERTA
+            self.pdf.set_xy(x, y + h - 6)
+            self.pdf.set_font(self.font_family, 'B', 7)
+            self.pdf.set_text_color(*trend_color)
+            self.pdf.cell(w, 4, trend_text, 0, 0, 'C')
 
     def _draw_business_impact(self):
         """Sección MÉTRICAS DE IMPACTO con datos de Matomo si están disponibles."""
@@ -202,28 +211,147 @@ class PDFGenerator:
         x_start = 10
         card_w = 44
         gap = 1
-        card_h = 28
+        card_h = 32  # taller to fit trend line
+
+        # Calculate trends from previous month
+        prev = self.metrics_data.get('prev_month', {})
+
+        def calc_trend(current, prev_val):
+            if prev_val and prev_val > 0:
+                return ((current - prev_val) / prev_val) * 100
+            return None
 
         # Card 1: Visitantes únicos
         x = x_start
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
-        self._draw_metric_card(x, y_ini, card_w, card_h, f"{visitors:,}", "Visitantes\nunicos", self.AZUL_NAVY)
+        trend_visitors = calc_trend(visitors, prev.get('nb_uniq_visitors'))
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{visitors:,}", "Visitantes\nunicos", self.AZUL_NAVY, trend=trend_visitors)
 
         # Card 2: Páginas por visita
         x = x_start + (card_w + gap)
         pages_per_visit = self.metrics_data.get('nb_actions_per_visit', 0)
-        self._draw_metric_card(x, y_ini, card_w, card_h, f"{pages_per_visit:.1f}", "Paginas por\nvisita", self.AZUL_NAVY)
+        trend_ppv = calc_trend(pages_per_visit, prev.get('nb_actions_per_visit'))
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{pages_per_visit:.1f}", "Paginas por\nvisita", self.AZUL_NAVY, trend=trend_ppv)
 
         # Card 3: Tiempo promedio
         x = x_start + 2 * (card_w + gap)
-        avg_time = self._format_duration(self.metrics_data.get('avg_time_on_site', 0))
-        self._draw_metric_card(x, y_ini, card_w, card_h, avg_time, "Tiempo\npromedio", self.AZUL_NAVY)
+        avg_time_val = self.metrics_data.get('avg_time_on_site', 0)
+        avg_time = self._format_duration(avg_time_val)
+        trend_time = calc_trend(avg_time_val, prev.get('avg_time_on_site'))
+        self._draw_metric_card(x, y_ini, card_w, card_h, avg_time, "Tiempo\npromedio", self.AZUL_NAVY, trend=trend_time)
 
-        # Card 4: Tasa de rebote
+        # Card 4: Tasa de rebote (inverted: lower is better)
         x = x_start + 3 * (card_w + gap)
         bounce_rate = self.metrics_data.get('bounce_rate', 0)
         bounce_color = self.ROJO_ALERTA if bounce_rate > 35 else self.VERDE_OK
-        self._draw_metric_card(x, y_ini, card_w, card_h, f"{bounce_rate:.1f}%", "Tasa de\nrebote", bounce_color)
+        trend_bounce = calc_trend(bounce_rate, prev.get('bounce_rate'))
+        # For bounce rate, invert the trend color (increase = bad)
+        if trend_bounce is not None:
+            trend_bounce = -trend_bounce  # flip sign so decrease shows as positive
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{bounce_rate:.1f}%", "Tasa de\nrebote", bounce_color, trend=trend_bounce)
+
+        self.pdf.set_y(y_ini + card_h + 3)
+        self.pdf.set_text_color(0, 0, 0)
+
+    def _draw_device_breakdown(self):
+        """Sección COMPORTAMIENTO POR DISPOSITIVO: Desktop vs Mobile."""
+        devices = self.metrics_data.get('devices', []) if self.metrics_data else []
+        if not devices:
+            return
+
+        self.pdf.ln(3)
+        self.pdf.set_font(self.font_family, 'B', 12)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.cell(0, 8, "COMPORTAMIENTO POR DISPOSITIVO", 0, 1, 'L')
+        self.pdf.ln(2)
+
+        y_ini = self.pdf.get_y()
+        x_start = 10
+        card_w = 92
+        gap = 6
+        card_h = 24
+
+        # Total visits for percentage calculation
+        total_visits = sum(d.get('nb_visits', 0) for d in devices)
+
+        # Group into Desktop and Mobile (merge Tablet into Desktop)
+        desktop = {'nb_visits': 0, 'bounce_rate': 0, 'count': 0}
+        mobile = {'nb_visits': 0, 'bounce_rate': 0, 'count': 0}
+        for dev in devices:
+            label = dev.get('label', '').lower()
+            if 'mobile' in label or 'smart' in label or 'phone' in label:
+                mobile['nb_visits'] += dev.get('nb_visits', 0)
+                mobile['bounce_rate'] += dev.get('bounce_rate', 0)
+                mobile['count'] += 1
+            else:
+                desktop['nb_visits'] += dev.get('nb_visits', 0)
+                desktop['bounce_rate'] += dev.get('bounce_rate', 0)
+                desktop['count'] += 1
+
+        desktop_bounce = desktop['bounce_rate'] / max(desktop['count'], 1)
+        mobile_bounce = mobile['bounce_rate'] / max(mobile['count'], 1)
+
+        for i, (label, data, bounce) in enumerate([
+            ("Desktop", desktop, desktop_bounce),
+            ("Mobile", mobile, mobile_bounce),
+        ]):
+            x = x_start + i * (card_w + gap)
+            pct = (data['nb_visits'] / total_visits * 100) if total_visits > 0 else 0
+            bounce_color = self.VERDE_OK if bounce < 40 else (self.AMARILLO_WARN if bounce < 50 else self.ROJO_ALERTA)
+
+            # Card background
+            self.pdf.set_fill_color(*self.GRIS_HEAD)
+            self.pdf.rect(x, y_ini, card_w, card_h, 'F')
+            self.pdf.set_fill_color(*bounce_color)
+            self.pdf.rect(x, y_ini, card_w, 3, 'F')
+
+            # Content
+            self.pdf.set_xy(x + 3, y_ini + 5)
+            self.pdf.set_font(self.font_family, 'B', 10)
+            self.pdf.set_text_color(*self.AZUL_NAVY)
+            self.pdf.cell(card_w - 6, 5, f"{label}: {data['nb_visits']:,} ({pct:.0f}%)", 0, 1, 'L')
+
+            self.pdf.set_xy(x + 3, y_ini + 12)
+            self.pdf.set_font(self.font_family, '', 9)
+            self.pdf.set_text_color(*bounce_color)
+            bounce_label = "ALTO" if bounce >= 50 else ("medio" if bounce >= 40 else "bajo")
+            self.pdf.cell(card_w - 6, 5, f"Rebote: {bounce:.1f}% ({bounce_label})", 0, 0, 'L')
+
+        self.pdf.set_y(y_ini + card_h + 3)
+        self.pdf.set_text_color(0, 0, 0)
+
+    def _draw_conversions(self):
+        """Sección CONVERSIONES: Solo si hay metas de Matomo configuradas."""
+        conversions = self.metrics_data.get('conversions') if self.metrics_data else None
+        if conversions is None:
+            return
+
+        self.pdf.ln(3)
+        self.pdf.set_font(self.font_family, 'B', 12)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.cell(0, 8, "CONVERSIONES", 0, 1, 'L')
+        self.pdf.ln(2)
+
+        y_ini = self.pdf.get_y()
+        x_start = 10
+        card_w = 92
+        gap = 6
+        card_h = 28
+
+        # Card 1: Leads/Conversiones
+        x = x_start
+        nb_conv = conversions.get('nb_conversions', 0)
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{nb_conv:,}", "Conversiones", self.AZUL_NAVY)
+
+        # Card 2: Tasa de conversion
+        x = x_start + (card_w + gap)
+        cr_raw = conversions.get('conversion_rate', '0%')
+        if isinstance(cr_raw, str):
+            cr = float(cr_raw.replace('%', '').strip() or 0)
+        else:
+            cr = float(cr_raw)
+        cr_color = self.VERDE_OK if cr >= 3 else self.ROJO_ALERTA
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{cr:.1f}%", "Tasa de\nconversion", cr_color)
 
         self.pdf.set_y(y_ini + card_h + 3)
         self.pdf.set_text_color(0, 0, 0)
@@ -279,6 +407,23 @@ class PDFGenerator:
             self.pdf.multi_cell(175, 3.5, priority_text, border=0, align='L')
 
             # Espacio blanco entre pasos
+            self.pdf.ln(2)
+
+        # Auto-sugerencia si no hay metas de conversión configuradas
+        conversions = self.metrics_data.get('conversions') if self.metrics_data else None
+        if conversions is None and self.metrics_data:
+            self.pdf.set_font(self.font_family, 'B', 10)
+            self.pdf.set_text_color(*self.AZUL_NAVY)
+            self.pdf.cell(0, 5, f"Paso adicional", 0, 1, 'L')
+
+            self.pdf.set_font(self.font_family, '', 9)
+            self.pdf.set_text_color(30, 30, 30)
+            self.pdf.set_x(15)
+            self.pdf.multi_cell(175, 3.5,
+                "Configurar seguimiento de conversiones en Matomo para medir leads, "
+                "compras y clicks en CTA. Esto permitira medir el impacto real de cada "
+                "mejora en terminos de negocio.",
+                border=0, align='L')
             self.pdf.ln(2)
 
         self.pdf.ln(1)
@@ -567,6 +712,41 @@ class PDFGenerator:
 
         self.pdf.ln(5)
 
+    def _draw_exit_pages(self):
+        """Tabla de paginas con mayor tasa de salida."""
+        exit_pages = self.metrics_data.get('exit_pages', []) if self.metrics_data else []
+        if not exit_pages:
+            return
+
+        self.pdf.ln(5)
+        self.pdf.set_font(self.font_family, 'B', 11)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.cell(0, 8, "Paginas con mayor abandono", 0, 1, 'L')
+
+        # Table header
+        self.pdf.set_fill_color(*self.AZUL_NAVY)
+        self.pdf.set_text_color(255, 255, 255)
+        self.pdf.set_font(self.font_family, 'B', 8)
+        self.pdf.cell(120, 6, "  Pagina", 0, 0, 'L', True)
+        self.pdf.cell(35, 6, "Visitas", 0, 0, 'C', True)
+        self.pdf.cell(35, 6, "Tasa de salida", 0, 1, 'C', True)
+
+        # Table rows
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        for i, page in enumerate(exit_pages[:5]):
+            fill = i % 2 == 0
+            if fill:
+                self.pdf.set_fill_color(*self.GRIS_HEAD)
+            label = page.get('label', '')[:55]
+            exit_rate = page.get('exit_rate', 0)
+            self.pdf.cell(120, 6, f"  {label}", 0, 0, 'L', fill)
+            self.pdf.cell(35, 6, str(page.get('nb_visits', 0)), 0, 0, 'C', fill)
+            self.pdf.cell(35, 6, f"{exit_rate}%", 0, 1, 'C', fill)
+
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(5)
+
     def _add_manual_tasks(self):
         if not self.improved_text:
             return
@@ -630,6 +810,8 @@ class PDFGenerator:
         self._header_premium()
         self._draw_operational_health()
         self._draw_business_impact()
+        self._draw_device_breakdown()
+        self._draw_conversions()
         self._draw_hoja_de_ruta()
         self._draw_services_this_month()
 
@@ -650,6 +832,7 @@ class PDFGenerator:
             self._draw_maintenance_table()
             self._draw_security_detail()
             self._draw_analytics_detail()
+            self._draw_exit_pages()
             self._add_manual_tasks()
             self._add_visual_evidence()
 
@@ -675,7 +858,23 @@ if __name__ == "__main__":
                 {'label': '/productos', 'nb_visits': 320, 'nb_hits': 450},
                 {'label': '/contacto', 'nb_visits': 180, 'nb_hits': 210},
                 {'label': '/nosotros', 'nb_visits': 95, 'nb_hits': 120},
-            ]
+            ],
+            'prev_month': {
+                'nb_visits': 1470, 'nb_uniq_visitors': 1020,
+                'avg_time_on_site': 207, 'bounce_rate': 39.2,
+                'nb_actions_per_visit': 2.5,
+            },
+            'devices': [
+                {'label': 'Desktop', 'nb_visits': 650, 'bounce_rate': 28.0},
+                {'label': 'Smartphone', 'nb_visits': 540, 'bounce_rate': 58.0},
+                {'label': 'Tablet', 'nb_visits': 60, 'bounce_rate': 35.0},
+            ],
+            'exit_pages': [
+                {'label': '/carrito', 'nb_visits': 180, 'exit_rate': 67},
+                {'label': '/pago', 'nb_visits': 120, 'exit_rate': 54},
+                {'label': '/producto-detail', 'nb_visits': 95, 'exit_rate': 42},
+            ],
+            'conversions': None,
         },
         wordfence_data={
             'total_attacks': 247,

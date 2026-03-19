@@ -141,6 +141,202 @@ function verify_wf_report_token( WP_REST_Request $request ) {
 }
 
 /**
+ * Extrae datos de Matomo Analytics si el plugin está instalado y activo.
+ */
+function sentinel_get_matomo_data() {
+    if ( ! class_exists( '\WpMatomo\Bootstrap' ) ) {
+        error_log( 'Sentinel: Matomo plugin not detected, skipping analytics data' );
+        return null;
+    }
+
+    try {
+        $site = new \WpMatomo\Site();
+        $idSite = $site->get_current_matomo_site_id();
+
+        if ( empty( $idSite ) ) {
+            error_log( 'Sentinel: Matomo site ID not found' );
+            return null;
+        }
+
+        \WpMatomo\Bootstrap::do_bootstrap();
+
+        // Resumen de visitas del mes actual
+        $visits_data = \Piwik\API\Request::processRequest( 'VisitsSummary.get', array(
+            'idSite' => $idSite,
+            'period' => 'month',
+            'date'   => 'today',
+            'format' => 'original',
+        ) );
+
+        // Top paginas del mes actual
+        $pages_data = \Piwik\API\Request::processRequest( 'Actions.getPageUrls', array(
+            'idSite'       => $idSite,
+            'period'       => 'month',
+            'date'         => 'today',
+            'format'       => 'original',
+            'flat'         => 1,
+            'filter_limit' => 5,
+        ) );
+
+        // Extraer resumen de visitas
+        $summary = array();
+        if ( is_object( $visits_data ) && method_exists( $visits_data, 'getColumns' ) ) {
+            $summary = $visits_data->getColumns();
+        } elseif ( is_object( $visits_data ) && method_exists( $visits_data, 'getFirstRow' ) ) {
+            $row = $visits_data->getFirstRow();
+            $summary = $row ? $row->getColumns() : array();
+        } elseif ( is_array( $visits_data ) ) {
+            $summary = $visits_data;
+        }
+
+        error_log( 'Sentinel: Matomo data retrieved - visits=' . ( $summary['nb_visits'] ?? 0 ) . ', visitors=' . ( $summary['nb_uniq_visitors'] ?? 0 ) . ', actions=' . ( $summary['nb_actions'] ?? 0 ) );
+
+        // Extraer top paginas
+        $top_pages = array();
+        if ( is_object( $pages_data ) && method_exists( $pages_data, 'getRows' ) ) {
+            foreach ( $pages_data->getRows() as $row ) {
+                $cols = $row->getColumns();
+                $top_pages[] = array(
+                    'label'            => $cols['label'] ?? '',
+                    'nb_visits'        => $cols['nb_visits'] ?? 0,
+                    'nb_hits'          => $cols['nb_hits'] ?? 0,
+                    'avg_time_on_page' => $cols['avg_time_on_page'] ?? 0,
+                );
+            }
+        }
+
+        error_log( 'Sentinel: Matomo top pages returned: ' . count( $top_pages ) );
+
+        // Resumen del mes anterior (para trends month-over-month)
+        $prev_month_data = \Piwik\API\Request::processRequest( 'VisitsSummary.get', array(
+            'idSite' => $idSite,
+            'period' => 'month',
+            'date'   => 'lastMonth',
+            'format' => 'original',
+        ) );
+
+        $prev_summary = array();
+        if ( is_object( $prev_month_data ) && method_exists( $prev_month_data, 'getColumns' ) ) {
+            $prev_summary = $prev_month_data->getColumns();
+        } elseif ( is_object( $prev_month_data ) && method_exists( $prev_month_data, 'getFirstRow' ) ) {
+            $prev_row = $prev_month_data->getFirstRow();
+            $prev_summary = $prev_row ? $prev_row->getColumns() : array();
+        } elseif ( is_array( $prev_month_data ) ) {
+            $prev_summary = $prev_month_data;
+        }
+
+        error_log( 'Sentinel: Matomo prev month - visits=' . ( $prev_summary['nb_visits'] ?? 0 ) );
+
+        // Desglose por dispositivo (Desktop vs Mobile)
+        $device_data = \Piwik\API\Request::processRequest( 'DevicesDetection.getType', array(
+            'idSite' => $idSite,
+            'period' => 'month',
+            'date'   => 'today',
+            'format' => 'original',
+        ) );
+
+        $devices = array();
+        if ( is_object( $device_data ) && method_exists( $device_data, 'getRows' ) ) {
+            foreach ( $device_data->getRows() as $row ) {
+                $cols = $row->getColumns();
+                $devices[] = array(
+                    'label'       => $cols['label'] ?? '',
+                    'nb_visits'   => $cols['nb_visits'] ?? 0,
+                    'bounce_rate' => $cols['bounce_rate'] ?? '0%',
+                );
+            }
+        }
+
+        error_log( 'Sentinel: Matomo devices returned: ' . count( $devices ) );
+
+        // Paginas con mayor tasa de salida
+        $exit_data = \Piwik\API\Request::processRequest( 'Actions.getExitPageUrls', array(
+            'idSite'       => $idSite,
+            'period'       => 'month',
+            'date'         => 'today',
+            'format'       => 'original',
+            'flat'         => 1,
+            'filter_limit' => 5,
+        ) );
+
+        $exit_pages = array();
+        if ( is_object( $exit_data ) && method_exists( $exit_data, 'getRows' ) ) {
+            foreach ( $exit_data->getRows() as $row ) {
+                $cols = $row->getColumns();
+                $exit_pages[] = array(
+                    'label'     => $cols['label'] ?? '',
+                    'nb_visits' => $cols['nb_visits'] ?? 0,
+                    'exit_rate' => $cols['exit_rate'] ?? 0,
+                );
+            }
+        }
+
+        error_log( 'Sentinel: Matomo exit pages returned: ' . count( $exit_pages ) );
+
+        // Metas/Conversiones (solo si hay goals configurados)
+        $conversions = null;
+        $goals = \Piwik\API\Request::processRequest( 'Goals.getGoals', array(
+            'idSite' => $idSite,
+        ) );
+
+        if ( ! empty( $goals ) ) {
+            $goal_data = \Piwik\API\Request::processRequest( 'Goals.get', array(
+                'idSite' => $idSite,
+                'period' => 'month',
+                'date'   => 'today',
+                'format' => 'original',
+            ) );
+
+            $goal_summary = array();
+            if ( is_object( $goal_data ) && method_exists( $goal_data, 'getColumns' ) ) {
+                $goal_summary = $goal_data->getColumns();
+            } elseif ( is_object( $goal_data ) && method_exists( $goal_data, 'getFirstRow' ) ) {
+                $goal_row = $goal_data->getFirstRow();
+                $goal_summary = $goal_row ? $goal_row->getColumns() : array();
+            } elseif ( is_array( $goal_data ) ) {
+                $goal_summary = $goal_data;
+            }
+
+            $conversions = array(
+                'nb_conversions'       => $goal_summary['nb_conversions'] ?? 0,
+                'nb_visits_converted'  => $goal_summary['nb_visits_converted'] ?? 0,
+                'conversion_rate'      => $goal_summary['conversion_rate'] ?? '0%',
+                'revenue'              => $goal_summary['revenue'] ?? 0,
+            );
+
+            error_log( 'Sentinel: Matomo conversions - ' . ( $conversions['nb_conversions'] ?? 0 ) . ' conversions' );
+        } else {
+            error_log( 'Sentinel: No Matomo goals configured, skipping conversions' );
+        }
+
+        return array(
+            'nb_visits'            => $summary['nb_visits'] ?? 0,
+            'nb_uniq_visitors'     => $summary['nb_uniq_visitors'] ?? 0,
+            'nb_actions'           => $summary['nb_actions'] ?? 0,
+            'avg_time_on_site'     => $summary['avg_time_on_site'] ?? 0,
+            'bounce_rate'          => $summary['bounce_rate'] ?? '0%',
+            'nb_actions_per_visit' => $summary['nb_actions_per_visit'] ?? 0,
+            'top_pages'            => $top_pages,
+            'prev_month'           => array(
+                'nb_visits'            => $prev_summary['nb_visits'] ?? 0,
+                'nb_uniq_visitors'     => $prev_summary['nb_uniq_visitors'] ?? 0,
+                'nb_actions'           => $prev_summary['nb_actions'] ?? 0,
+                'avg_time_on_site'     => $prev_summary['avg_time_on_site'] ?? 0,
+                'bounce_rate'          => $prev_summary['bounce_rate'] ?? '0%',
+                'nb_actions_per_visit' => $prev_summary['nb_actions_per_visit'] ?? 0,
+            ),
+            'devices'              => $devices,
+            'exit_pages'           => $exit_pages,
+            'conversions'          => $conversions,
+        );
+
+    } catch ( \Exception $e ) {
+        error_log( 'Sentinel: Matomo API error - ' . $e->getMessage() );
+        return null;
+    }
+}
+
+/**
  * Consulta la base de datos para obtener los bloqueos de los últimos 30 días con métricas detalladas.
  */
 function get_wordfence_blocked_stats() {
@@ -299,15 +495,42 @@ function get_wordfence_blocked_stats() {
         }
     }
 
-    // 10. Site Health Score
-    $site_health_score = 'Good'; // Default
-    if ( function_exists( 'get_site_status' ) ) {
-        $status = get_site_status();
-        $site_health_score = $status['status'] ?? 'Good';
+    // 10. Pending Updates Count
+    $pending_updates = array(
+        'plugins'   => 0,
+        'themes'    => 0,
+        'wordpress' => 0,
+    );
+    if ( function_exists( 'wp_get_update_data' ) ) {
+        $update_data = wp_get_update_data();
+        $pending_updates = array(
+            'plugins'   => $update_data['counts']['plugins'] ?? 0,
+            'themes'    => $update_data['counts']['themes'] ?? 0,
+            'wordpress' => $update_data['counts']['wordpress'] ?? 0,
+        );
+    }
+
+    // 10b. Site Health Score
+    $site_health_score = array( 'status' => 'good', 'good' => 0, 'recommended' => 0, 'critical' => 0 );
+    if ( class_exists( 'WP_Site_Health' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/class-wp-site-health.php';
+        $health = WP_Site_Health::get_instance();
+        if ( method_exists( $health, 'get_test_count' ) ) {
+            $counts = $health->get_test_count();
+            $site_health_score = array(
+                'status'      => ( $counts['critical'] ?? 0 ) > 0 ? 'critical' : ( ( $counts['recommended'] ?? 0 ) > 0 ? 'recommended' : 'good' ),
+                'good'        => $counts['good'] ?? 0,
+                'recommended' => $counts['recommended'] ?? 0,
+                'critical'    => $counts['critical'] ?? 0,
+            );
+        }
     }
 
 
-    return array(
+    // 11. Matomo Analytics (if available)
+    $matomo_data = sentinel_get_matomo_data();
+
+    $response = array(
         'status' => 'success',
         'wordfence' => array(
             'total_attacks' => $total_attacks,
@@ -319,14 +542,21 @@ function get_wordfence_blocked_stats() {
         ),
         'infrastructure' => $server_info,
         'maintenance' => array(
-            'recent_updates' => $recent_updates,
-            'last_backup' => $last_backup,
-            'site_health' => $site_health_score
+            'recent_updates'  => $recent_updates,
+            'pending_updates' => $pending_updates,
+            'last_backup'     => $last_backup,
+            'site_health'     => $site_health_score
         ),
         'security' => array(
             'ssl_days_left' => $ssl_days_left
         )
     );
+
+    if ( $matomo_data !== null ) {
+        $response['metricas'] = $matomo_data;
+    }
+
+    return $response;
 }
 
 /**
