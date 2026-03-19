@@ -93,83 +93,69 @@ class PDFGenerator:
         self.pdf.set_y(48)
 
     def _draw_operational_health(self):
-        """Sección SALUD OPERATIVA con 4 métricas: Disponibilidad, Seguridad, SSL, Actualizaciones."""
+        """Sección SALUD OPERATIVA con 4 cards: Disponibilidad, Seguridad, SSL, Actualizaciones."""
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
         self.pdf.cell(0, 8, "SALUD OPERATIVA", 0, 1, 'L')
         self.pdf.ln(2)
 
         y_ini = self.pdf.get_y()
-        box_x = 10
-        box_w = 190
-        box_h = 45
+        x_start = 10
+        card_w = 42
+        gap = 1.5
+        card_h = 28
 
-        # Fondo gris claro para la caja
-        self.pdf.set_fill_color(*self.GRIS_HEAD)
-        self.pdf.rect(box_x, y_ini, box_w, box_h, 'F')
+        # Card 1: Disponibilidad
+        x = x_start
+        self._draw_health_card(x, y_ini, card_w, card_h, "100%", "Disponibilidad", self.VERDE_OK)
 
-        # 4 filas de status
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_text_color(30, 30, 30)
-
-        # Fila 1: Disponibilidad
-        self.pdf.set_xy(box_x + 5, y_ini + 3)
-        self.pdf.cell(0, 6, "DISPONIBILIDAD:", 0, 0, 'L')
-        self.pdf.set_x(130)
-        self.pdf.set_text_color(*self.VERDE_OK)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, "100% (0 caidas)", 0, 1, 'R')
-
-        # Fila 2: Seguridad
-        self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_x(box_x + 5)
+        # Card 2: Seguridad
+        x = x_start + (card_w + gap)
         attacks = self.wordfence_data.get('total_attacks', 0)
-        self.pdf.cell(0, 6, "SEGURIDAD:", 0, 0, 'L')
+        security_text = "0" if attacks == 0 else f"{attacks:,}"
+        security_label = "Sin amenazas" if attacks == 0 else "Ataques\nbloqueados"
         security_color = self.VERDE_OK if attacks == 0 else self.ROJO_ALERTA
-        security_value = "0 amenazas" if attacks == 0 else f"{attacks:,} ataques bloqueados"
-        self.pdf.set_x(130)
-        self.pdf.set_text_color(*security_color)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, security_value, 0, 1, 'R')
+        self._draw_health_card(x, y_ini, card_w, card_h, security_text, security_label, security_color)
 
-        # Fila 3: SSL
-        self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_x(box_x + 5)
-        self.pdf.cell(0, 6, "CERTIFICADO SSL:", 0, 0, 'L')
-        ssl_color = self.VERDE_OK
-        ssl_value = "Valido"
-        if self.ssl_days is not None:
-            if self.ssl_days < 5:
-                ssl_color = self.ROJO_ALERTA
-                ssl_value = f"Se renueva en {self.ssl_days}d (CRITICO)"
-            elif self.ssl_days < 15:
-                ssl_color = self.AMARILLO_WARN
-                ssl_value = f"Se renueva en {self.ssl_days}d (pronto)"
-            else:
-                ssl_value = f"Se renueva en {self.ssl_days}d"
-        self.pdf.set_x(130)
-        self.pdf.set_text_color(*ssl_color)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, ssl_value, 0, 1, 'R')
+        # Card 3: SSL
+        x = x_start + 2 * (card_w + gap)
+        ssl_days = self.ssl_days if self.ssl_days is not None else 0
+        ssl_color = self.ROJO_ALERTA if ssl_days < 5 else (self.AMARILLO_WARN if ssl_days < 15 else self.VERDE_OK)
+        ssl_value = f"{ssl_days}d" if ssl_days > 0 else "OK"
+        self._draw_health_card(x, y_ini, card_w, card_h, ssl_value, "Certificado\nSSL", ssl_color)
 
-        # Fila 4: Actualizaciones
-        self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_x(box_x + 5)
-        self.pdf.cell(0, 6, "ACTUALIZACIONES:", 0, 0, 'L')
+        # Card 4: Actualizaciones
+        x = x_start + 3 * (card_w + gap)
         pending = self.maintenance_data.get('pending_updates', {})
         total_pending = pending.get('plugins', 0) + pending.get('themes', 0) + pending.get('wordpress', 0)
+        updates_value = "0" if total_pending == 0 else f"{total_pending}"
+        updates_label = "Al dia" if total_pending == 0 else "Actualizaciones\npendientes"
         updates_color = self.VERDE_OK if total_pending == 0 else self.AMARILLO_WARN
-        updates_value = "Al dia" if total_pending == 0 else f"{total_pending} pendientes"
-        self.pdf.set_x(130)
-        self.pdf.set_text_color(*updates_color)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, updates_value, 0, 1, 'R')
+        self._draw_health_card(x, y_ini, card_w, card_h, updates_value, updates_label, updates_color)
 
-        self.pdf.set_y(y_ini + box_h + 3)
+        self.pdf.set_y(y_ini + card_h + 3)
         self.pdf.set_text_color(0, 0, 0)
+
+    def _draw_health_card(self, x, y, w, h, big_value, label, color):
+        """Dibuja una tarjeta de salud con valor grande arriba y etiqueta abajo."""
+        # Fondo
+        self.pdf.set_fill_color(*self.GRIS_HEAD)
+        self.pdf.rect(x, y, w, h, 'F')
+        # Barra de color arriba
+        self.pdf.set_fill_color(*color)
+        self.pdf.rect(x, y, w, 3, 'F')
+
+        # Valor grande (arriba)
+        self.pdf.set_xy(x, y + 5)
+        self.pdf.set_font(self.font_family, 'B', 16)
+        self.pdf.set_text_color(*color)
+        self.pdf.cell(w, 8, big_value, 0, 1, 'C')
+
+        # Etiqueta (abajo)
+        self.pdf.set_xy(x, y + 15)
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        self.pdf.multi_cell(w - 2, 3, label, border=0, align='C')
 
     def _draw_business_impact(self):
         """Sección MÉTRICAS DE IMPACTO con datos de Matomo si están disponibles."""
@@ -183,7 +169,7 @@ class PDFGenerator:
             self.pdf.set_font(self.font_family, '', 10)
             self.pdf.set_text_color(*self.GRIS_TEXT)
             self.pdf.set_fill_color(*self.GRIS_HEAD)
-            self.pdf.multi_cell(0, 6, "Métricas de tráfico no disponibles para este cliente.", border=1, align='C', fill=True)
+            self.pdf.multi_cell(0, 6, "Pronto tendremos mas informacion sobre las metricas de tu web.", border=1, align='C', fill=True)
             self.pdf.ln(3)
             return
 
@@ -245,17 +231,17 @@ class PDFGenerator:
         self.pdf.set_text_color(0, 0, 0)
 
     def _draw_hoja_de_ruta(self):
-        """Sección HOJA DE RUTA con 3 prioridades numeradas."""
+        """Sección HOJA DE RUTA con 3 pasos para llevar la web al próximo nivel."""
         if not self.hoja_de_ruta:
             return
 
         self.pdf.ln(3)
 
         # Titulo de seccion
-        self.pdf.set_font(self.font_family, 'B', 12)
+        self.pdf.set_font(self.font_family, 'B', 11)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 8, "HOJA DE RUTA - PRÓXIMOS PASOS", 0, 1, 'L')
-        self.pdf.ln(2)
+        self.pdf.cell(0, 6, "Los siguientes pasos para llevar tu web al proximo nivel son:", 0, 1, 'L')
+        self.pdf.ln(1)
 
         # Parse roadmap text into max 3 priorities
         lines = self.hoja_de_ruta.strip().split('\n')
@@ -278,35 +264,20 @@ class PDFGenerator:
         priorities = priorities[:3]
 
         for i, priority_text in enumerate(priorities):
-            box_x = 10
-            box_y = self.pdf.get_y()
-            box_w = 190
-            accent_w = 3
-
-            # Barra de acento navy
-            self.pdf.set_fill_color(*self.AZUL_NAVY)
-            self.pdf.rect(box_x, box_y, accent_w, 5, 'F')
-
-            # Fondo gris para la caja
-            self.pdf.set_fill_color(*self.GRIS_HEAD)
-            self.pdf.rect(box_x + accent_w, box_y, box_w - accent_w, 5, 'F')
-
-            # Encabezado con número
-            self.pdf.set_xy(box_x + accent_w + 3, box_y)
+            # Encabezado: "Paso 1", "Paso 2", etc.
             self.pdf.set_font(self.font_family, 'B', 10)
             self.pdf.set_text_color(*self.AZUL_NAVY)
-            self.pdf.cell(0, 5, f"[{i+1}] PRIORIDAD {i+1}", 0, 1, 'L')
+            self.pdf.cell(0, 5, f"Paso {i+1}", 0, 1, 'L')
 
-            # Contenido de la prioridad
+            # Contenido del paso
             self.pdf.set_font(self.font_family, '', 9)
             self.pdf.set_text_color(30, 30, 30)
-            self.pdf.set_x(box_x + accent_w + 3)
-            self.pdf.set_fill_color(*self.GRIS_HEAD)
-            self.pdf.multi_cell(box_w - accent_w - 6, 4, priority_text, border=0, align='L', fill=True)
+            self.pdf.set_x(15)
+            self.pdf.multi_cell(175, 3.5, priority_text, border=0, align='L')
 
             self.pdf.ln(1)
 
-        self.pdf.ln(2)
+        self.pdf.ln(1)
 
     def _draw_services_this_month(self):
         """Sección SERVICIOS ESTE MES con resumen de lo realizado."""
