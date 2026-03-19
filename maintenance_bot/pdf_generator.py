@@ -540,6 +540,12 @@ class PDFGenerator:
         self.pdf.set_x(box_x + 10)
         self.pdf.cell(box_w - 10, 4, "Tiempo: 2-3 horas de analisis  |  Costo: Gs. 1.500.000 (plan completo)", 0, 1, 'L', fill=True)
 
+        # Contacto
+        self.pdf.set_font(self.font_family, 'B', 8)
+        self.pdf.set_text_color(*self.AZUL_NAVY)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "WhatsApp: +595 981 123456  |  Email: rodney@impulsosdigitales.com", 0, 1, 'L', fill=True)
+
         # Urgencia
         self.pdf.set_font(self.font_family, 'B', 8)
         self.pdf.set_text_color(*self.ROJO_ALERTA)
@@ -1008,17 +1014,17 @@ if __name__ == "__main__":
             "  Problema: 540 visitantes moviles/mes, 58% se va sin interactuar\n"
             "  Accion: Auditoria UX/UI + Rediseno responsive\n"
             "  Inversion: Gs. 1.500.000\n"
-            "  Retorno: Si reducimos a 45%, ganamos +70 visitantes que convierten\n"
+            "  Retorno: Si reducimos a 45%, ganamos +70 visitantes = Gs. 1,050,000/mes\n"
             "- Reducir abandono en /carrito (67%)\n"
             "  Problema: De 180 visitas, 121 se van sin completar\n"
             "  Accion: Simplificar flujo + agregar recuperacion de carrito\n"
             "  Inversion: Gs. 300.000\n"
-            "  Retorno: Si recuperamos 20%, ganamos +24 conversiones/mes\n"
+            "  Retorno: Si recuperamos 20%, ganamos +24 conversiones = Gs. 1,200,000/mes\n"
             "- Mejorar fotos de productos\n"
             "  Problema: 320 visitas/mes a /productos, conversion baja\n"
             "  Accion: Refotos profesionales + descripciones mejoradas\n"
             "  Inversion: Gs. 800.000\n"
-            "  Retorno: +15 compras/mes = Gs. 300-450k/mes"
+            "  Retorno: +15 compras/mes = Gs. 450,000/mes"
         ),
         metrics_data={
             'nb_visits': 1250, 'nb_uniq_visitors': 870, 'nb_actions': 3400,
