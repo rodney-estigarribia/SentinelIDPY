@@ -93,7 +93,7 @@ class PDFGenerator:
         self.pdf.set_y(48)
 
     def _draw_operational_health(self):
-        """Sección SALUD OPERATIVA con 4 cards: Disponibilidad, Seguridad, SSL, Actualizaciones."""
+        """Sección SALUD OPERATIVA con 5 cards: Disponibilidad, Seguridad, SSL, Actualizaciones, Backup."""
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
         self.pdf.cell(0, 8, "SALUD OPERATIVA", 0, 1, 'L')
@@ -101,8 +101,8 @@ class PDFGenerator:
 
         y_ini = self.pdf.get_y()
         x_start = 10
-        card_w = 42
-        gap = 1.5
+        card_w = 36
+        gap = 1
         card_h = 28
 
         # Card 1: Disponibilidad
@@ -113,7 +113,7 @@ class PDFGenerator:
         x = x_start + (card_w + gap)
         attacks = self.wordfence_data.get('total_attacks', 0)
         security_text = "0" if attacks == 0 else f"{attacks:,}"
-        security_label = "Sin amenazas" if attacks == 0 else "Ataques\nbloqueados"
+        security_label = "Sin\namenazas" if attacks == 0 else "Ataques\nbloqueados"
         security_color = self.VERDE_OK if attacks == 0 else self.ROJO_ALERTA
         self._draw_health_card(x, y_ini, card_w, card_h, security_text, security_label, security_color)
 
@@ -129,9 +129,13 @@ class PDFGenerator:
         pending = self.maintenance_data.get('pending_updates', {})
         total_pending = pending.get('plugins', 0) + pending.get('themes', 0) + pending.get('wordpress', 0)
         updates_value = "0" if total_pending == 0 else f"{total_pending}"
-        updates_label = "Al dia" if total_pending == 0 else "Actualizaciones\npendientes"
+        updates_label = "Al dia" if total_pending == 0 else "Actualiz.\npendientes"
         updates_color = self.VERDE_OK if total_pending == 0 else self.AMARILLO_WARN
         self._draw_health_card(x, y_ini, card_w, card_h, updates_value, updates_label, updates_color)
+
+        # Card 5: Backup Proactivo
+        x = x_start + 4 * (card_w + gap)
+        self._draw_health_card(x, y_ini, card_w, card_h, "24/7", "Backup\nproactivo", self.AZUL_NAVY)
 
         self.pdf.set_y(y_ini + card_h + 3)
         self.pdf.set_text_color(0, 0, 0)
@@ -157,6 +161,27 @@ class PDFGenerator:
         self.pdf.set_text_color(30, 30, 30)
         self.pdf.multi_cell(w - 2, 3, label, border=0, align='C')
 
+    def _draw_metric_card(self, x, y, w, h, big_value, label, color):
+        """Dibuja una tarjeta de metrica con valor grande arriba y etiqueta abajo."""
+        # Fondo
+        self.pdf.set_fill_color(*self.GRIS_HEAD)
+        self.pdf.rect(x, y, w, h, 'F')
+        # Barra de color arriba
+        self.pdf.set_fill_color(*color)
+        self.pdf.rect(x, y, w, 3, 'F')
+
+        # Valor grande (arriba)
+        self.pdf.set_xy(x, y + 5)
+        self.pdf.set_font(self.font_family, 'B', 14)
+        self.pdf.set_text_color(*color)
+        self.pdf.cell(w, 7, big_value, 0, 1, 'C')
+
+        # Etiqueta (abajo)
+        self.pdf.set_xy(x, y + 14)
+        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_text_color(30, 30, 30)
+        self.pdf.multi_cell(w - 2, 3, label, border=0, align='C')
+
     def _draw_business_impact(self):
         """Sección MÉTRICAS DE IMPACTO con datos de Matomo si están disponibles."""
         self.pdf.ln(3)
@@ -174,60 +199,33 @@ class PDFGenerator:
             return
 
         y_ini = self.pdf.get_y()
-        box_x = 10
-        box_w = 190
-        box_h = 35
+        x_start = 10
+        card_w = 44
+        gap = 1
+        card_h = 28
 
-        # Fondo gris claro para la caja
-        self.pdf.set_fill_color(*self.GRIS_HEAD)
-        self.pdf.rect(box_x, y_ini, box_w, box_h, 'F')
-
-        # 4 filas de métricas
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_text_color(30, 30, 30)
-
-        # Fila 1: Visitantes únicos
-        self.pdf.set_xy(box_x + 5, y_ini + 3)
+        # Card 1: Visitantes únicos
+        x = x_start
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
-        self.pdf.cell(0, 6, "Visitantes unicos:", 0, 0, 'L')
-        self.pdf.set_x(130)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, f"{visitors:,}", 0, 1, 'R')
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{visitors:,}", "Visitantes\nunicos", self.AZUL_NAVY)
 
-        # Fila 2: Páginas por visita
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_x(box_x + 5)
+        # Card 2: Páginas por visita
+        x = x_start + (card_w + gap)
         pages_per_visit = self.metrics_data.get('nb_actions_per_visit', 0)
-        self.pdf.cell(0, 6, "Paginas por visita:", 0, 0, 'L')
-        self.pdf.set_x(130)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, f"{pages_per_visit:.1f}", 0, 1, 'R')
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{pages_per_visit:.1f}", "Paginas por\nvisita", self.AZUL_NAVY)
 
-        # Fila 3: Tiempo promedio
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_x(box_x + 5)
+        # Card 3: Tiempo promedio
+        x = x_start + 2 * (card_w + gap)
         avg_time = self._format_duration(self.metrics_data.get('avg_time_on_site', 0))
-        self.pdf.cell(0, 6, "Tiempo promedio:", 0, 0, 'L')
-        self.pdf.set_x(130)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, avg_time, 0, 1, 'R')
+        self._draw_metric_card(x, y_ini, card_w, card_h, avg_time, "Tiempo\npromedio", self.AZUL_NAVY)
 
-        # Fila 4: Tasa de rebote
-        self.pdf.set_font(self.font_family, '', 10)
-        self.pdf.set_text_color(30, 30, 30)
-        self.pdf.set_x(box_x + 5)
+        # Card 4: Tasa de rebote
+        x = x_start + 3 * (card_w + gap)
         bounce_rate = self.metrics_data.get('bounce_rate', 0)
         bounce_color = self.ROJO_ALERTA if bounce_rate > 35 else self.VERDE_OK
-        bounce_indicator = " (alto)" if bounce_rate > 35 else ""
-        self.pdf.cell(0, 6, "Tasa de rebote:", 0, 0, 'L')
-        self.pdf.set_x(130)
-        self.pdf.set_text_color(*bounce_color)
-        self.pdf.set_font(self.font_family, 'B', 10)
-        self.pdf.cell(0, 6, f"{bounce_rate:.1f}%{bounce_indicator}", 0, 1, 'R')
+        self._draw_metric_card(x, y_ini, card_w, card_h, f"{bounce_rate:.1f}%", "Tasa de\nrebote", bounce_color)
 
-        self.pdf.set_y(y_ini + box_h + 3)
+        self.pdf.set_y(y_ini + card_h + 3)
         self.pdf.set_text_color(0, 0, 0)
 
     def _draw_hoja_de_ruta(self):
@@ -237,11 +235,16 @@ class PDFGenerator:
 
         self.pdf.ln(3)
 
-        # Titulo de seccion
-        self.pdf.set_font(self.font_family, 'B', 11)
+        # Titulo principal en ALL CAPS
+        self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 6, "Los siguientes pasos para llevar tu web al proximo nivel son:", 0, 1, 'L')
-        self.pdf.ln(1)
+        self.pdf.cell(0, 6, "LOS SIGUIENTES PASOS", 0, 1, 'L')
+
+        # Subtitulo
+        self.pdf.set_font(self.font_family, '', 10)
+        self.pdf.set_text_color(30, 30, 30)
+        self.pdf.cell(0, 5, "Para llevar tu web al siguiente nivel son:", 0, 1, 'L')
+        self.pdf.ln(2)
 
         # Parse roadmap text into max 3 priorities
         lines = self.hoja_de_ruta.strip().split('\n')
@@ -275,12 +278,13 @@ class PDFGenerator:
             self.pdf.set_x(15)
             self.pdf.multi_cell(175, 3.5, priority_text, border=0, align='L')
 
-            self.pdf.ln(1)
+            # Espacio blanco entre pasos
+            self.pdf.ln(2)
 
         self.pdf.ln(1)
 
     def _draw_services_this_month(self):
-        """Sección SERVICIOS ESTE MES con resumen de lo realizado."""
+        """Sección SERVICIOS ESTE MES con lista detallada de servicios."""
         self.pdf.ln(2)
 
         # Titulo de seccion
@@ -289,33 +293,44 @@ class PDFGenerator:
         self.pdf.cell(0, 8, "SERVICIOS ESTE MES", 0, 1, 'L')
         self.pdf.ln(2)
 
-        y_ini = self.pdf.get_y()
-        box_x = 10
-        box_w = 190
+        # Servicios incluidos
+        services = [
+            ("1. Copias de seguridad nube", [
+                "Base de datos + Archivos del sitio.",
+                "Almacenadas en la nube.",
+                "Se realizan todos los dias durante el periodo (o ante eventos criticos).",
+                "Se retienen durante (2) dos anos."
+            ]),
+            ("2. Mantenimiento | Actualizaciones", [
+                "Sistema, plugins y temas.",
+                "Revision de compatibilidad, estabilidad y mejoras."
+            ]),
+            ("3. Revision de SEO, accesibilidad y seguridad", [
+                "Accesos, contrasenas, spam, rendimiento, SEO basico, accesibilidad, etc."
+            ]),
+            ("4. Soporte tecnico", [
+                "Via WhatsApp o correo, para ajustes simples y consultas."
+            ])
+        ]
 
-        # Fondo gris claro para la caja
-        self.pdf.set_fill_color(*self.GRIS_HEAD)
-        self.pdf.rect(box_x, y_ini, box_w, 22, 'F')
-
-        # Filas de servicios
-        self.pdf.set_font(self.font_family, '', 10)
+        self.pdf.set_font(self.font_family, '', 9)
         self.pdf.set_text_color(30, 30, 30)
 
-        # Mantenimiento
-        self.pdf.set_xy(box_x + 5, y_ini + 2)
-        self.pdf.cell(0, 5, "- Mantenimiento: Incluido en el plan", 0, 1, 'L')
+        for service_title, details in services:
+            # Titulo del servicio
+            self.pdf.set_font(self.font_family, 'B', 9)
+            self.pdf.set_text_color(*self.AZUL_NAVY)
+            self.pdf.cell(0, 4, service_title, 0, 1, 'L')
 
-        # Monitoreo
-        attacks = self.wordfence_data.get('total_attacks', 0)
-        incident_text = f"0 incidentes" if attacks == 0 else f"{attacks:,} incidentes bloqueados"
-        self.pdf.set_x(box_x + 5)
-        self.pdf.cell(0, 5, f"- Monitoreo 24/7: {incident_text}", 0, 1, 'L')
+            # Detalles del servicio
+            self.pdf.set_font(self.font_family, '', 8)
+            self.pdf.set_text_color(30, 30, 30)
+            for detail in details:
+                self.pdf.set_x(15)
+                self.pdf.multi_cell(175, 3, f"  {detail}", border=0, align='L')
 
-        # Backups
-        self.pdf.set_x(box_x + 5)
-        self.pdf.cell(0, 5, "- Backups: Automaticos diarios", 0, 1, 'L')
+            self.pdf.ln(1)
 
-        self.pdf.set_y(y_ini + 24)
         self.pdf.set_text_color(0, 0, 0)
 
     # ─── PAGE 2: TECHNICAL DETAILS ─────────────────────────────────
