@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0F1419;
+            --bg-lighter: #1A2332;
+            --cyan-accent: #00D9FF;
+            --cyan-light: #00F0FF;
+            --text-white: #FFFFFF;
+            --text-secondary: #B0C4DE;
+            --text-muted: #8A9FB0;
+            --accent-green: #2ECC71;
+            --accent-red: #E74C3C;
+            --accent-gold: #F7931E;
+        }
+
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            line-height: 1.6;
+            font-size: 11px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--bg-dark);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            border-top: 4px solid var(--cyan-accent);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .header::after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, var(--cyan-accent), transparent);
+            margin-top: 20px;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .header-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background-color: var(--cyan-accent);
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        /* ===== HEALTH GRID ===== */
+        .health-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .health-card {
+            background-color: var(--bg-lighter);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .health-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan-accent), transparent);
+        }
+
+        .health-card-number {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--cyan-accent);
+            margin-bottom: 3px;
+        }
+
+        .health-card-label {
+            font-size: 9px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* ===== METRICS GRID ===== */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .metric-card {
+            background-color: var(--bg-lighter);
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 6px;
+            padding: 14px;
+            text-align: center;
+            position: relative;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--cyan-accent), transparent);
+        }
+
+        .metric-main {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-bottom: 3px;
+        }
+
+        .metric-secondary {
+            font-size: 9px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .metric-trend {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .trend-down { color: var(--accent-red); background-color: rgba(231, 76, 60, 0.1); }
+        .trend-up { color: var(--accent-green); background-color: rgba(46, 204, 113, 0.1); }
+
+        /* ===== DEVICE GRID ===== */
+        .device-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .device-card {
+            background-color: var(--bg-lighter);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 6px;
+            padding: 14px;
+            position: relative;
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan-accent), transparent);
+        }
+
+        .device-name { font-size: 13px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
+        .device-stat { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+        .device-stat-label { color: var(--text-secondary); }
+        .device-stat-value { color: var(--text-white); font-weight: 600; }
+
+        .device-alert {
+            margin-top: 8px; padding: 6px 8px;
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 3px solid var(--accent-red);
+            border-radius: 3px; font-size: 10px; color: var(--accent-red);
+        }
+
+        .device-good {
+            margin-top: 8px; padding: 6px 8px;
+            background-color: rgba(46, 204, 113, 0.1);
+            border-left: 3px solid var(--accent-green);
+            border-radius: 3px; font-size: 10px; color: var(--accent-green);
+        }
+
+        /* ===== STEPS ===== */
+        .steps-container {
+            background-color: var(--bg-lighter);
+            border: 1px solid rgba(0, 217, 255, 0.2);
+            border-radius: 6px;
+            padding: 18px;
+            position: relative;
+        }
+
+        .steps-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan-accent), transparent);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .step {
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+        }
+
+        .step:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        .step-number { font-size: 13px; font-weight: 700; color: var(--cyan-accent); margin-bottom: 5px; }
+        .step-detail { font-size: 10px; color: var(--text-secondary); margin-bottom: 3px; line-height: 1.4; }
+        .step-highlight { color: var(--cyan-accent); font-weight: 600; }
+
+        /* ===== FINANCIAL SUMMARY ===== */
+        .financial-summary {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(0, 240, 255, 0.05));
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 6px;
+            padding: 18px;
+            position: relative;
+        }
+
+        .financial-summary::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan-accent), transparent);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .financial-row { display: grid; grid-template-columns: 2fr 1fr; margin-bottom: 8px; align-items: center; font-size: 11px; }
+        .financial-label { color: var(--text-secondary); }
+        .financial-value { text-align: right; color: var(--text-white); font-weight: 600; font-size: 12px; }
+        .financial-divider { height: 1px; background: rgba(0, 217, 255, 0.2); margin: 10px 0; }
+        .financial-total { display: grid; grid-template-columns: 2fr 1fr; font-weight: 700; font-size: 14px; color: var(--cyan-accent); }
+        .financial-section-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 8px; }
+
+        .roi-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .roi-metric { background-color: rgba(0, 217, 255, 0.1); border-radius: 4px; padding: 8px; text-align: center; }
+        .roi-value { font-size: 13px; font-weight: 700; color: var(--cyan-accent); margin-bottom: 2px; }
+        .roi-label { color: var(--text-secondary); font-size: 9px; }
+
+        /* ===== CTA ===== */
+        .cta-section {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 240, 255, 0.08));
+            border: 2px solid var(--cyan-accent);
+            border-radius: 6px;
+            padding: 18px;
+            margin-top: 25px;
+            position: relative;
+        }
+
+        .cta-title { font-size: 14px; font-weight: 700; color: var(--cyan-accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .cta-phase { margin-bottom: 10px; font-size: 11px; }
+        .cta-phase-title { font-weight: 600; color: var(--text-white); margin-bottom: 3px; }
+        .cta-phase-text { color: var(--text-secondary); margin-left: 8px; font-size: 10px; }
+
+        .cta-urgency {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 3px solid var(--accent-red);
+            border-radius: 3px;
+            padding: 8px 10px;
+            margin-top: 10px;
+            font-size: 10px;
+            color: var(--accent-red);
+            line-height: 1.4;
+        }
+
+        /* ===== SERVICES ===== */
+        .services-list {
+            background-color: var(--bg-lighter);
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 6px;
+            padding: 14px;
+        }
+
+        .service-item { margin-bottom: 10px; font-size: 10px; }
+        .service-item:last-child { margin-bottom: 0; }
+        .service-title { font-weight: 600; color: var(--text-white); margin-bottom: 3px; }
+        .service-description { color: var(--text-secondary); line-height: 1.4; margin-left: 8px; }
+
+        /* ===== PAGE 2 ===== */
+        .page-break { page-break-after: always; break-after: always; }
+
+        .table-container {
+            background-color: var(--bg-lighter);
+            border: 1px solid rgba(0, 217, 255, 0.15);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        th { background-color: rgba(0, 217, 255, 0.15); color: var(--cyan-accent); padding: 8px; text-align: left; font-weight: 600; border-bottom: 1px solid rgba(0, 217, 255, 0.2); }
+        td { padding: 8px; border-bottom: 1px solid rgba(0, 217, 255, 0.1); color: var(--text-secondary); }
+        tr:last-child td { border-bottom: none; }
+
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .detail-card { background-color: var(--bg-lighter); border: 1px solid rgba(0, 217, 255, 0.15); border-radius: 6px; padding: 12px; position: relative; }
+        .detail-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--cyan-accent), transparent); }
+        .detail-label { font-size: 9px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; }
+        .detail-value { font-size: 14px; font-weight: 600; color: var(--text-white); }
+
+        .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid rgba(0, 217, 255, 0.2); text-align: center; font-size: 9px; color: var(--text-muted); }
+
+        .text-cyan { color: var(--cyan-accent); }
+        .text-success { color: var(--accent-green); }
+        .text-danger { color: var(--accent-red); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- PAGE 1: EXECUTIVE DASHBOARD -->
+        <div class="header">
+            <h1 class="header-title">📊 DASHBOARD ESTRATÉGICO - {{cliente_nombre}}</h1>
+            <div class="header-meta">
+                <span>Período: {{periodo}}</span>
+                <span>Preparado por: Rodney Mendoza - Impulsos Digitales</span>
+            </div>
+        </div>
+
+        <!-- SALUD OPERATIVA -->
+        <div class="section">
+            <h2 class="section-title">🏥 Salud Operativa</h2>
+            <div class="health-grid">
+                {{health_cards}}
+            </div>
+        </div>
+
+        <!-- MÉTRICAS DE IMPACTO -->
+        <div class="section">
+            <h2 class="section-title">📈 Métricas de Impacto</h2>
+            {{metrics_section}}
+        </div>
+
+        <!-- COMPORTAMIENTO POR DISPOSITIVO -->
+        {{device_section}}
+
+        <!-- LOS SIGUIENTES PASOS -->
+        {{steps_section}}
+
+        <!-- RESUMEN FINANCIERO -->
+        {{financial_section}}
+
+        <!-- CTA -->
+        {{cta_section}}
+
+        <!-- SERVICIOS ESTE MES -->
+        <div class="section">
+            <h2 class="section-title">📋 Servicios Este Mes</h2>
+            <div class="services-list">
+                <div class="service-item">
+                    <div class="service-title">1. Copias de seguridad nube</div>
+                    <div class="service-description">Base de datos + Archivos del sitio. Almacenadas en la nube. Se realizan todos los días. Se retienen durante 2 años.</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-title">2. Mantenimiento | Actualizaciones</div>
+                    <div class="service-description">Sistema, plugins y temas. Revisión de compatibilidad, estabilidad y mejoras.</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-title">3. Revisión de SEO, accesibilidad y seguridad</div>
+                    <div class="service-description">Accesos, contraseñas, spam, rendimiento, SEO básico, accesibilidad, etc.</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-title">4. Soporte técnico</div>
+                    <div class="service-description">Vía WhatsApp o correo, para ajustes simples y consultas.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE BREAK -->
+        <div class="page-break"></div>
+
+        <!-- PAGE 2: TECHNICAL DETAIL -->
+        <div class="header" style="margin-bottom: 20px;">
+            <h1 class="header-title">Detalle Técnico - {{cliente_nombre}}</h1>
+        </div>
+
+        {{storage_section}}
+        {{maintenance_section}}
+        {{security_section}}
+        {{analytics_section}}
+        {{exit_pages_section}}
+        {{manual_tasks_section}}
+
+        <div class="footer">
+            <p>© 2026 Impulsos Digitales. Reporte Confidencial - Preparado para {{cliente_nombre}}</p>
+            <p>Para consultas o seguimiento, contactar a: Rodney Mendoza</p>
+        </div>
+    </div>
+</body>
+</html>

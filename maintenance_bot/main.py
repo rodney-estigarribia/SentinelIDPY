@@ -14,7 +14,7 @@ from telegram.ext import (
     ConversationHandler,
 )
 from ai_handler import AIHandler
-from pdf_generator import PDFGenerator
+from html_pdf_generator import HTMLPDFGenerator as PDFGenerator
 from client_fetcher import ClientDataFetcher
 from recommendation_engine import RecommendationEngine
 

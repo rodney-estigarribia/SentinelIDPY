@@ -1,5 +1,7 @@
 python-telegram-bot[job-queue]==20.8
 fpdf2==2.7.8
+weasyprint>=68.0
 pillow==10.2.0
 requests==2.31.0
 python-dotenv==1.0.1
+pytest>=7.0
