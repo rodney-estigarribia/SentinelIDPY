@@ -201,6 +201,7 @@ class HTMLPDFGenerator:
             <div class="steps-container">
                 {steps_html}
             </div>
+            <div style="font-size:9px;color:var(--text-secondary);font-style:italic;margin-top:8px;">* Dinero estimado basado en análisis de sitio y mercado de la industria actual.</div>
         </div>'''
 
     def _build_financial_section(self):
@@ -247,6 +248,7 @@ class HTMLPDFGenerator:
                     <div class="roi-metric"><div class="roi-value">{roi_3m_pct}%</div><div class="roi-label">ROI a 3 meses</div></div>
                 </div>
             </div>
+            <div style="font-size:9px;color:var(--text-secondary);font-style:italic;margin-top:8px;">* Dinero estimado basado en análisis de sitio y mercado de la industria actual.</div>
         </div>'''
 
     def _build_cta_section(self):
