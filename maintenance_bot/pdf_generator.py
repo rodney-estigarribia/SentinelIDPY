@@ -17,6 +17,8 @@ class PDFGenerator:
                  infra_data=None, ssl_days=None, hoja_de_ruta=None, metrics_data=None,
                  wordfence_data=None, maintenance_data=None, recommendations=None):
         self.pdf = FPDF()
+        self.has_emoji_font = False
+
         # Try to use Montserrat, fallback to Helvetica
         font_path = "Montserrat.ttf"
         if os.path.exists(font_path):
@@ -29,6 +31,23 @@ class PDFGenerator:
                 self.font_family = "Helvetica"
         else:
             self.font_family = "Helvetica"
+
+        # Try to load Noto Emoji font for emoji support
+        emoji_paths = [
+            os.path.join(os.path.dirname(__file__), "NotoEmoji-Variable.ttf"),
+            "NotoEmoji-Variable.ttf",
+            "maintenance_bot/NotoEmoji-Variable.ttf",
+        ]
+        for epath in emoji_paths:
+            if os.path.exists(epath):
+                try:
+                    self.pdf.add_font("NotoEmoji", "", epath)
+                    self.has_emoji_font = True
+                    logger.info(f"Loaded NotoEmoji font from {epath}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Could not load NotoEmoji {epath}: {e}")
+                    continue
 
         self.cliente_nombre = cliente_nombre
         self.improved_text = improved_text
@@ -49,6 +68,20 @@ class PDFGenerator:
         self.ROJO_ALERTA = (220, 53, 69)  # #DC3545
         self.VERDE_OK = (40, 167, 69)     # #28A745
         self.AMARILLO_WARN = (255, 193, 7) # #FFC107
+
+    def _section_title(self, emoji, text, size=12, h=8, align='L', fill=False, w=0):
+        """Render a section title with emoji (using NotoEmoji) then text in main font."""
+        if self.has_emoji_font:
+            # Render emoji with NotoEmoji font
+            self.pdf.set_font("NotoEmoji", "", size)
+            emoji_w = self.pdf.get_string_width(emoji) + 2
+            self.pdf.cell(emoji_w, h, emoji, 0, 0, 'L', fill)
+            # Render text with main font
+            self.pdf.set_font(self.font_family, 'B', size)
+            remaining_w = (w - emoji_w) if w > 0 else 0
+            self.pdf.cell(remaining_w, h, text, 0, 1, align, fill)
+        else:
+            self.pdf.cell(w, h, text, 0, 1, align, fill)
 
     # Card layout constants
     CARD_X_START = 10
@@ -81,7 +114,7 @@ class PDFGenerator:
         self.pdf.set_font(self.font_family, 'B', 18)
         self.pdf.set_text_color(255, 255, 255)
         self.pdf.set_xy(text_x, 10)
-        self.pdf.cell(0, 10, f"DASHBOARD ESTRATÉGICO - {self.cliente_nombre}", 0, 1, 'L')
+        self._section_title("📊", f"DASHBOARD ESTRATÉGICO - {self.cliente_nombre}", size=18, h=10)
 
         # Subtitulo con mes, año y preparado por
         now = datetime.datetime.now()
@@ -97,7 +130,7 @@ class PDFGenerator:
         """Sección SALUD OPERATIVA con 5 cards: Disponibilidad, Seguridad, SSL, Actualizaciones, Backup."""
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 8, "SALUD OPERATIVA", 0, 1, 'L')
+        self._section_title("🏥", "SALUD OPERATIVA")
         self.pdf.ln(2)
 
         y_ini = self.pdf.get_y()
@@ -197,7 +230,7 @@ class PDFGenerator:
         self.pdf.ln(3)
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 8, "MÉTRICAS DE IMPACTO", 0, 1, 'L')
+        self._section_title("📈", "MÉTRICAS DE IMPACTO")
         self.pdf.ln(2)
 
         if not self.metrics_data:
@@ -263,7 +296,7 @@ class PDFGenerator:
         self.pdf.ln(3)
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 8, "COMPORTAMIENTO POR DISPOSITIVO", 0, 1, 'L')
+        self._section_title("📱", "COMPORTAMIENTO POR DISPOSITIVO")
         self.pdf.ln(2)
 
         y_ini = self.pdf.get_y()
@@ -330,7 +363,7 @@ class PDFGenerator:
         self.pdf.ln(3)
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 8, "CONVERSIONES", 0, 1, 'L')
+        self._section_title("💰", "CONVERSIONES")
         self.pdf.ln(2)
 
         y_ini = self.pdf.get_y()
@@ -367,7 +400,7 @@ class PDFGenerator:
         # Titulo principal en ALL CAPS
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 6, "LOS SIGUIENTES PASOS", 0, 1, 'L')
+        self._section_title("🎯", "LOS SIGUIENTES PASOS", size=12, h=6)
 
         # Subtitulo
         self.pdf.set_font(self.font_family, '', 10)
@@ -453,7 +486,7 @@ class PDFGenerator:
         # Titulo
         self.pdf.set_font(self.font_family, 'B', 11)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 6, "RESUMEN FINANCIERO DEL PLAN", 0, 1, 'L')
+        self._section_title("💰", "RESUMEN FINANCIERO DEL PLAN", size=11, h=6)
         self.pdf.ln(1)
 
         box_x = 10
@@ -525,7 +558,7 @@ class PDFGenerator:
         self.pdf.set_font(self.font_family, 'B', 11)
         self.pdf.set_text_color(*self.AZUL_NAVY)
         self.pdf.set_x(box_x)
-        self.pdf.cell(box_w, 7, "PROXIMO PASO - AUDITORIA ESTRATEGICA", 0, 1, 'L', fill=True)
+        self._section_title("✅", "PROXIMO PASO - AUDITORIA ESTRATEGICA", size=11, h=7, fill=True, w=box_w)
 
         # INMEDIATO
         self.pdf.set_font(self.font_family, 'B', 9)
@@ -545,6 +578,8 @@ class PDFGenerator:
         self.pdf.set_text_color(*self.AZUL_NAVY)
         self.pdf.set_x(box_x + 10)
         self.pdf.cell(box_w - 10, 4, "WhatsApp: +595 981 123456  |  Email: rodney@impulsosdigitales.com", 0, 1, 'L', fill=True)
+        self.pdf.set_x(box_x + 10)
+        self.pdf.cell(box_w - 10, 4, "Calendario: https://calendly.com/impulsosdigitales", 0, 1, 'L', fill=True)
 
         # Urgencia
         self.pdf.set_font(self.font_family, 'B', 8)
@@ -593,7 +628,7 @@ class PDFGenerator:
         # Titulo de seccion
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
-        self.pdf.cell(0, 8, "SERVICIOS ESTE MES", 0, 1, 'L')
+        self._section_title("📋", "SERVICIOS ESTE MES")
         self.pdf.ln(2)
 
         # Servicios incluidos
