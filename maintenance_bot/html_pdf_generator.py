@@ -41,32 +41,51 @@ class HTMLPDFGenerator:
 
     def _build_health_cards(self):
         attacks = self.wordfence_data.get('total_attacks', 0)
-        security_text = "0" if attacks == 0 else f"{attacks:,}"
-        security_label = "Sin amenazas" if attacks == 0 else "Ataques bloqueados"
+        if attacks >= 1000000:
+            security_text = f"{attacks/1000000:.1f}M"
+        elif attacks >= 1000:
+            security_text = f"{attacks/1000:.1f}k"
+        else:
+            security_text = str(attacks)
+            
+        security_label = "Intentos de ataque" if attacks == 0 else "Ataques bloqueados"
+
+        active_shields = str(self.wordfence_data.get('active_shields', 6))
 
         ssl_days = self.ssl_days if self.ssl_days is not None else 0
-        ssl_value = f"{ssl_days}d" if ssl_days > 0 else "OK"
+        if ssl_days <= 0:
+            ssl_value = "0 días"
+            ssl_label = "Certificado expirado"
+            ssl_extra = ""
+        else:
+            ssl_value = f"{ssl_days} días"
+            ssl_label = "Renovación automática"
+            ssl_extra = '<div style="font-size:8px;color:var(--text-secondary);font-style:italic;margin-top:4px;text-transform:none;letter-spacing:normal;font-weight:normal;">* Renovación automática habilitada</div>'
 
         pending = self.maintenance_data.get('pending_updates', {})
         total_pending = pending.get('plugins', 0) + pending.get('themes', 0) + pending.get('wordpress', 0)
-        updates_value = "0" if total_pending == 0 else f"{total_pending}"
-        updates_label = "Al día" if total_pending == 0 else "Actualiz. pendientes"
+        updates_value = "0" if total_pending == 0 else str(total_pending)
+        updates_label = "Actualiz. pendientes"
 
         cards = [
-            ("100%", "Disponibilidad"),
-            (security_text, security_label),
-            (ssl_value, "Certificado SSL"),
-            (updates_value, updates_label),
-            ("24/7", "Backup proactivo"),
+            ("100%", "Tiempo en línea", ""),
+            (security_text, security_label, ""),
+            (active_shields, "Escudos activos", ""),
+            (ssl_value, ssl_label, ssl_extra),
+            (updates_value, updates_label, ""),
+            ("1 / día", "Respaldos remotos", ""),
         ]
 
         html = ""
-        for number, label in cards:
+        for number, label, extra in cards:
+            # Drop the inline style that might have messed up the CSS size
             html += f'''
                 <div class="health-card">
                     <div class="health-card-number">{number}</div>
-                    <div class="health-card-label">{label}</div>
+                    <div class="health-card-label">{label}{extra}</div>
                 </div>'''
+                
+        # The template has a health-grid flex layout which naturally wraps 2 items per row
         return html
 
     def _build_metrics_section(self):

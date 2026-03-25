@@ -127,7 +127,7 @@ class PDFGenerator:
         self.pdf.set_y(48)
 
     def _draw_operational_health(self):
-        """Sección SALUD OPERATIVA con 5 cards: Disponibilidad, Seguridad, SSL, Actualizaciones, Backup."""
+        """Sección SALUD OPERATIVA con 6 cards en grid de 3 columnas."""
         self.pdf.set_font(self.font_family, 'B', 12)
         self.pdf.set_text_color(*self.AZUL_NAVY)
         self._section_title("🏥", "SALUD OPERATIVA")
@@ -135,46 +135,60 @@ class PDFGenerator:
 
         y_ini = self.pdf.get_y()
         x_start = 10
-        card_w = 36
-        gap = 1
+        card_w = 60
+        gap_x = 5
+        gap_y = 5
         card_h = 28
 
-        # Card 1: Disponibilidad
-        x = x_start
-        self._draw_health_card(x, y_ini, card_w, card_h, "100%", "Disponibilidad", self.VERDE_OK)
+        active_shields = str(self.wordfence_data.get('active_shields', 6))
 
-        # Card 2: Seguridad
-        x = x_start + (card_w + gap)
         attacks = self.wordfence_data.get('total_attacks', 0)
-        security_text = "0" if attacks == 0 else f"{attacks:,}"
-        security_label = "Sin\namenazas" if attacks == 0 else "Ataques\nbloqueados"
+        if attacks >= 1000000:
+            security_text = f"{attacks/1000000:.1f}M"
+        elif attacks >= 1000:
+            security_text = f"{attacks/1000:.1f}k"
+        else:
+            security_text = str(attacks)
+        security_label = "Intentos de ataque" if attacks == 0 else "Ataques bloqueados"
         security_color = self.VERDE_OK if attacks == 0 else self.ROJO_ALERTA
-        self._draw_health_card(x, y_ini, card_w, card_h, security_text, security_label, security_color)
 
-        # Card 3: SSL
-        x = x_start + 2 * (card_w + gap)
         ssl_days = self.ssl_days if self.ssl_days is not None else 0
-        ssl_color = self.ROJO_ALERTA if ssl_days < 5 else (self.AMARILLO_WARN if ssl_days < 15 else self.VERDE_OK)
-        ssl_value = f"{ssl_days}d" if ssl_days > 0 else "OK"
-        self._draw_health_card(x, y_ini, card_w, card_h, ssl_value, "Certificado\nSSL", ssl_color)
+        ssl_color = self.ROJO_ALERTA if ssl_days <= 0 else (self.AMARILLO_WARN if ssl_days < 15 else self.VERDE_OK)
+        if ssl_days <= 0:
+            ssl_value = "0 dias"
+            ssl_label = "Certificado expirado"
+            ssl_footnote = None
+        else:
+            ssl_value = f"{ssl_days} dias"
+            ssl_label = "Renovacion automatica"
+            ssl_footnote = "* Renovacion automatica habilitada"
 
-        # Card 4: Actualizaciones
-        x = x_start + 3 * (card_w + gap)
         pending = self.maintenance_data.get('pending_updates', {})
         total_pending = pending.get('plugins', 0) + pending.get('themes', 0) + pending.get('wordpress', 0)
-        updates_value = "0" if total_pending == 0 else f"{total_pending}"
-        updates_label = "Al dia" if total_pending == 0 else "Actualiz.\npendientes"
+        updates_value = "0" if total_pending == 0 else str(total_pending)
+        updates_label = "Actualiz. pendientes"
         updates_color = self.VERDE_OK if total_pending == 0 else self.AMARILLO_WARN
-        self._draw_health_card(x, y_ini, card_w, card_h, updates_value, updates_label, updates_color)
 
-        # Card 5: Backup Proactivo
-        x = x_start + 4 * (card_w + gap)
-        self._draw_health_card(x, y_ini, card_w, card_h, "24/7", "Backup\nproactivo", self.AZUL_NAVY)
+        cards = [
+            ("100%", "Tiempo en linea", self.VERDE_OK, None),
+            (security_text, security_label, security_color, None),
+            (active_shields, "Escudos activos", self.AZUL_NAVY, None),
+            (ssl_value, ssl_label, ssl_color, ssl_footnote),
+            (updates_value, updates_label, updates_color, None),
+            ("1 / dia", "Respaldos remotos", self.AZUL_NAVY, None)
+        ]
 
-        self.pdf.set_y(y_ini + card_h + 3)
+        for i, card in enumerate(cards):
+            row = i // 3
+            col = i % 3
+            x = x_start + col * (card_w + gap_x)
+            y = y_ini + row * (card_h + gap_y)
+            self._draw_health_card(x, y, card_w, card_h, card[0], card[1], card[2], footnote=card[3])
+
+        self.pdf.set_y(y_ini + 2 * card_h + gap_y + 3)
         self.pdf.set_text_color(0, 0, 0)
 
-    def _draw_health_card(self, x, y, w, h, big_value, label, color):
+    def _draw_health_card(self, x, y, w, h, big_value, label, color, footnote=None):
         """Dibuja una tarjeta de salud con valor grande arriba y etiqueta abajo."""
         # Fondo
         self.pdf.set_fill_color(*self.GRIS_HEAD)
@@ -185,15 +199,31 @@ class PDFGenerator:
 
         # Valor grande (arriba)
         self.pdf.set_xy(x, y + 5)
-        self.pdf.set_font(self.font_family, 'B', 16)
+        val_size = 16
+        if len(big_value) >= 6:
+            val_size = 13
+        elif len(big_value) >= 4:
+            val_size = 14
+        self.pdf.set_font(self.font_family, 'B', val_size)
         self.pdf.set_text_color(*color)
         self.pdf.cell(w, 8, big_value, 0, 1, 'C')
 
         # Etiqueta (abajo)
-        self.pdf.set_xy(x, y + 15)
-        self.pdf.set_font(self.font_family, '', 8)
+        self.pdf.set_xy(x + 1, y + 14)
+        label_size = 8
+        if len(label) > 20 and "\n" not in label:
+            label_size = 7
+        self.pdf.set_font(self.font_family, '', label_size)
         self.pdf.set_text_color(30, 30, 30)
-        self.pdf.multi_cell(w - 2, 3, label, border=0, align='C')
+        self.pdf.multi_cell(w - 2, 3.5, label, border=0, align='C')
+        
+        if footnote:
+            # We add footnote 0.5 units below the current cursor which was moved by multi_cell
+            self.pdf.set_y(self.pdf.get_y() + 0.5)
+            self.pdf.set_font(self.font_family, '', 6)
+            self.pdf.set_text_color(130, 130, 130)
+            self.pdf.set_x(x + 1)
+            self.pdf.multi_cell(w - 2, 2.5, footnote, border=0, align='C')
 
     def _draw_metric_card(self, x, y, w, h, big_value, label, color, trend=None):
         """Dibuja una tarjeta de metrica con valor grande arriba, etiqueta abajo, y trend opcional."""
