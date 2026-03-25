@@ -18,6 +18,7 @@ class ClientDataFetcher:
     def fetch_all_data(client_url: str) -> dict:
         """
         Consulta el endpoint del cliente y retorna el JSON completo.
+        Returns None on failure (not empty dict) to allow proper null checking.
         """
         endpoint = f"{client_url}/wp-json/sentinel/v1/stats"
         headers = {
@@ -29,19 +30,36 @@ class ClientDataFetcher:
         }
 
         try:
-            logger.info(f"Fetching data from: {endpoint}")
+            logger.info(f"[FETCH] Starting request to: {endpoint}")
             response = requests.get(endpoint, headers=headers, params=params, timeout=15, verify=False)
-            logger.info(f"Response status code: {response.status_code}")
+            logger.info(f"[FETCH] Response status code: {response.status_code}")
             response.raise_for_status()
             data = response.json()
-            logger.info(f"Data keys received: {list(data.keys())}")
+            logger.info(f"[FETCH] Success - Data keys received: {list(data.keys())}")
+
+            # Verify infrastructure data is present
+            infra = data.get('infrastructure', {})
+            if infra:
+                logger.info(f"[FETCH] Infrastructure data confirmed: disk_total_gb={infra.get('disk_total_gb', 'N/A')}, disk_used_gb={infra.get('disk_used_gb', 'N/A')}")
+            else:
+                logger.warning(f"[FETCH] Infrastructure data missing from response")
+
             return data
+        except requests.exceptions.Timeout as e:
+            logger.error(f"[FETCH] Timeout error for {client_url}: {e}")
+            return None
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"[FETCH] Connection error for {client_url}: {e}")
+            return None
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"[FETCH] HTTP error for {client_url}: {response.status_code if 'response' in locals() else 'unknown'} - {e}")
+            return None
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error consultando {client_url}: {e}")
-            return {}
+            logger.error(f"[FETCH] Request error for {client_url}: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Unexpected error from {client_url}: {e}")
-            return {}
+            logger.error(f"[FETCH] Unexpected error from {client_url}: {type(e).__name__} - {e}")
+            return None
 
     @staticmethod
     def extract_metrics(data: dict) -> dict:

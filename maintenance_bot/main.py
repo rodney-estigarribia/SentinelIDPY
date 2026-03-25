@@ -89,12 +89,27 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Consultar datos del cliente (infraestructura, metricas, SSL)
     loop = asyncio.get_running_loop()
     all_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_all_data, client['url'])
-    infra_data = all_data.get('infrastructure', {}) if all_data else None
-    metrics_data = ClientDataFetcher.extract_metrics(all_data) if all_data else None
-    wordfence_data = all_data.get('wordfence', {}) if all_data else {}
-    maintenance_data = all_data.get('maintenance', {}) if all_data else {}
+
+    # Explicit handling: all_data is None on failure, or dict on success
+    if all_data is None:
+        logger.warning(f"[CLIENT_SELECT] API fetch returned None - using empty data")
+        infra_data = None
+        metrics_data = None
+        wordfence_data = {}
+        maintenance_data = {}
+    else:
+        logger.info(f"[CLIENT_SELECT] API fetch successful")
+        infra_data = all_data.get('infrastructure', {}) if all_data.get('infrastructure') else None
+        metrics_data = ClientDataFetcher.extract_metrics(all_data) if all_data else None
+        wordfence_data = all_data.get('wordfence', {}) if all_data else {}
+        maintenance_data = all_data.get('maintenance', {}) if all_data else {}
+
     ssl_days = await loop.run_in_executor(None, ClientDataFetcher.obtener_dias_ssl, client['url'])
-    logger.info(f"Infrastructure: {infra_data}, Metrics: {metrics_data}, SSL: {ssl_days}")
+
+    logger.info(f"[CLIENT_SELECT] Data fetched - Infrastructure: {bool(infra_data)}, Metrics: {bool(metrics_data)}, SSL: {ssl_days} days")
+    if infra_data:
+        logger.info(f"[CLIENT_SELECT] Infrastructure details: disk_total_gb={infra_data.get('disk_total_gb')}, disk_used_gb={infra_data.get('disk_used_gb')}, percentage={infra_data.get('disk_used_percentage')}%")
+
     context.user_data['infrastructure_data'] = infra_data
     context.user_data['metrics_data'] = metrics_data
     context.user_data['wordfence_data'] = wordfence_data

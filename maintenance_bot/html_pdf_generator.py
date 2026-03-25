@@ -22,7 +22,9 @@ class HTMLPDFGenerator:
         self.improved_text = improved_text
         self.antes_path = antes_img
         self.despues_path = despues_img
-        self.infra_data = infra_data or {}
+        # IMPORTANT: Preserve None for infra_data to distinguish API failure from missing data
+        # This allows proper null checking in _build_storage_section()
+        self.infra_data = infra_data
         self.ssl_days = ssl_days
         self.hoja_de_ruta = hoja_de_ruta
         self.metrics_data = metrics_data or {}
@@ -281,11 +283,23 @@ class HTMLPDFGenerator:
     # ─── PAGE 2 BUILDERS ──────────────────────────────────────────
 
     def _build_storage_section(self):
-        if not self.infra_data or self.infra_data.get('disk_total_gb', 0) == 0:
+        # Explicit None check: only skip if data is None or completely missing
+        if self.infra_data is None:
+            logger.warning("[STORAGE_SECTION] Infrastructure data is None - skipping storage section")
             return ""
+
+        # Check if data exists and has valid disk information
+        disk_total = self.infra_data.get('disk_total_gb', 0)
+        if not disk_total or disk_total == 0:
+            logger.warning(f"[STORAGE_SECTION] Invalid disk data: {self.infra_data}")
+            return ""
+
         pct = self.infra_data.get('disk_used_percentage', 0)
         used = self.infra_data.get('disk_used_gb', 0)
-        total = self.infra_data.get('disk_total_gb', 0)
+        total = disk_total
+
+        logger.info(f"[STORAGE_SECTION] Building storage section: {used}GB / {total}GB ({pct}%)")
+
         status = "Contás con muy buen espacio disponible." if pct < 80 else "Tu espacio en disco está llegando al límite."
         return f'''
         <div class="section">
@@ -294,10 +308,11 @@ class HTMLPDFGenerator:
         </div>'''
 
     def _build_maintenance_section(self):
-        if not self.maintenance_data and not self.infra_data:
+        # Handle None infra_data explicitly
+        if not self.maintenance_data and self.infra_data is None:
             return ""
-        wp = self.infra_data.get('wp_version', '')
-        php = self.infra_data.get('php_version', '')
+        wp = self.infra_data.get('wp_version', '') if self.infra_data else ''
+        php = self.infra_data.get('php_version', '') if self.infra_data else ''
         updates = self.maintenance_data.get('recent_updates', [])
         version_html = ""
         if wp:
