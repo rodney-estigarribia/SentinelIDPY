@@ -143,9 +143,10 @@ function verify_wf_report_token( WP_REST_Request $request ) {
 /**
  * Extrae datos de Matomo Analytics si el plugin está instalado y activo.
  */
-function sentinel_get_matomo_data() {
+function sentinel_get_matomo_data(&$debug_msg) {
     if ( ! class_exists( '\WpMatomo\Bootstrap' ) ) {
-        error_log( 'Sentinel: Matomo plugin not detected, skipping analytics data' );
+        $debug_msg = 'Matomo For WordPress no detectado (clase \WpMatomo\Bootstrap no existe)';
+        error_log( 'Sentinel: ' . $debug_msg );
         return null;
     }
 
@@ -154,11 +155,19 @@ function sentinel_get_matomo_data() {
         $idSite = $site->get_current_matomo_site_id();
 
         if ( empty( $idSite ) ) {
-            error_log( 'Sentinel: Matomo site ID not found' );
+            $debug_msg = 'ID del sitio no encontrado en las configuraciones de Matomo For WordPress';
+            error_log( 'Sentinel: ' . $debug_msg );
             return null;
         }
 
         \WpMatomo\Bootstrap::do_bootstrap();
+
+        // Elevar temporalmente privilegios de Matomo para permitir peticiones por la REST API remota (unlogged)
+        $matomo_access = \Piwik\Access::getInstance();
+        $was_super_user = $matomo_access->hasSuperUserAccess();
+        if ( ! $was_super_user ) {
+            $matomo_access->setSuperUserAccess( true );
+        }
 
         // Resumen de visitas del mes actual
         $visits_data = \Piwik\API\Request::processRequest( 'VisitsSummary.get', array(
@@ -309,6 +318,11 @@ function sentinel_get_matomo_data() {
             error_log( 'Sentinel: No Matomo goals configured, skipping conversions' );
         }
 
+        if ( ! $was_super_user ) {
+            $matomo_access->setSuperUserAccess( false );
+        }
+
+        $debug_msg = 'Exito';
         return array(
             'nb_visits'            => $summary['nb_visits'] ?? 0,
             'nb_uniq_visitors'     => $summary['nb_uniq_visitors'] ?? 0,
@@ -331,7 +345,11 @@ function sentinel_get_matomo_data() {
         );
 
     } catch ( \Exception $e ) {
-        error_log( 'Sentinel: Matomo API error - ' . $e->getMessage() );
+        if ( isset( $matomo_access ) && isset( $was_super_user ) && ! $was_super_user ) {
+            try { $matomo_access->setSuperUserAccess( false ); } catch ( \Exception $e2 ) {}
+        }
+        $debug_msg = 'Error de API Matomo Local: ' . $e->getMessage();
+        error_log( 'Sentinel: ' . $debug_msg );
         return null;
     }
 }
@@ -528,7 +546,8 @@ function get_wordfence_blocked_stats() {
 
 
     // 11. Matomo Analytics (if available)
-    $matomo_data = sentinel_get_matomo_data();
+    $debug_msg = '';
+    $matomo_data = sentinel_get_matomo_data($debug_msg);
 
     $response = array(
         'status' => 'success',
@@ -549,7 +568,8 @@ function get_wordfence_blocked_stats() {
         ),
         'security' => array(
             'ssl_days_left' => $ssl_days_left
-        )
+        ),
+        'matomo_debug' => $debug_msg
     );
 
     if ( $matomo_data !== null ) {
@@ -577,4 +597,3 @@ function sentinel_debug_headers( WP_REST_Request $request ) {
         )
     );
 }
-?>
