@@ -1,9 +1,13 @@
 FROM python:3.11-slim
 
-# Instalar dependencias del sistema para Pillow si es necesario
+# Instalar dependencias del sistema para Pillow y WeasyPrint
 RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     zlib1g-dev \
+    libglib2.0-0 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
