@@ -105,15 +105,15 @@
         /* ===== HEALTH GRID (2 columns) ===== */
         .health-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
         }
 
         .health-card {
             background-color: var(--bg-lighter);
             border: 1px solid rgba(0, 102, 204, 0.2);
             border-radius: 8px;
-            padding: 16px;
+            padding: 10px 12px;
             position: relative;
             overflow: hidden;
         }
@@ -129,14 +129,14 @@
         }
 
         .health-card-number {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--cyan-accent);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .health-card-label {
-            font-size: 11px;
+            font-size: 9px;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -154,7 +154,7 @@
             background-color: var(--bg-lighter);
             border: 1px solid rgba(0, 102, 204, 0.15);
             border-radius: 8px;
-            padding: 14px;
+            padding: 8px 10px;
             text-align: center;
             position: relative;
         }
@@ -169,101 +169,107 @@
             background: linear-gradient(90deg, var(--cyan-accent), transparent);
         }
 
+        .metric-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
         .metric-main {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--text-white);
-            margin-bottom: 3px;
         }
 
         .metric-secondary {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-secondary);
-            margin-bottom: 5px;
+            margin-top: 2px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
         .metric-trend {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
-            padding: 3px 6px;
+            padding: 2px 5px;
             border-radius: 3px;
             display: inline-block;
         }
 
-        .trend-down { color: var(--accent-red); background-color: rgba(231, 76, 60, 0.08); }
-        .trend-up { color: var(--accent-green); background-color: rgba(46, 204, 113, 0.08); }
+        .trend-down { color: #c0392b; background-color: transparent; border: 1px solid rgba(231, 76, 60, 0.3); }
+        .trend-up { color: #1e8449; background-color: transparent; border: 1px solid rgba(46, 204, 113, 0.3); }
 
         /* ===== DEVICE GRID ===== */
         .device-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            grid-template-columns: 1fr;
+            gap: 6px;
         }
 
         .device-card {
             background-color: var(--bg-lighter);
             border: 1px solid rgba(0, 102, 204, 0.2);
             border-radius: 8px;
-            padding: 16px;
-            position: relative;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .device-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--cyan-accent), transparent);
-        }
+        .device-card::before { display: none; }
 
-        .device-name { font-size: 14px; font-weight: 600; color: var(--text-white); margin-bottom: 8px; }
-        .device-stat { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+        .device-name { font-size: 11px; font-weight: 600; color: var(--text-white); white-space: nowrap; min-width: 70px; }
+        .device-stats-inline { display: flex; gap: 12px; flex: 1; align-items: center; }
+        .device-stat { font-size: 10px; white-space: nowrap; }
         .device-stat-label { color: var(--text-secondary); }
         .device-stat-value { color: var(--text-white); font-weight: 600; }
 
         .device-alert {
-            margin-top: 8px; padding: 7px 9px;
-            background-color: rgba(231, 76, 60, 0.08);
-            border-left: 3px solid var(--accent-red);
-            border-radius: 4px; font-size: 11px; color: var(--accent-red);
+            padding: 3px 7px;
+            background-color: transparent;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 3px; font-size: 9px; color: #c0392b;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
         .device-good {
-            margin-top: 8px; padding: 7px 9px;
-            background-color: rgba(46, 204, 113, 0.08);
-            border-left: 3px solid var(--accent-green);
-            border-radius: 4px; font-size: 11px; color: var(--accent-green);
+            padding: 3px 7px;
+            background-color: transparent;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 3px; font-size: 9px; color: #1e8449;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
         /* ===== STEPS ===== */
         .steps-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .step {
             background-color: var(--bg-lighter);
             border: 1px solid rgba(0, 102, 204, 0.2);
             border-radius: 8px;
-            padding: 20px;
+            padding: 10px 12px;
             position: relative;
         }
 
-        .steps-container::before {
+        .step::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 3px;
+            height: 2px;
             background: linear-gradient(90deg, var(--cyan-accent), transparent);
             border-radius: 8px 8px 0 0;
         }
 
-        .step {
-            margin-bottom: 16px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid rgba(0, 102, 204, 0.1);
-        }
-
-        .step:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-        .step-number { font-size: 14px; font-weight: 700; color: var(--cyan-accent); margin-bottom: 6px; }
-        .step-detail { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; line-height: 1.5; }
+        .step-number { font-size: 11px; font-weight: 700; color: var(--cyan-accent); margin-bottom: 4px; }
+        .step-detail { font-size: 9px; color: var(--text-secondary); margin-bottom: 2px; line-height: 1.4; }
         .step-highlight { color: var(--cyan-accent); font-weight: 600; }
 
         /* ===== FINANCIAL SUMMARY ===== */
@@ -289,6 +295,7 @@
         .financial-value { text-align: right; color: var(--text-white); font-weight: 600; font-size: 13px; }
         .financial-divider { height: 1px; background: rgba(0, 102, 204, 0.2); margin: 12px 0; }
         .financial-total { display: grid; grid-template-columns: 2fr 1fr; font-weight: 700; font-size: 15px; color: var(--cyan-accent); }
+        .financial-total div:last-child { text-align: right; }
         .financial-section-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 8px; }
 
         .roi-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -303,6 +310,7 @@
             border-radius: 8px;
             padding: 20px;
             margin-top: 30px;
+            margin-bottom: 35px;
             position: relative;
         }
 
@@ -400,15 +408,34 @@
         <!-- LOS SIGUIENTES PASOS -->
         {{steps_section}}
 
+        <!-- PAGE BREAK before FINANCIAL -->
+        <div class="page-break"></div>
+
         <!-- RESUMEN FINANCIERO -->
         {{financial_section}}
 
         <!-- CTA -->
         {{cta_section}}
 
-        <!-- SERVICIOS ESTE MES -->
+        <!-- PAGE BREAK -->
+        <div class="page-break"></div>
+
+        <!-- PAGE 2: TECHNICAL DETAIL -->
+        <div class="header" style="margin-bottom: 20px;">
+            <h1 class="header-title">Detalle Técnico - {{cliente_nombre}}</h1>
+        </div>
+
+        {{storage_section}}
+        {{maintenance_section}}
+        {{security_section}}
+        {{analytics_section}}
+        {{exit_pages_section}}
+        {{manual_tasks_section}}
+        {{images_section}}
+
+        <!-- SERVICIOS INCLUIDOS -->
         <div class="section">
-            <h2 class="section-title">📋 Servicios Este Mes</h2>
+            <h2 class="section-title">📋 Servicios Incluidos</h2>
             <div class="services-list">
                 <div class="service-item">
                     <div class="service-title">1. Copias de seguridad nube</div>
@@ -428,21 +455,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- PAGE BREAK -->
-        <div class="page-break"></div>
-
-        <!-- PAGE 2: TECHNICAL DETAIL -->
-        <div class="header" style="margin-bottom: 20px;">
-            <h1 class="header-title">Detalle Técnico - {{cliente_nombre}}</h1>
-        </div>
-
-        {{storage_section}}
-        {{maintenance_section}}
-        {{security_section}}
-        {{analytics_section}}
-        {{exit_pages_section}}
-        {{manual_tasks_section}}
 
         <div class="footer">
             <p>© 2026 Impulsos Digitales. Reporte Confidencial - Preparado para {{cliente_nombre}}</p>

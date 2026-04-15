@@ -20,6 +20,7 @@ Este repositorio centraliza herramientas esenciales para el mantenimiento y moni
  ┃ ┗ 📂 wordpress-plugin
  ┃   ┗ 📜 sentinel-idpy-connector.php # Plugin para extraer métricas de salud y seguridad
  ┣ 📂 docs             # Documentación técnica y roadmaps
+ ┃ ┗ 📜 PROJECT.md     # Documentación principal del proyecto
  ┣ 📜 sites.json       # Configuración global (URLs de los clientes)
  ┣ 📜 requirements.txt # Dependencias de Python
  ┣ 📜 mock_sentinel_server.py # Servidor de pruebas para desarrollo
@@ -71,7 +72,7 @@ Este bot interactivo permite documentar tareas manuales, procesar explicaciones 
 ### Características:
 - **IA Local**: Conexión con Ollama (`qwen2.5-coder:1.5b`) para redactar bitácoras profesionales.
 - **Seguridad**: Lista blanca de usuarios (`ALLOWED_USERS`) y sanitización de rutas.
-- **Reportes Premium**: Generación de PDFs con FPDF2, soporte Unicode (DejaVuSans) y optimización WebP.
+- **Reportes Premium**: Generación de PDFs vía HTML/CSS con **WeasyPrint** para un diseño superior.
 - **Dockerizado**: Despliegue sencillo con Docker Compose y volúmenes persistentes.
 
 ### Despliegue y Uso:
@@ -80,7 +81,7 @@ Este bot interactivo permite documentar tareas manuales, procesar explicaciones 
 2. **Variables de Entorno**:
    - Copia `maintenance_bot/.env.example` a `maintenance_bot/.env`.
    - Define tu `TELEGRAM_TOKEN`.
-   - Añade tu ID de usuario en `ALLOWED_USERS` (ej: `12345678,98765432`). Puedes obtener tu ID hablando con `@userinfobot`.
+   - Añade tu ID de usuario en `ALLOWED_USERS` (ej: `12345678,98765432`).
 3. **Ejecución con Docker**:
    ```bash
    cd maintenance_bot
@@ -90,4 +91,16 @@ Este bot interactivo permite documentar tareas manuales, procesar explicaciones 
    - Envía el comando `/revisar` al bot.
    - Sigue el flujo interactivo: Seleccionar cliente -> Escribir bitácora -> Validar IA -> Subir fotos (o `/skip`) -> Recibir PDF.
 
+### Pruebas y Desarrollo (Generador de PDF):
+
+Si realizas cambios en el diseño del PDF (HTML/CSS) y deseas previsualizar el resultado sin usar Telegram:
+1. Asegúrate de tener instaladas las dependencias: `pip install weasyprint`.
+2. Ejecuta el generador con el bloque de datos de prueba:
+   ```bash
+   python3 maintenance_bot/html_pdf_generator.py
+   ```
+3. El reporte de prueba se generará en: `reportes/test_html_executive.pdf`.
+
 ---
+
+© 2026 SentinelIDPY - Rodney Mendoza

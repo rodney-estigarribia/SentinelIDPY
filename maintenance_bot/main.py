@@ -17,6 +17,8 @@ from ai_handler import AIHandler
 from html_pdf_generator import HTMLPDFGenerator as PDFGenerator
 from client_fetcher import ClientDataFetcher
 from recommendation_engine import RecommendationEngine
+from timeframe_utils import generate_timeframe_options
+import datetime
 
 # Configuración del bot
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -29,7 +31,7 @@ ALLOWED_USERS = [int(i.strip()) for i in os.getenv("ALLOWED_USERS", "").split(",
 CLIENTS_FILE = "clientes.json"
 
 # Estados de la conversación
-INICIO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA = range(9)
+INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA = range(10)
 
 # Configurar logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -70,7 +72,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return INICIO
 
 async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Captura el ID del cliente y pregunta por la bitácora."""
+    """Captura el ID del cliente y pregunta por el periodo."""
     query = update.callback_query
     await query.answer()
     
@@ -83,44 +85,105 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     context.user_data['client'] = client
-    # Generar un ID unico para esta sesion de reporte
     context.user_data['session_id'] = uuid.uuid4().hex[:8]
 
-    # Consultar datos del cliente (infraestructura, metricas, SSL)
-    loop = asyncio.get_running_loop()
-    all_data = await loop.run_in_executor(None, ClientDataFetcher.fetch_all_data, client['url'])
+    keyboard = [
+        [InlineKeyboardButton("1 Mes", callback_data="tfcat_1m"),
+         InlineKeyboardButton("1 Trimestre", callback_data="tfcat_3m")],
+        [InlineKeyboardButton("6 Meses", callback_data="tfcat_6m"),
+         InlineKeyboardButton("1 Año", callback_data="tfcat_1y")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(f"Cliente seleccionado: *{client['nombre']}*\n\nSeleccione la categoría del período a reportar:", parse_mode='Markdown', reply_markup=reply_markup)
+    return SELECCION_PERIODO
 
-    # Explicit handling: all_data is None on failure, or dict on success
-    if all_data is None:
-        logger.warning(f"[CLIENT_SELECT] API fetch returned None - using empty data")
-        infra_data = None
-        metrics_data = None
-        wordfence_data = {}
-        maintenance_data = {}
-    else:
-        logger.info(f"[CLIENT_SELECT] API fetch successful")
-        infra_data = all_data.get('infrastructure', {}) if all_data.get('infrastructure') else None
-        metrics_data = ClientDataFetcher.extract_metrics(all_data) if all_data else None
-        wordfence_data = all_data.get('wordfence', {}) if all_data else {}
-        maintenance_data = all_data.get('maintenance', {}) if all_data else {}
+async def period_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja la seleccion de categoria y periodo, y luego carga los datos."""
+    query = update.callback_query
+    await query.answer()
+    cb = query.data
 
-    ssl_days = await loop.run_in_executor(None, ClientDataFetcher.obtener_dias_ssl, client['url'])
+    if cb == "client_selected_again":
+        keyboard = [
+            [InlineKeyboardButton("1 Mes", callback_data="tfcat_1m"), InlineKeyboardButton("1 Trimestre", callback_data="tfcat_3m")],
+            [InlineKeyboardButton("6 Meses", callback_data="tfcat_6m"), InlineKeyboardButton("1 Año", callback_data="tfcat_1y")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text("Seleccione la categoría del período a reportar:", reply_markup=reply_markup)
+        return SELECCION_PERIODO
 
-    logger.info(f"[CLIENT_SELECT] Data fetched - Infrastructure: {bool(infra_data)}, Metrics: {bool(metrics_data)}, SSL: {ssl_days} days")
-    if infra_data:
-        logger.info(f"[CLIENT_SELECT] Infrastructure details: disk_total_gb={infra_data.get('disk_total_gb')}, disk_used_gb={infra_data.get('disk_used_gb')}, percentage={infra_data.get('disk_used_percentage')}%")
+    client = context.user_data['client']
+    opts = generate_timeframe_options(datetime.date.today())
+    context.user_data['tf_opts'] = opts
 
-    context.user_data['infrastructure_data'] = infra_data
-    context.user_data['metrics_data'] = metrics_data
-    context.user_data['wordfence_data'] = wordfence_data
-    context.user_data['maintenance_data'] = maintenance_data
-    context.user_data['ssl_days'] = ssl_days
+    if cb.startswith('tfcat_'):
+        keyboard = []
+        if cb == "tfcat_1m":
+            keyboard.append([InlineKeyboardButton(opts['last_30']['label'], callback_data="tfx_last_30")])
+            keyboard.append([InlineKeyboardButton(opts['current_month']['label'], callback_data="tfx_current_month")])
+            keyboard.append([InlineKeyboardButton(opts['prev_month']['label'], callback_data="tfx_prev_month")])
+        elif cb == "tfcat_3m":
+            for k, v in opts.items():
+                if k.startswith('Q_'): keyboard.append([InlineKeyboardButton(v['label'], callback_data=f"tfx_{k}")])
+        elif cb == "tfcat_6m":
+            for k, v in opts.items():
+                if k.startswith('H_'): keyboard.append([InlineKeyboardButton(v['label'], callback_data=f"tfx_{k}")])
+        elif cb == "tfcat_1y":
+            for k, v in opts.items():
+                if k.startswith('Y_'): keyboard.append([InlineKeyboardButton(v['label'], callback_data=f"tfx_{k}")])
+        
+        keyboard.append([InlineKeyboardButton("Volver atrás", callback_data="client_selected_again")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text("Seleccione el rango temporal exacto:", reply_markup=reply_markup)
+        return SELECCION_PERIODO
 
-    await query.edit_message_text(
-        f"📋 Mantenimiento para *{client['nombre']}*\n\n¿Qué mejoras manuales de SEO/Accesibilidad/Rendimiento hiciste hoy?",
-        parse_mode='Markdown'
-    )
-    return BITACORA
+    if cb.startswith('tfx_'):
+        tf_key = cb.replace('tfx_', '')
+        selected_tf = opts.get(tf_key)
+        if not selected_tf:
+            await query.edit_message_text("Error: Opción inválida.")
+            return ConversationHandler.END
+
+        context.user_data['selected_tf'] = selected_tf
+        await query.edit_message_text(f"Consultando datos de *{client['nombre']}* para el periodo *{selected_tf['label']}*...\nTiempo estimado: 10 a 20 segundos.", parse_mode='Markdown')
+
+        # Consultar datos del cliente con timeout adaptado
+        loop = asyncio.get_running_loop()
+        all_data = await loop.run_in_executor(None, 
+            lambda: ClientDataFetcher.fetch_all_data(
+                client['url'], 
+                matomo_period=selected_tf['matomo_period'],
+                matomo_date=selected_tf['matomo_date'],
+                matomo_prev_date=selected_tf['matomo_prev_date'],
+                wf_start=selected_tf['wf_start'],
+                wf_end=selected_tf['wf_end']
+            )
+        )
+
+        ssl_days = await loop.run_in_executor(None, ClientDataFetcher.obtener_dias_ssl, client['url'])
+
+        if all_data is None:
+            infra_data = None
+            metrics_data = None
+            wordfence_data = {}
+            maintenance_data = {}
+        else:
+            infra_data = all_data.get('infrastructure', {}) if all_data.get('infrastructure') else None
+            metrics_data = ClientDataFetcher.extract_metrics(all_data) if all_data else None
+            wordfence_data = all_data.get('wordfence', {}) if all_data else {}
+            maintenance_data = all_data.get('maintenance', {}) if all_data else {}
+
+        context.user_data['infrastructure_data'] = infra_data
+        context.user_data['metrics_data'] = metrics_data
+        context.user_data['wordfence_data'] = wordfence_data
+        context.user_data['maintenance_data'] = maintenance_data
+        context.user_data['ssl_days'] = ssl_days
+
+        await query.edit_message_text(
+            f"📋 Mantenimiento para *{client['nombre']}* ({selected_tf['label']})\n\n¿Qué mejoras manuales de SEO/Accesibilidad/Rendimiento hiciste hoy?",
+            parse_mode='Markdown'
+        )
+        return BITACORA
 
 async def process_bitacora(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Envía la bitácora a la IA con límites de seguridad."""
@@ -322,7 +385,8 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations)
+        selected_tf = context.user_data.get('selected_tf', {'label': 'Últimos 30 días'})
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'])
         logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
@@ -368,6 +432,7 @@ def main():
         entry_points=[CommandHandler('review', start)],
         states={
             INICIO: [CallbackQueryHandler(client_selected)],
+            SELECCION_PERIODO: [CallbackQueryHandler(period_selected)],
             BITACORA: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_bitacora)],
             REVISION_IA: [CallbackQueryHandler(confirm_ia)],
             EDITAR_IA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edit_ia)],

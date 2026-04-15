@@ -15,7 +15,7 @@ class ClientDataFetcher:
     """Consulta datos de infraestructura y almacenamiento desde los clientes."""
 
     @staticmethod
-    def fetch_all_data(client_url: str) -> dict:
+    def fetch_all_data(client_url: str, matomo_period: str = 'month', matomo_date: str = 'today', matomo_prev_date: str = 'lastMonth', wf_start: int = None, wf_end: int = None) -> dict:
         """
         Consulta el endpoint del cliente y retorna el JSON completo.
         Returns None on failure (not empty dict) to allow proper null checking.
@@ -26,8 +26,15 @@ class ClientDataFetcher:
             'X-WF-Report-Token': WF_REPORT_TOKEN
         }
         params = {
-            'token': WF_REPORT_TOKEN
+            'token': WF_REPORT_TOKEN,
+            'matomo_period': matomo_period,
+            'matomo_date': matomo_date,
+            'matomo_prev_date': matomo_prev_date
         }
+        if wf_start is not None:
+            params['wf_start'] = wf_start
+        if wf_end is not None:
+            params['wf_end'] = wf_end
 
         try:
             logger.info(f"[FETCH] Starting request to: {endpoint}")
@@ -108,6 +115,22 @@ class ClientDataFetcher:
                 'bounce_rate': br,
             })
 
+        # Top browsers (top 2)
+        browsers = []
+        for b in metricas.get('browsers', [])[:2]:
+            browsers.append({
+                'label': b.get('label', ''),
+                'nb_visits': int(b.get('nb_visits', 0)),
+            })
+
+        # Top OS families (top 2)
+        os_families = []
+        for o in metricas.get('os_families', [])[:2]:
+            os_families.append({
+                'label': o.get('label', ''),
+                'nb_visits': int(o.get('nb_visits', 0)),
+            })
+
         return {
             'nb_visits': int(metricas.get('nb_visits', 0)),
             'nb_uniq_visitors': int(metricas.get('nb_uniq_visitors', 0)),
@@ -118,6 +141,8 @@ class ClientDataFetcher:
             'top_pages': top_pages,
             'prev_month': prev_month,
             'devices': devices,
+            'browsers': browsers,
+            'os_families': os_families,
             'exit_pages': metricas.get('exit_pages', [])[:5],
             'conversions': metricas.get('conversions'),
         }

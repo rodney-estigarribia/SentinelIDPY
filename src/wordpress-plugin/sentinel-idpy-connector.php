@@ -143,7 +143,7 @@ function verify_wf_report_token( WP_REST_Request $request ) {
 /**
  * Extrae datos de Matomo Analytics si el plugin está instalado y activo.
  */
-function sentinel_get_matomo_data(&$debug_msg) {
+function sentinel_get_matomo_data(&$debug_msg, $matomo_period = 'month', $matomo_date = 'today', $matomo_prev_date = 'lastMonth') {
     if ( ! class_exists( '\WpMatomo\Bootstrap' ) ) {
         $debug_msg = 'Matomo For WordPress no detectado (clase \WpMatomo\Bootstrap no existe)';
         error_log( 'Sentinel: ' . $debug_msg );
@@ -172,16 +172,16 @@ function sentinel_get_matomo_data(&$debug_msg) {
         // Resumen de visitas del mes actual
         $visits_data = \Piwik\API\Request::processRequest( 'VisitsSummary.get', array(
             'idSite' => $idSite,
-            'period' => 'month',
-            'date'   => 'today',
+            'period' => $matomo_period,
+            'date'   => $matomo_date,
             'format' => 'original',
         ) );
 
         // Top paginas del mes actual
         $pages_data = \Piwik\API\Request::processRequest( 'Actions.getPageUrls', array(
             'idSite'       => $idSite,
-            'period'       => 'month',
-            'date'         => 'today',
+            'period'       => $matomo_period,
+            'date'         => $matomo_date,
             'format'       => 'original',
             'flat'         => 1,
             'filter_limit' => 5,
@@ -219,8 +219,8 @@ function sentinel_get_matomo_data(&$debug_msg) {
         // Resumen del mes anterior (para trends month-over-month)
         $prev_month_data = \Piwik\API\Request::processRequest( 'VisitsSummary.get', array(
             'idSite' => $idSite,
-            'period' => 'month',
-            'date'   => 'lastMonth',
+            'period' => $matomo_period,
+            'date'   => $matomo_prev_date,
             'format' => 'original',
         ) );
 
@@ -239,8 +239,8 @@ function sentinel_get_matomo_data(&$debug_msg) {
         // Desglose por dispositivo (Desktop vs Mobile)
         $device_data = \Piwik\API\Request::processRequest( 'DevicesDetection.getType', array(
             'idSite' => $idSite,
-            'period' => 'month',
-            'date'   => 'today',
+            'period' => $matomo_period,
+            'date'   => $matomo_date,
             'format' => 'original',
         ) );
 
@@ -258,11 +258,55 @@ function sentinel_get_matomo_data(&$debug_msg) {
 
         error_log( 'Sentinel: Matomo devices returned: ' . count( $devices ) );
 
+        // Top navegadores
+        $browser_data = \Piwik\API\Request::processRequest( 'DevicesDetection.getBrowsers', array(
+            'idSite'       => $idSite,
+            'period'       => $matomo_period,
+            'date'         => $matomo_date,
+            'format'       => 'original',
+            'filter_limit' => 5,
+        ) );
+
+        $browsers = array();
+        if ( is_object( $browser_data ) && method_exists( $browser_data, 'getRows' ) ) {
+            foreach ( $browser_data->getRows() as $row ) {
+                $cols = $row->getColumns();
+                $browsers[] = array(
+                    'label'     => $cols['label'] ?? '',
+                    'nb_visits' => $cols['nb_visits'] ?? 0,
+                );
+            }
+        }
+
+        error_log( 'Sentinel: Matomo browsers returned: ' . count( $browsers ) );
+
+        // Top sistemas operativos
+        $os_data = \Piwik\API\Request::processRequest( 'DevicesDetection.getOsFamilies', array(
+            'idSite'       => $idSite,
+            'period'       => $matomo_period,
+            'date'         => $matomo_date,
+            'format'       => 'original',
+            'filter_limit' => 5,
+        ) );
+
+        $os_families = array();
+        if ( is_object( $os_data ) && method_exists( $os_data, 'getRows' ) ) {
+            foreach ( $os_data->getRows() as $row ) {
+                $cols = $row->getColumns();
+                $os_families[] = array(
+                    'label'     => $cols['label'] ?? '',
+                    'nb_visits' => $cols['nb_visits'] ?? 0,
+                );
+            }
+        }
+
+        error_log( 'Sentinel: Matomo OS families returned: ' . count( $os_families ) );
+
         // Paginas con mayor tasa de salida
         $exit_data = \Piwik\API\Request::processRequest( 'Actions.getExitPageUrls', array(
             'idSite'       => $idSite,
-            'period'       => 'month',
-            'date'         => 'today',
+            'period'       => $matomo_period,
+            'date'         => $matomo_date,
             'format'       => 'original',
             'flat'         => 1,
             'filter_limit' => 5,
@@ -291,8 +335,8 @@ function sentinel_get_matomo_data(&$debug_msg) {
         if ( ! empty( $goals ) ) {
             $goal_data = \Piwik\API\Request::processRequest( 'Goals.get', array(
                 'idSite' => $idSite,
-                'period' => 'month',
-                'date'   => 'today',
+                'period' => $matomo_period,
+                'date'   => $matomo_date,
                 'format' => 'original',
             ) );
 
@@ -340,6 +384,8 @@ function sentinel_get_matomo_data(&$debug_msg) {
                 'nb_actions_per_visit' => $prev_summary['nb_actions_per_visit'] ?? 0,
             ),
             'devices'              => $devices,
+            'browsers'             => $browsers,
+            'os_families'          => $os_families,
             'exit_pages'           => $exit_pages,
             'conversions'          => $conversions,
         );
@@ -363,7 +409,8 @@ function get_wordfence_blocked_stats() {
     $table_name = $wpdb->prefix . 'wfHits';
     $wordfence_available = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
 
-    $thirty_days_ago = time() - (30 * 24 * 60 * 60);
+    $wf_start = isset($_GET['wf_start']) ? (int) $_GET['wf_start'] : time() - (30 * 24 * 60 * 60);
+    $wf_end = isset($_GET['wf_end']) ? (int) $_GET['wf_end'] : time();
 
     // Wordfence data (only if available)
     $total_attacks = 0;
@@ -376,17 +423,17 @@ function get_wordfence_blocked_stats() {
     if ($wordfence_available) {
         // 1. Total de ataques
         $total_query = $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table_name} WHERE ctime > %f AND action = %s",
-            $thirty_days_ago, 'blocked'
+            "SELECT COUNT(*) FROM {$table_name} WHERE ctime >= %f AND ctime <= %f AND action = %s",
+            $wf_start, $wf_end, 'blocked'
         );
         $total_attacks = (int) $wpdb->get_var( $total_query );
 
         // 2. Top 5 Malicious IPs
         $top_ips_query = $wpdb->prepare(
             "SELECT IP, COUNT(*) as count FROM {$table_name}
-             WHERE ctime > %f AND action = %s
+             WHERE ctime >= %f AND ctime <= %f AND action = %s
              GROUP BY IP ORDER BY count DESC LIMIT 5",
-            $thirty_days_ago, 'blocked'
+            $wf_start, $wf_end, 'blocked'
         );
         $top_ips_raw = $wpdb->get_results( $top_ips_query );
         foreach($top_ips_raw as $row) {
@@ -399,9 +446,9 @@ function get_wordfence_blocked_stats() {
         // 3. Top 5 targeted URLs
         $top_urls_query = $wpdb->prepare(
             "SELECT URL, COUNT(*) as count FROM {$table_name}
-             WHERE ctime > %f AND action = %s
+             WHERE ctime >= %f AND ctime <= %f AND action = %s
              GROUP BY URL ORDER BY count DESC LIMIT 5",
-            $thirty_days_ago, 'blocked'
+            $wf_start, $wf_end, 'blocked'
         );
         $top_urls_raw = $wpdb->get_results( $top_urls_query );
         foreach($top_urls_raw as $row) {
@@ -411,18 +458,18 @@ function get_wordfence_blocked_stats() {
         // 4. Top 5 Block Reasons
         $top_reasons_query = $wpdb->prepare(
             "SELECT actionDescription as reason, COUNT(*) as count FROM {$table_name}
-             WHERE ctime > %f AND action = %s
+             WHERE ctime >= %f AND ctime <= %f AND action = %s
              GROUP BY actionDescription ORDER BY count DESC LIMIT 5",
-            $thirty_days_ago, 'blocked'
+            $wf_start, $wf_end, 'blocked'
         );
         $top_reasons = $wpdb->get_results( $top_reasons_query );
 
         // 5. Top 5 Attempted Usernames
         $top_users_query = $wpdb->prepare(
             "SELECT actionData, COUNT(*) as count FROM {$table_name}
-             WHERE ctime > %f AND action = %s AND actionDescription LIKE %s
+             WHERE ctime >= %f AND ctime <= %f AND action = %s AND actionDescription LIKE %s
              GROUP BY actionData ORDER BY count DESC LIMIT 5",
-            $thirty_days_ago, 'blocked', '%login%'
+            $wf_start, $wf_end, 'blocked', '%login%'
         );
         $top_users_raw = $wpdb->get_results( $top_users_query );
         foreach($top_users_raw as $row) {
@@ -545,9 +592,13 @@ function get_wordfence_blocked_stats() {
     }
 
 
+    $matomo_period = isset($_GET['matomo_period']) ? sanitize_text_field($_GET['matomo_period']) : 'month';
+    $matomo_date = isset($_GET['matomo_date']) ? sanitize_text_field($_GET['matomo_date']) : 'today';
+    $matomo_prev_date = isset($_GET['matomo_prev_date']) ? sanitize_text_field($_GET['matomo_prev_date']) : 'lastMonth';
+
     // 11. Matomo Analytics (if available)
     $debug_msg = '';
-    $matomo_data = sentinel_get_matomo_data($debug_msg);
+    $matomo_data = sentinel_get_matomo_data($debug_msg, $matomo_period, $matomo_date, $matomo_prev_date);
 
     $response = array(
         'status' => 'success',
@@ -564,7 +615,8 @@ function get_wordfence_blocked_stats() {
             'recent_updates'  => $recent_updates,
             'pending_updates' => $pending_updates,
             'last_backup'     => $last_backup,
-            'site_health'     => $site_health_score
+            'site_health'     => $site_health_score,
+            'total_active_plugins' => is_array(get_option('active_plugins')) ? count(get_option('active_plugins')) : 0
         ),
         'security' => array(
             'ssl_days_left' => $ssl_days_left

@@ -17,9 +17,10 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 class HTMLPDFGenerator:
     def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None,
                  infra_data=None, ssl_days=None, hoja_de_ruta=None, metrics_data=None,
-                 wordfence_data=None, maintenance_data=None, recommendations=None):
+                 wordfence_data=None, maintenance_data=None, recommendations=None, timeframe_name="Últimos 30 días"):
         self.cliente_nombre = cliente_nombre
         self.improved_text = improved_text
+        self.timeframe_name = timeframe_name
         self.antes_path = antes_img
         self.despues_path = despues_img
         # IMPORTANT: Preserve None for infra_data to distinguish API failure from missing data
@@ -47,7 +48,7 @@ class HTMLPDFGenerator:
             security_text = f"{attacks/1000:.1f}k"
         else:
             security_text = str(attacks)
-            
+
         security_label = "Intentos de ataque" if attacks == 0 else "Ataques bloqueados"
 
         active_shields = str(self.wordfence_data.get('active_shields', 6))
@@ -63,7 +64,8 @@ class HTMLPDFGenerator:
             ssl_extra = '<div style="font-size:8px;color:var(--text-secondary);font-style:italic;margin-top:4px;text-transform:none;letter-spacing:normal;font-weight:normal;">* Renovación automática habilitada</div>'
 
         pending = self.maintenance_data.get('pending_updates', {})
-        total_pending = pending.get('plugins', 0) + pending.get('themes', 0) + pending.get('wordpress', 0)
+        total_pending = pending.get(
+            'plugins', 0) + pending.get('themes', 0) + pending.get('wordpress', 0)
         updates_value = "0" if total_pending == 0 else str(total_pending)
         updates_label = "Actualiz. pendientes"
 
@@ -73,7 +75,7 @@ class HTMLPDFGenerator:
             (active_shields, "Escudos activos", ""),
             (ssl_value, ssl_label, ssl_extra),
             (updates_value, updates_label, ""),
-            ("1 / día", "Respaldos remotos", ""),
+            ("1 x día", "Respaldos remotos", ""),
         ]
 
         html = ""
@@ -84,7 +86,7 @@ class HTMLPDFGenerator:
                     <div class="health-card-number">{number}</div>
                     <div class="health-card-label">{label}{extra}</div>
                 </div>'''
-                
+
         # The template has a health-grid flex layout which naturally wraps 2 items per row
         return html
 
@@ -110,30 +112,38 @@ class HTMLPDFGenerator:
 
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
         ppv = self.metrics_data.get('nb_actions_per_visit', 0)
-        avg_time = self._format_duration(self.metrics_data.get('avg_time_on_site', 0))
+        avg_time = self._format_duration(
+            self.metrics_data.get('avg_time_on_site', 0))
         avg_time_val = self.metrics_data.get('avg_time_on_site', 0)
         bounce = self.metrics_data.get('bounce_rate', 0)
 
         cards = [
-            (f"{visitors:,}", "Visitantes únicos", trend_html(calc_trend(visitors, prev.get('nb_uniq_visitors')))),
-            (f"{ppv:.1f}", "Páginas por visita", trend_html(calc_trend(ppv, prev.get('nb_actions_per_visit')))),
-            (avg_time, "Tiempo promedio", trend_html(calc_trend(avg_time_val, prev.get('avg_time_on_site')))),
-            (f"{bounce:.1f}%", "Tasa de rebote", trend_html(calc_trend(bounce, prev.get('bounce_rate')), invert=True)),
+            (f"{visitors:,}", "Visitantes únicos", trend_html(
+                calc_trend(visitors, prev.get('nb_uniq_visitors')))),
+            (f"{ppv:.1f}", "Páginas por visita", trend_html(
+                calc_trend(ppv, prev.get('nb_actions_per_visit')))),
+            (avg_time, "Tiempo promedio", trend_html(
+                calc_trend(avg_time_val, prev.get('avg_time_on_site')))),
+            (f"{bounce:.1f}%", "Tasa de rebote", trend_html(
+                calc_trend(bounce, prev.get('bounce_rate')), invert=True)),
         ]
 
         html = '<div class="metrics-grid">'
         for value, label, trend in cards:
             html += f'''
                 <div class="metric-card">
-                    <div class="metric-main">{value}</div>
+                    <div class="metric-top">
+                        <div class="metric-main">{value}</div>
+                        {trend}
+                    </div>
                     <div class="metric-secondary">{label}</div>
-                    {trend}
                 </div>'''
         html += '</div>'
         return html
 
     def _build_device_section(self):
-        devices = self.metrics_data.get('devices', []) if self.metrics_data else []
+        devices = self.metrics_data.get(
+            'devices', []) if self.metrics_data else []
         if not devices:
             return ""
 
@@ -154,11 +164,29 @@ class HTMLPDFGenerator:
 
         desktop_bounce = desktop['bounce_rate'] / max(desktop['count'], 1)
         mobile_bounce = mobile['bounce_rate'] / max(mobile['count'], 1)
-        desktop_pct = (desktop['nb_visits'] / total_visits * 100) if total_visits > 0 else 0
-        mobile_pct = (mobile['nb_visits'] / total_visits * 100) if total_visits > 0 else 0
+        desktop_pct = (desktop['nb_visits'] /
+                       total_visits * 100) if total_visits > 0 else 0
+        mobile_pct = (mobile['nb_visits'] / total_visits *
+                      100) if total_visits > 0 else 0
 
-        desktop_status = '<div class="device-good">✓ Comportamiento óptimo</div>' if desktop_bounce < 40 else '<div class="device-alert">⚠ Requiere atención</div>'
-        mobile_status = '<div class="device-alert">⚠ Requiere optimización urgente</div>' if mobile_bounce > 50 else '<div class="device-good">✓ Comportamiento aceptable</div>'
+        desktop_status = '<div class="device-good">✓ Comportamiento óptimo</div>' if desktop_bounce < 40 else '<div class="device-alert">! Requiere atención</div>'
+        mobile_status = '<div class="device-alert">! Requiere optimización urgente</div>' if mobile_bounce > 50 else '<div class="device-good">✓ Comportamiento aceptable</div>'
+
+        # Browsers & OS (top 2 each)
+        browsers = self.metrics_data.get('browsers', [])[:2] if self.metrics_data else []
+        os_families = self.metrics_data.get('os_families', [])[:2] if self.metrics_data else []
+
+        def format_top2(items):
+            if not items:
+                return ''
+            parts = []
+            for i in items:
+                pct = (i['nb_visits'] / total_visits * 100) if total_visits > 0 else 0
+                parts.append(f'{i["label"]} {pct:.0f}%')
+            return ' · '.join(parts)
+
+        browser_stat = f'<div class="device-stat"><span class="device-stat-label">Nav: </span><span class="device-stat-value">{format_top2(browsers)}</span></div>' if browsers else ''
+        os_stat = f'<div class="device-stat"><span class="device-stat-label">SO: </span><span class="device-stat-value">{format_top2(os_families)}</span></div>' if os_families else ''
 
         return f'''
         <div class="section">
@@ -166,14 +194,20 @@ class HTMLPDFGenerator:
             <div class="device-grid">
                 <div class="device-card">
                     <div class="device-name">💻 Desktop</div>
-                    <div class="device-stat"><span class="device-stat-label">Visitantes:</span><span class="device-stat-value">{desktop["nb_visits"]:,} ({desktop_pct:.0f}%)</span></div>
-                    <div class="device-stat"><span class="device-stat-label">Bounce rate:</span><span class="device-stat-value">{desktop_bounce:.1f}%</span></div>
+                    <div class="device-stats-inline">
+                        <div class="device-stat"><span class="device-stat-label">Visitas: </span><span class="device-stat-value">{desktop["nb_visits"]:,} ({desktop_pct:.0f}%)</span></div>
+                        <div class="device-stat"><span class="device-stat-label">Rebote: </span><span class="device-stat-value">{desktop_bounce:.1f}%</span></div>
+                        {browser_stat}
+                    </div>
                     {desktop_status}
                 </div>
                 <div class="device-card">
                     <div class="device-name">📱 Mobile</div>
-                    <div class="device-stat"><span class="device-stat-label">Visitantes:</span><span class="device-stat-value">{mobile["nb_visits"]:,} ({mobile_pct:.0f}%)</span></div>
-                    <div class="device-stat"><span class="device-stat-label">Bounce rate:</span><span class="device-stat-value">{mobile_bounce:.1f}%</span></div>
+                    <div class="device-stats-inline">
+                        <div class="device-stat"><span class="device-stat-label">Visitas: </span><span class="device-stat-value">{mobile["nb_visits"]:,} ({mobile_pct:.0f}%)</span></div>
+                        <div class="device-stat"><span class="device-stat-label">Rebote: </span><span class="device-stat-value">{mobile_bounce:.1f}%</span></div>
+                        {os_stat}
+                    </div>
                     {mobile_status}
                 </div>
             </div>
@@ -191,7 +225,8 @@ class HTMLPDFGenerator:
             if stripped.startswith('•') or (stripped.startswith('-') and not stripped.startswith('  ')):
                 if current_step:
                     steps.append(current_step)
-                current_step = {'title': stripped.lstrip('•- ').strip(), 'details': []}
+                current_step = {'title': stripped.lstrip(
+                    '•- ').strip(), 'details': []}
             elif stripped and current_step:
                 current_step['details'].append(stripped)
         if current_step:
@@ -222,7 +257,7 @@ class HTMLPDFGenerator:
             <div class="steps-container">
                 {steps_html}
             </div>
-            <div style="font-size:9px;color:var(--text-secondary);font-style:italic;margin-top:8px;">* Dinero estimado basado en análisis de sitio y mercado de la industria actual.</div>
+            <div style="font-size:8px;color:var(--text-secondary);font-style:italic;margin-top:6px;">* Dinero estimado basado en análisis de sitio y mercado de la industria actual.</div>
         </div>'''
 
     def _build_financial_section(self):
@@ -246,7 +281,8 @@ class HTMLPDFGenerator:
 
         payback = summary['payback_months']
         payback_text = f"~{payback:.0f} mes" if payback <= 1.5 else f"~{payback:.0f} meses"
-        roi_3m_pct = int((summary['roi_3_months'] / summary['total_investment']) * 100) if summary['total_investment'] > 0 else 0
+        roi_3m_pct = int((summary['roi_3_months'] / summary['total_investment'])
+                         * 100) if summary['total_investment'] > 0 else 0
 
         return f'''
         <div class="section">
@@ -304,20 +340,23 @@ class HTMLPDFGenerator:
     def _build_storage_section(self):
         # Explicit None check: only skip if data is None or completely missing
         if self.infra_data is None:
-            logger.warning("[STORAGE_SECTION] Infrastructure data is None - skipping storage section")
+            logger.warning(
+                "[STORAGE_SECTION] Infrastructure data is None - skipping storage section")
             return ""
 
         # Check if data exists and has valid disk information
         disk_total = self.infra_data.get('disk_total_gb', 0)
         if not disk_total or disk_total == 0:
-            logger.warning(f"[STORAGE_SECTION] Invalid disk data: {self.infra_data}")
+            logger.warning(
+                f"[STORAGE_SECTION] Invalid disk data: {self.infra_data}")
             return ""
 
         pct = self.infra_data.get('disk_used_percentage', 0)
         used = self.infra_data.get('disk_used_gb', 0)
         total = disk_total
 
-        logger.info(f"[STORAGE_SECTION] Building storage section: {used}GB / {total}GB ({pct}%)")
+        logger.info(
+            f"[STORAGE_SECTION] Building storage section: {used}GB / {total}GB ({pct}%)")
 
         status = "Contás con muy buen espacio disponible." if pct < 80 else "Tu espacio en disco está llegando al límite."
         return f'''
@@ -327,30 +366,61 @@ class HTMLPDFGenerator:
         </div>'''
 
     def _build_maintenance_section(self):
-        # Handle None infra_data explicitly
         if not self.maintenance_data and self.infra_data is None:
             return ""
-        wp = self.infra_data.get('wp_version', '') if self.infra_data else ''
-        php = self.infra_data.get('php_version', '') if self.infra_data else ''
-        updates = self.maintenance_data.get('recent_updates', [])
-        version_html = ""
-        if wp:
-            version_html += f"<p style='color:var(--text-secondary);margin-bottom:3px;'>WordPress {wp}</p>"
-        if php:
-            version_html += f"<p style='color:var(--text-secondary);margin-bottom:8px;'>PHP {php}</p>"
-        rows = ""
-        for plugin in updates:
-            rows += f"<tr><td>{plugin.get('name','')}</td><td>{plugin.get('version','')}</td></tr>"
-        table = f'<div class="table-container"><table><thead><tr><th>Plugin</th><th>Versión</th></tr></thead><tbody>{rows}</tbody></table></div>' if rows else ""
-        return f'<div class="section"><h2 class="section-title">Estado del Mantenimiento</h2>{version_html}{table}</div>'
+
+        wp_version = self.infra_data.get('wp_version', 'Desconocida') if self.infra_data else 'Desconocida'
+        pending_wp = self.maintenance_data.get('pending_updates', {}).get('wordpress', 0) if self.maintenance_data else 0
+        wp_status = "Actualizacion pendiente" if pending_wp > 0 else "Actualizado a la ultima version"
+        wp_class = "text-danger" if pending_wp > 0 else "text-success"
+
+        php_version = self.infra_data.get('php_version', 'Desconocida') if self.infra_data else 'Desconocida'
+        is_safe_php = str(php_version).startswith('8.')
+        php_status = "Version segura y compatible" if is_safe_php else f"Requiere actualizacion ({php_version})"
+        php_class = "text-success" if is_safe_php else "text-danger"
+
+        total_plugins = self.maintenance_data.get('total_active_plugins', 0) if self.maintenance_data else 0
+        pending_plugins = self.maintenance_data.get('pending_updates', {}).get('plugins', 0) if self.maintenance_data else 0
+        updated_plugins = max(0, total_plugins - pending_plugins) if total_plugins > 0 else 0
+        
+        plugins_title = f"{total_plugins} Plugins activos"
+        if total_plugins > 0:
+            plugins_status = f"{updated_plugins} al dia y {pending_plugins} pendientes" if pending_plugins > 0 else "100% actualizados a la ultima version"
+        else:
+            plugins_status = f"{pending_plugins} pendientes" if pending_plugins > 0 else "Sin datos"
+        plugins_class = "text-danger" if pending_plugins > 0 else "text-success"
+
+        return f'''
+        <div class="section">
+            <h2 class="section-title">Estado del Ecosistema</h2>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="background:#f5f8fa;padding:10px 15px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;align-items:center;">
+                    <div style="font-weight:600;color:var(--text-white);font-size:12px;">WordPress</div>
+                    <div style="font-weight:500;color:var(--text-secondary);font-size:11px;">v{wp_version}</div>
+                    <div class="{wp_class}" style="font-size:11px;font-weight:500;text-align:right;">{wp_status}</div>
+                </div>
+                <div style="background:#f5f8fa;padding:10px 15px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;align-items:center;">
+                    <div style="font-weight:600;color:var(--text-white);font-size:12px;">Motor PHP</div>
+                    <div style="font-weight:500;color:var(--text-secondary);font-size:11px;">v{php_version}</div>
+                    <div class="{php_class}" style="font-size:11px;font-weight:500;text-align:right;">{php_status}</div>
+                </div>
+                <div style="background:#f5f8fa;padding:10px 15px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;align-items:center;">
+                    <div style="font-weight:600;color:var(--text-white);font-size:12px;">Plugins</div>
+                    <div style="font-weight:500;color:var(--text-secondary);font-size:11px;">{total_plugins} activos</div>
+                    <div class="{plugins_class}" style="font-size:11px;font-weight:500;text-align:right;">{plugins_status}</div>
+                </div>
+            </div>
+        </div>'''
 
     def _build_security_section(self):
         if not self.wordfence_data or self.wordfence_data.get('total_attacks', 0) == 0:
             return ""
         total = self.wordfence_data.get('total_attacks', 0)
         last_scan = self.wordfence_data.get('last_scan', 'No disponible')
-        ip_rows = "".join(f"<tr><td>{ip.get('ip','')}</td><td>{ip.get('count',0)}</td></tr>" for ip in self.wordfence_data.get('top_ips', [])[:5])
-        url_rows = "".join(f"<tr><td>{u.get('url','')[:60]}</td><td>{u.get('count',0)}</td></tr>" for u in self.wordfence_data.get('top_urls', [])[:3])
+        ip_rows = "".join(
+            f"<tr><td>{ip.get('ip', '')}</td><td>{ip.get('count', 0)}</td></tr>" for ip in self.wordfence_data.get('top_ips', [])[:5])
+        url_rows = "".join(
+            f"<tr><td>{u.get('url', '')[:60]}</td><td>{u.get('count', 0)}</td></tr>" for u in self.wordfence_data.get('top_urls', [])[:3])
         return f'''
         <div class="section">
             <h2 class="section-title">Detalle de Seguridad</h2>
@@ -366,10 +436,12 @@ class HTMLPDFGenerator:
             return ""
         visits = self.metrics_data.get('nb_visits', 0)
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
-        avg_time = self._format_duration(self.metrics_data.get('avg_time_on_site', 0))
+        avg_time = self._format_duration(
+            self.metrics_data.get('avg_time_on_site', 0))
         bounce = self.metrics_data.get('bounce_rate', 0)
         top_pages = self.metrics_data.get('top_pages', [])
-        page_rows = "".join(f"<tr><td>{p.get('label','')}</td><td>{p.get('nb_visits',0)}</td><td>{p.get('nb_hits',0)}</td></tr>" for p in top_pages)
+        page_rows = "".join(
+            f"<tr><td>{p.get('label', '')}</td><td>{p.get('nb_visits', 0)}</td><td>{p.get('nb_hits', 0)}</td></tr>" for p in top_pages)
         return f'''
         <div class="section">
             <h2 class="section-title">Análisis de Visibilidad</h2>
@@ -384,10 +456,12 @@ class HTMLPDFGenerator:
         </div>'''
 
     def _build_exit_pages_section(self):
-        exit_pages = self.metrics_data.get('exit_pages', []) if self.metrics_data else []
+        exit_pages = self.metrics_data.get(
+            'exit_pages', []) if self.metrics_data else []
         if not exit_pages:
             return ""
-        rows = "".join(f'<tr><td>{p.get("label","")}</td><td>{p.get("nb_visits",0)}</td><td class="text-danger">{p.get("exit_rate",0)}%</td></tr>' for p in exit_pages[:5])
+        rows = "".join(
+            f'<tr><td>{p.get("label", "")}</td><td>{p.get("nb_visits", 0)}</td><td class="text-danger">{p.get("exit_rate", 0)}%</td></tr>' for p in exit_pages[:5])
         return f'''
         <div class="section">
             <h3 class="section-title" style="font-size:12px;">Páginas con mayor abandono</h3>
@@ -403,11 +477,38 @@ class HTMLPDFGenerator:
             <div class="detail-card"><div class="step-detail" style="font-size:11px;line-height:1.6;">{self.improved_text}</div></div>
         </div>'''
 
+    def _build_images_section(self):
+        if not self.antes_path and not self.despues_path:
+            return ""
+
+        from pathlib import Path
+
+        html = '<div class="section"><h2 class="section-title">Antes & Después</h2><div class="device-grid" style="gap: 12px; margin-top: 15px;">'
+
+        def image_html(path, label):
+            if not path or not os.path.exists(path):
+                return ""
+            file_url = Path(os.path.abspath(path)).as_uri()
+            return f"""
+            <div class="device-card" style="padding: 10px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--cyan-accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">{label}</div>
+                <img src="{file_url}" style="max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 4px; border: 1px solid rgba(0, 102, 204, 0.1);" />
+            </div>"""
+
+        if self.antes_path:
+            html += image_html(self.antes_path, "ANTES")
+        if self.despues_path:
+            html += image_html(self.despues_path, "DESPUÉS")
+
+        html += '</div></div>'
+        return html
+
     # ─── GENERATE ─────────────────────────────────────────────────
 
     def generate(self, filename):
         now = datetime.datetime.now()
-        periodo = f"{MESES[now.month]} {now.year}"
+        periodo = getattr(self, 'timeframe_name',
+                          f"{MESES[now.month]} {now.year}")
 
         template_path = os.path.join(TEMPLATE_DIR, 'executive_report.html')
         with open(template_path, 'r', encoding='utf-8') as f:
@@ -417,17 +518,27 @@ class HTMLPDFGenerator:
         html = template.replace('{{cliente_nombre}}', self.cliente_nombre)
         html = html.replace('{{periodo}}', periodo)
         html = html.replace('{{health_cards}}', self._build_health_cards())
-        html = html.replace('{{metrics_section}}', self._build_metrics_section())
+        html = html.replace('{{metrics_section}}',
+                            self._build_metrics_section())
         html = html.replace('{{device_section}}', self._build_device_section())
         html = html.replace('{{steps_section}}', self._build_steps_section())
-        html = html.replace('{{financial_section}}', self._build_financial_section())
+        html = html.replace('{{financial_section}}',
+                            self._build_financial_section())
         html = html.replace('{{cta_section}}', self._build_cta_section())
-        html = html.replace('{{storage_section}}', self._build_storage_section())
-        html = html.replace('{{maintenance_section}}', self._build_maintenance_section())
-        html = html.replace('{{security_section}}', self._build_security_section())
-        html = html.replace('{{analytics_section}}', self._build_analytics_section())
-        html = html.replace('{{exit_pages_section}}', self._build_exit_pages_section())
-        html = html.replace('{{manual_tasks_section}}', self._build_manual_tasks_section())
+        html = html.replace('{{storage_section}}',
+                            self._build_storage_section())
+        html = html.replace('{{maintenance_section}}',
+                            self._build_maintenance_section())
+        html = html.replace('{{security_section}}',
+                            self._build_security_section())
+        html = html.replace('{{analytics_section}}',
+                            self._build_analytics_section())
+        html = html.replace('{{exit_pages_section}}',
+                            self._build_exit_pages_section())
+        html = html.replace('{{manual_tasks_section}}',
+                            self._build_manual_tasks_section())
+        html = html.replace('{{images_section}}',
+                            self._build_images_section())
 
         if not os.path.exists("reportes"):
             os.makedirs("reportes")
@@ -442,7 +553,8 @@ if __name__ == "__main__":
     gen = HTMLPDFGenerator(
         "CGA",
         "Hemos optimizado el tiempo de respuesta del servidor.",
-        infra_data={'disk_used_percentage': 36, 'disk_used_gb': 4476, 'disk_total_gb': 12336},
+        infra_data={'disk_used_percentage': 36,
+                    'disk_used_gb': 4476, 'disk_total_gb': 12336},
         ssl_days=45,
         hoja_de_ruta=(
             "- Reducir bounce rate en mobile (58%)\n"
@@ -479,6 +591,14 @@ if __name__ == "__main__":
                 {'label': 'Desktop', 'nb_visits': 650, 'bounce_rate': 28.0},
                 {'label': 'Smartphone', 'nb_visits': 540, 'bounce_rate': 58.0},
                 {'label': 'Tablet', 'nb_visits': 60, 'bounce_rate': 35.0},
+            ],
+            'browsers': [
+                {'label': 'Chrome', 'nb_visits': 780},
+                {'label': 'Firefox', 'nb_visits': 290},
+            ],
+            'os_families': [
+                {'label': 'Windows', 'nb_visits': 620},
+                {'label': 'Android', 'nb_visits': 380},
             ],
             'exit_pages': [
                 {'label': '/carrito', 'nb_visits': 180, 'exit_rate': 67},
