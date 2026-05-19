@@ -44,12 +44,25 @@ class ClientDataFetcher:
             data = response.json()
             logger.info(f"[FETCH] Success - Data keys received: {list(data.keys())}")
 
-            # Verify infrastructure data is present
+            # Diagnóstico de cada sección
             infra = data.get('infrastructure', {})
             if infra:
-                logger.info(f"[FETCH] Infrastructure data confirmed: disk_total_gb={infra.get('disk_total_gb', 'N/A')}, disk_used_gb={infra.get('disk_used_gb', 'N/A')}")
+                logger.info(f"[FETCH] Infrastructure: disk_total_gb={infra.get('disk_total_gb')}, plugins_key_present=True")
             else:
-                logger.warning(f"[FETCH] Infrastructure data missing from response")
+                logger.warning(f"[FETCH] Infrastructure: MISSING from response")
+
+            maintenance = data.get('maintenance', {})
+            logger.info(f"[FETCH] Maintenance: total_active_plugins={maintenance.get('total_active_plugins', 'MISSING')}, pending={maintenance.get('pending_updates', 'MISSING')}")
+
+            wf = data.get('wordfence', {})
+            logger.info(f"[FETCH] Wordfence: total_attacks={wf.get('total_attacks', 'MISSING')}, top_ips_count={len(wf.get('top_ips', []))}")
+
+            metricas = data.get('metricas')
+            if metricas:
+                logger.info(f"[FETCH] Metricas: nb_visits={metricas.get('nb_visits')}, nb_uniq_visitors={metricas.get('nb_uniq_visitors')}, bounce_rate={metricas.get('bounce_rate')}")
+            else:
+                matomo_debug = data.get('matomo_debug', 'sin detalle')
+                logger.warning(f"[FETCH] Metricas: MISSING - matomo_debug='{matomo_debug}'")
 
             return data
         except requests.exceptions.Timeout as e:
@@ -131,6 +144,20 @@ class ClientDataFetcher:
                 'nb_visits': int(o.get('nb_visits', 0)),
             })
 
+        # Normalizar exit_rate de páginas de salida (Matomo puede devolver "67%" string)
+        exit_pages = []
+        for ep in metricas.get('exit_pages', [])[:5]:
+            er = ep.get('exit_rate', 0)
+            if isinstance(er, str):
+                er = float(er.replace('%', '').strip() or 0)
+            else:
+                er = float(er)
+            exit_pages.append({
+                'label': ep.get('label', ''),
+                'nb_visits': int(ep.get('nb_visits', 0)),
+                'exit_rate': er,
+            })
+
         return {
             'nb_visits': int(metricas.get('nb_visits', 0)),
             'nb_uniq_visitors': int(metricas.get('nb_uniq_visitors', 0)),
@@ -143,7 +170,7 @@ class ClientDataFetcher:
             'devices': devices,
             'browsers': browsers,
             'os_families': os_families,
-            'exit_pages': metricas.get('exit_pages', [])[:5],
+            'exit_pages': exit_pages,
             'conversions': metricas.get('conversions'),
         }
 

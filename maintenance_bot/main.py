@@ -31,7 +31,7 @@ ALLOWED_USERS = [int(i.strip()) for i in os.getenv("ALLOWED_USERS", "").split(",
 CLIENTS_FILE = "clientes.json"
 
 # Estados de la conversación
-INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA = range(10)
+INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA, AUDITORIA_TIPO, AUDITORIA_CUSTOM = range(12)
 
 # Configurar logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -270,7 +270,15 @@ async def handle_photo_antes(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def skip_antes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['antes_img'] = None
-    await update.message.reply_text("Saltado. Envía la foto del *DESPUÉS* o /skip.")
+    keyboard = [
+        [InlineKeyboardButton("Cancelar", callback_data="cancel_report")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "Saltado. Envía la foto del *DESPUÉS* o /skip.",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
     return CAPTURA_DESPUES
 
 async def handle_photo_despues(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -279,17 +287,77 @@ async def handle_photo_despues(update: Update, context: ContextTypes.DEFAULT_TYP
     path = f"reportes/tmp_{session_id}_desp.jpg"
     await photo_file.download_to_drive(path)
     context.user_data['despues_img'] = path
-    return await ask_hoja_de_ruta(update, context)
+    return await ask_auditoria_tipo(update, context)
 
 async def skip_despues(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['despues_img'] = None
+    await update.message.reply_text("Saltado. Continuando...")
+    return await ask_auditoria_tipo(update, context)
+
+async def ask_auditoria_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Pregunta qué tipo de auditoría recomienda para el cliente."""
+    client_name = context.user_data['client']['nombre']
+    keyboard = [
+        [InlineKeyboardButton("Rediseño con Elementor", callback_data="audit_elementor"),
+         InlineKeyboardButton("Actualización del diseño web", callback_data="audit_design_update")],
+        [InlineKeyboardButton("Mejoras SEO y visibilidad", callback_data="audit_seo"),
+         InlineKeyboardButton("Migración de plataforma", callback_data="audit_migration")],
+        [InlineKeyboardButton("Otro (escribir)", callback_data="audit_custom")],
+        [InlineKeyboardButton("❌ Cancelar", callback_data="cancel_report")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        f"¿Qué tipo de mejoras recomiendas para *{client_name}*?",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+    return AUDITORIA_TIPO
+
+async def handle_auditoria_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja la selección del tipo de auditoría."""
+    query = update.callback_query
+    await query.answer()
+
+    # Mapeo de tipos de auditoría a textos de implementación
+    IMPL_TEXTS = {
+        "audit_elementor": ("Rediseño con Elementor", "Comenzar diseño según brief aprobado"),
+        "audit_design_update": ("Actualización del diseño web", "Comenzar actualización según prioridades definidas"),
+        "audit_seo": ("Mejoras SEO y visibilidad", "Comenzar optimización según puntos críticos identificados"),
+        "audit_migration": ("Migración de plataforma", "Comenzar migración según plan de transición"),
+    }
+
+    cb = query.data
+
+    if cb == "audit_custom":
+        await query.edit_message_text("Escribi el tipo de mejora que recomiendas:")
+        return AUDITORIA_CUSTOM
+
+    if cb in IMPL_TEXTS:
+        audit_type, impl_text = IMPL_TEXTS[cb]
+        context.user_data['audit_type'] = audit_type
+        context.user_data['cta_implementation_text'] = impl_text
+        await query.edit_message_text(f"Auditoría: *{audit_type}*", parse_mode='Markdown')
+
+    return await ask_hoja_de_ruta(query, context)
+
+async def handle_auditoria_custom(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja el texto libre para tipo de auditoría personalizado."""
+    audit_type = update.message.text
+    context.user_data['audit_type'] = audit_type
+    context.user_data['cta_implementation_text'] = f"Comenzar implementación de {audit_type.lower()}"
+    await update.message.reply_text(f"Auditoría personalizada: *{audit_type}*", parse_mode='Markdown')
     return await ask_hoja_de_ruta(update, context)
 
 async def ask_hoja_de_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Pregunta al consultor por recomendaciones estratégicas."""
     client_name = context.user_data['client']['nombre']
+    keyboard = [
+        [InlineKeyboardButton("❌ Cancelar", callback_data="cancel_report")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         f"Para cerrar el reporte: Que recomendaciones estrategicas o proximos pasos sugeris para *{client_name}* este mes?\n\n(Escribi tips rapidos o /skip para omitir)",
+        reply_markup=reply_markup,
         parse_mode='Markdown'
     )
     return HOJA_DE_RUTA
@@ -379,6 +447,8 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     wordfence_data = context.user_data.get('wordfence_data', {})
     maintenance_data = context.user_data.get('maintenance_data', {})
     data_recommendations = context.user_data.get('data_recommendations', [])
+    audit_type = context.user_data.get('audit_type')
+    cta_implementation_text = context.user_data.get('cta_implementation_text')
     logger.info(f"Generating report - infra: {infra_data}, ssl: {ssl_days}, metrics: {metrics_data}")
     pdf_path = None
 
@@ -386,7 +456,7 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
         selected_tf = context.user_data.get('selected_tf', {'label': 'Últimos 30 días'})
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'])
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'], audit_type, cta_implementation_text)
         logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
@@ -421,8 +491,26 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await msg.delete()
     return ConversationHandler.END
 
+async def cancel_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja cancelación desde botón inline."""
+    query = update.callback_query
+    await query.answer()
+    client = context.user_data.get('client', {}).get('nombre', 'Cliente')
+    await query.edit_message_text(
+        f"❌ Reporte para *{client}* cancelado.\n\n"
+        f"Puedes iniciar de nuevo con /review cuando estés listo.",
+        parse_mode='Markdown'
+    )
+    return ConversationHandler.END
+
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Operación cancelada.")
+    """Maneja cancelación desde comando /cancel."""
+    client = context.user_data.get('client', {}).get('nombre', 'Cliente')
+    await update.message.reply_text(
+        f"❌ Reporte para *{client}* cancelado.\n\n"
+        f"Puedes iniciar de nuevo con /review cuando estés listo.",
+        parse_mode='Markdown'
+    )
     return ConversationHandler.END
 
 def main():
@@ -444,6 +532,8 @@ def main():
                 MessageHandler(filters.PHOTO, handle_photo_despues),
                 CommandHandler('skip', skip_despues)
             ],
+            AUDITORIA_TIPO: [CallbackQueryHandler(handle_auditoria_tipo)],
+            AUDITORIA_CUSTOM: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_auditoria_custom)],
             HOJA_DE_RUTA: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_hoja_de_ruta),
                 CommandHandler('skip', skip_hoja_de_ruta)
@@ -451,7 +541,10 @@ def main():
             REVISION_RUTA: [CallbackQueryHandler(confirm_ruta)],
             EDITAR_RUTA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edit_ruta)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[
+            CommandHandler('cancel', cancel),
+            CallbackQueryHandler(cancel_report, pattern="^cancel_report$")
+        ],
     )
 
     app.add_handler(conv_handler)

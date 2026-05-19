@@ -17,7 +17,8 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 class HTMLPDFGenerator:
     def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None,
                  infra_data=None, ssl_days=None, hoja_de_ruta=None, metrics_data=None,
-                 wordfence_data=None, maintenance_data=None, recommendations=None, timeframe_name="Últimos 30 días"):
+                 wordfence_data=None, maintenance_data=None, recommendations=None, timeframe_name="Últimos 30 días",
+                 audit_type=None, cta_implementation_text=None):
         self.cliente_nombre = cliente_nombre
         self.improved_text = improved_text
         self.timeframe_name = timeframe_name
@@ -32,6 +33,8 @@ class HTMLPDFGenerator:
         self.wordfence_data = wordfence_data or {}
         self.maintenance_data = maintenance_data or {}
         self.recommendations = recommendations or []
+        self.audit_type = audit_type
+        self.cta_implementation_text = cta_implementation_text or "Comenzar implementación de mejoras propuestas"
 
     def _format_duration(self, seconds):
         minutes = int(seconds) // 60
@@ -169,8 +172,8 @@ class HTMLPDFGenerator:
         mobile_pct = (mobile['nb_visits'] / total_visits *
                       100) if total_visits > 0 else 0
 
-        desktop_status = '<div class="device-good">✓ Comportamiento óptimo</div>' if desktop_bounce < 40 else '<div class="device-alert">! Requiere atención</div>'
-        mobile_status = '<div class="device-alert">! Requiere optimización urgente</div>' if mobile_bounce > 50 else '<div class="device-good">✓ Comportamiento aceptable</div>'
+        desktop_status = '<div class="device-good">Comportamiento óptimo</div>' if desktop_bounce < 40 else '<div class="device-alert">Requiere atención</div>'
+        mobile_status = '<div class="device-alert">Requiere optimización urgente</div>' if mobile_bounce > 50 else '<div class="device-good">Comportamiento aceptable</div>'
 
         # Browsers & OS (top 2 each)
         browsers = self.metrics_data.get('browsers', [])[:2] if self.metrics_data else []
@@ -190,10 +193,10 @@ class HTMLPDFGenerator:
 
         return f'''
         <div class="section">
-            <h2 class="section-title">📱 Comportamiento por Dispositivo</h2>
+            <h2 class="section-title">Comportamiento por Dispositivo</h2>
             <div class="device-grid">
                 <div class="device-card">
-                    <div class="device-name">💻 Desktop</div>
+                    <div class="device-name">Desktop</div>
                     <div class="device-stats-inline">
                         <div class="device-stat"><span class="device-stat-label">Visitas: </span><span class="device-stat-value">{desktop["nb_visits"]:,} ({desktop_pct:.0f}%)</span></div>
                         <div class="device-stat"><span class="device-stat-label">Rebote: </span><span class="device-stat-value">{desktop_bounce:.1f}%</span></div>
@@ -202,7 +205,7 @@ class HTMLPDFGenerator:
                     {desktop_status}
                 </div>
                 <div class="device-card">
-                    <div class="device-name">📱 Mobile</div>
+                    <div class="device-name">Mobile</div>
                     <div class="device-stats-inline">
                         <div class="device-stat"><span class="device-stat-label">Visitas: </span><span class="device-stat-value">{mobile["nb_visits"]:,} ({mobile_pct:.0f}%)</span></div>
                         <div class="device-stat"><span class="device-stat-label">Rebote: </span><span class="device-stat-value">{mobile_bounce:.1f}%</span></div>
@@ -253,7 +256,7 @@ class HTMLPDFGenerator:
 
         return f'''
         <div class="section">
-            <h2 class="section-title">🎯 Los Siguientes Pasos</h2>
+            <h2 class="section-title">Los Siguientes Pasos</h2>
             <div class="steps-container">
                 {steps_html}
             </div>
@@ -286,7 +289,7 @@ class HTMLPDFGenerator:
 
         return f'''
         <div class="section">
-            <h2 class="section-title">💰 Resumen Financiero</h2>
+            <h2 class="section-title">Resumen Financiero</h2>
             <div class="financial-summary">
                 <div class="financial-section-label">INVERSIÓN TOTAL:</div>
                 {investment_rows}
@@ -309,27 +312,25 @@ class HTMLPDFGenerator:
         </div>'''
 
     def _build_cta_section(self):
-        return '''
+        audit_title = f"Próximo Paso - Auditoría Estratégica: {self.audit_type}" if self.audit_type else "Próximo Paso - Auditoría Estratégica"
+        return f'''
         <div class="cta-section">
-            <h3 class="cta-title">✅ Próximo Paso - Auditoría Estratégica</h3>
+            <h3 class="cta-title">{audit_title}</h3>
             <div class="cta-phase">
-                <div class="cta-phase-title">⏰ INMEDIATO (Esta semana):</div>
+                <div class="cta-phase-title">INMEDIATO (Esta semana):</div>
                 <div class="cta-phase-text">Agendar auditoría estratégica con Rodney</div>
-                <div class="cta-phase-text">📱 WhatsApp: +595 981 123456</div>
-                <div class="cta-phase-text">📧 Email: rodney@impulsosdigitales.com</div>
-                <div class="cta-phase-text">📅 Calendario: https://calendly.com/impulsosdigitales</div>
-                <div class="cta-phase-text" style="margin-top: 5px;"><strong>Tiempo:</strong> 2-3 horas | <strong>Costo:</strong> Gs. 1.500.000 (plan completo)</div>
-            </div>
-            <div class="cta-urgency">
-                <strong>⚠️ IMPORTANTE:</strong> Las mejoras en mobile impactan directamente tus ingresos. Cada semana de espera = oportunidad perdida.
+                <div class="cta-phase-text">WhatsApp: +595 981 123456</div>
+                <div class="cta-phase-text">Email: rodney@impulsosdigitales.com</div>
+                <div class="cta-phase-text">Calendario: https://calendly.com/impulsosdigitales</div>
+                <div class="cta-phase-text" style="margin-top: 5px;"><strong>Tiempo:</strong> 2-3 horas | <strong>Costo:</strong> Gs. 500.000 (plan completo)</div>
             </div>
             <div class="cta-phase" style="margin-top: 10px;">
-                <div class="cta-phase-title">📋 CORTO PLAZO (Próximas 2 semanas):</div>
+                <div class="cta-phase-title">CORTO PLAZO (Próximas 2 semanas):</div>
                 <div class="cta-phase-text">Recibir reporte de auditoría con puntos críticos priorizados</div>
-                <div class="cta-phase-text">Comenzar implementación según impacto financiero</div>
+                <div class="cta-phase-text">{self.cta_implementation_text}</div>
             </div>
             <div class="cta-phase">
-                <div class="cta-phase-title">📊 SEGUIMIENTO (Cada 30 días):</div>
+                <div class="cta-phase-title">SEGUIMIENTO (Cada 30 días):</div>
                 <div class="cta-phase-text">Medir cambios en bounce, conversión y abandono</div>
                 <div class="cta-phase-text">Ajustar estrategia según datos del próximo reporte</div>
             </div>

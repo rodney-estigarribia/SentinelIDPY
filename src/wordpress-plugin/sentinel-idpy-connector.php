@@ -421,19 +421,23 @@ function get_wordfence_blocked_stats() {
     $last_scan = 'No disponible';
 
     if ($wordfence_available) {
+        // Wordfence usa variantes de action: 'blocked', 'blocked:loginLockout', 'blocked:countryBlock', etc.
+        $blocked_like = $wpdb->esc_like('blocked') . '%';
+
         // 1. Total de ataques
         $total_query = $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table_name} WHERE ctime >= %f AND ctime <= %f AND action = %s",
-            $wf_start, $wf_end, 'blocked'
+            "SELECT COUNT(*) FROM {$table_name} WHERE ctime >= %f AND ctime <= %f AND action LIKE %s",
+            $wf_start, $wf_end, $blocked_like
         );
         $total_attacks = (int) $wpdb->get_var( $total_query );
+        error_log( 'Sentinel: Wordfence total_attacks=' . $total_attacks . ' (period: ' . date('Y-m-d', (int)$wf_start) . ' to ' . date('Y-m-d', (int)$wf_end) . ')' );
 
         // 2. Top 5 Malicious IPs
         $top_ips_query = $wpdb->prepare(
             "SELECT IP, COUNT(*) as count FROM {$table_name}
-             WHERE ctime >= %f AND ctime <= %f AND action = %s
+             WHERE ctime >= %f AND ctime <= %f AND action LIKE %s
              GROUP BY IP ORDER BY count DESC LIMIT 5",
-            $wf_start, $wf_end, 'blocked'
+            $wf_start, $wf_end, $blocked_like
         );
         $top_ips_raw = $wpdb->get_results( $top_ips_query );
         foreach($top_ips_raw as $row) {
@@ -446,9 +450,9 @@ function get_wordfence_blocked_stats() {
         // 3. Top 5 targeted URLs
         $top_urls_query = $wpdb->prepare(
             "SELECT URL, COUNT(*) as count FROM {$table_name}
-             WHERE ctime >= %f AND ctime <= %f AND action = %s
+             WHERE ctime >= %f AND ctime <= %f AND action LIKE %s
              GROUP BY URL ORDER BY count DESC LIMIT 5",
-            $wf_start, $wf_end, 'blocked'
+            $wf_start, $wf_end, $blocked_like
         );
         $top_urls_raw = $wpdb->get_results( $top_urls_query );
         foreach($top_urls_raw as $row) {
@@ -458,18 +462,19 @@ function get_wordfence_blocked_stats() {
         // 4. Top 5 Block Reasons
         $top_reasons_query = $wpdb->prepare(
             "SELECT actionDescription as reason, COUNT(*) as count FROM {$table_name}
-             WHERE ctime >= %f AND ctime <= %f AND action = %s
+             WHERE ctime >= %f AND ctime <= %f AND action LIKE %s
              GROUP BY actionDescription ORDER BY count DESC LIMIT 5",
-            $wf_start, $wf_end, 'blocked'
+            $wf_start, $wf_end, $blocked_like
         );
         $top_reasons = $wpdb->get_results( $top_reasons_query );
 
         // 5. Top 5 Attempted Usernames
+        $login_like = $wpdb->esc_like('%login%');
         $top_users_query = $wpdb->prepare(
             "SELECT actionData, COUNT(*) as count FROM {$table_name}
-             WHERE ctime >= %f AND ctime <= %f AND action = %s AND actionDescription LIKE %s
+             WHERE ctime >= %f AND ctime <= %f AND action LIKE %s AND actionDescription LIKE %s
              GROUP BY actionData ORDER BY count DESC LIMIT 5",
-            $wf_start, $wf_end, 'blocked', '%login%'
+            $wf_start, $wf_end, $blocked_like, '%login%'
         );
         $top_users_raw = $wpdb->get_results( $top_users_query );
         foreach($top_users_raw as $row) {

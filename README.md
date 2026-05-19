@@ -4,6 +4,38 @@ Este repositorio centraliza herramientas esenciales para el mantenimiento y moni
 
 ---
 
+## 📝 Cambios Recientes (Mayo 2026)
+
+### Mejoras al Telegram Maintenance Bot
+
+**Actualización de PDF y Flujo de Auditoría:**
+- ✅ **Emojis removidos** de PDFs (WeasyPrint no los renderiza bien)
+- ✅ **Título del Dashboard**: Cambió de `📊 DASHBOARD ESTRATÉGICO - IDPY` a `DASHBOARD {Cliente}`
+- ✅ **Autor simplificado**: Ahora solo muestra `Impulsos Digitales`
+- ✅ **Precio de auditoría**: Actualizado a **Gs. 500.000** (antes era 1.500.000)
+
+**Nuevo Flujo de Selección de Auditoría:**
+- El bot ahora pregunta qué tipo de mejoras recomiendas antes de la hoja de ruta
+- Opciones predeterminadas:
+  - Rediseño con Elementor
+  - Actualización del diseño web
+  - Mejoras SEO y visibilidad
+  - Migración de plataforma
+  - Otro (texto libre)
+- El tipo seleccionado se muestra en la sección CTA del PDF con texto personalizado
+
+**Cancelación Mejorada:**
+- Comando `/cancel` en cualquier momento
+- Botón `❌ Cancelar` en pasos críticos (seleccionar auditoría, escribir recomendaciones)
+- Mensajes amables al cancelar
+
+**Para deployar estos cambios:**
+```bash
+make up
+```
+
+---
+
 ## Estructura del Proyecto
 
 ```bash
@@ -77,6 +109,7 @@ Este bot interactivo permite documentar tareas manuales, procesar explicaciones 
 
 ### Despliegue y Uso:
 
+#### Inicial (Primera vez):
 1. **Configuración de Clientes**: Edita `maintenance_bot/clientes.json` con los datos de tus clientes.
 2. **Variables de Entorno**:
    - Copia `maintenance_bot/.env.example` a `maintenance_bot/.env`.
@@ -84,12 +117,37 @@ Este bot interactivo permite documentar tareas manuales, procesar explicaciones 
    - Añade tu ID de usuario en `ALLOWED_USERS` (ej: `12345678,98765432`).
 3. **Ejecución con Docker**:
    ```bash
-   cd maintenance_bot
-   docker-compose up --build -d
+   make up
    ```
-4. **Uso en Telegram**:
-   - Envía el comando `/revisar` al bot.
-   - Sigue el flujo interactivo: Seleccionar cliente -> Escribir bitácora -> Validar IA -> Subir fotos (o `/skip`) -> Recibir PDF.
+
+#### Para actualizaciones (después de cambios en el código):
+```bash
+# Opción 1: Deploy rápido (recomendado)
+make up
+
+# Opción 2: Pasos manuales
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+
+# Ver logs en tiempo real
+make logs
+```
+
+#### Uso en Telegram:
+- Envía el comando `/review` al bot.
+- Sigue el flujo interactivo:
+  1. **Seleccionar cliente** — Elige de la lista
+  2. **Período** — Última semana, mes, trimestre, etc.
+  3. **Bitácora** — Qué actividades hiciste (IA lo profesionaliza)
+  4. **Fotos** — Antes/Después (opcional, usa `/skip`)
+  5. **Tipo de Auditoría** — Selecciona o escribe libremente
+  6. **Recomendaciones** — Próximos pasos estratégicos (opcional)
+  7. **Generar PDF** — El bot crea el reporte y lo envía
+
+#### Cancelación:
+- En cualquier momento: `/cancel`
+- O presiona el botón `❌ Cancelar` en los pasos con teclado
 
 ### Pruebas y Desarrollo (Generador de PDF):
 
