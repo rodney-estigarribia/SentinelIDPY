@@ -11,6 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+// Clear OPcache on activation so fresh code is always loaded after updates
+register_activation_hook( __FILE__, function() {
+    if ( function_exists( 'opcache_invalidate' ) ) {
+        opcache_invalidate( __FILE__, true );
+    }
+    if ( function_exists( 'opcache_reset' ) ) {
+        opcache_reset();
+    }
+} );
+
 // --- Auto-update via GitHub Releases ---
 define( 'SENTINEL_PLUGIN_VERSION', '2.4' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );

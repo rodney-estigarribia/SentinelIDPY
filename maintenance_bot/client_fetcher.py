@@ -23,13 +23,17 @@ class ClientDataFetcher:
         endpoint = f"{client_url}/wp-json/sentinel/v1/stats"
         headers = {
             'User-Agent': 'SentinelIDPY-MaintenanceBot/1.0',
-            'X-WF-Report-Token': WF_REPORT_TOKEN
+            'X-WF-Report-Token': WF_REPORT_TOKEN,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
         }
+        import time
         params = {
             'token': WF_REPORT_TOKEN,
             'matomo_period': matomo_period,
             'matomo_date': matomo_date,
-            'matomo_prev_date': matomo_prev_date
+            'matomo_prev_date': matomo_prev_date,
+            '_': int(time.time()),  # bypass caching plugins on client sites
         }
         if wf_start is not None:
             params['wf_start'] = wf_start
