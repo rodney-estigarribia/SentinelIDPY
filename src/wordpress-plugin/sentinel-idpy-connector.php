@@ -3,13 +3,101 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 2.1
+ * Version: 2.2
  */
 
 // Evitar acceso directo
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+// --- Auto-update via GitHub Releases ---
+define( 'SENTINEL_PLUGIN_VERSION', '2.2' );
+define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
+
+add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
+add_filter( 'plugins_api', 'sentinel_plugin_info', 10, 3 );
+
+function sentinel_check_for_update( $transient ) {
+    if ( empty( $transient->checked ) ) {
+        return $transient;
+    }
+
+    $plugin_slug = plugin_basename( __FILE__ );
+    $cache_key   = 'sentinel_update_check';
+    $cached      = get_transient( $cache_key );
+
+    if ( false === $cached ) {
+        $remote = wp_remote_get(
+            'https://api.github.com/repos/' . SENTINEL_GITHUB_REPO . '/releases/latest',
+            array(
+                'timeout' => 10,
+                'headers' => array( 'Accept' => 'application/vnd.github.v3+json', 'User-Agent' => 'WordPress/' . get_bloginfo('version') ),
+            )
+        );
+
+        if ( is_wp_error( $remote ) || 200 !== wp_remote_retrieve_response_code( $remote ) ) {
+            set_transient( $cache_key, array(), 6 * HOUR_IN_SECONDS );
+            return $transient;
+        }
+
+        $release = json_decode( wp_remote_retrieve_body( $remote ) );
+        $cached  = array();
+
+        if ( $release && isset( $release->tag_name ) ) {
+            $download_url = '';
+            if ( ! empty( $release->assets ) ) {
+                foreach ( $release->assets as $asset ) {
+                    if ( substr( $asset->name, -4 ) === '.zip' ) {
+                        $download_url = $asset->browser_download_url;
+                        break;
+                    }
+                }
+            }
+            $cached = array(
+                'version'      => ltrim( $release->tag_name, 'v' ),
+                'download_url' => $download_url,
+            );
+        }
+
+        set_transient( $cache_key, $cached, 6 * HOUR_IN_SECONDS );
+    }
+
+    if ( ! empty( $cached['version'] ) && ! empty( $cached['download_url'] )
+        && version_compare( $cached['version'], SENTINEL_PLUGIN_VERSION, '>' ) ) {
+        $transient->response[ $plugin_slug ] = (object) array(
+            'slug'        => dirname( $plugin_slug ),
+            'plugin'      => $plugin_slug,
+            'new_version' => $cached['version'],
+            'url'         => 'https://github.com/' . SENTINEL_GITHUB_REPO,
+            'package'     => $cached['download_url'],
+        );
+    }
+
+    return $transient;
+}
+
+function sentinel_plugin_info( $res, $action, $args ) {
+    if ( 'plugin_information' !== $action ) {
+        return $res;
+    }
+    $plugin_slug = dirname( plugin_basename( __FILE__ ) );
+    if ( ! isset( $args->slug ) || $args->slug !== $plugin_slug ) {
+        return $res;
+    }
+    return (object) array(
+        'name'         => 'SentinelIDPY Connector',
+        'slug'         => $plugin_slug,
+        'version'      => SENTINEL_PLUGIN_VERSION,
+        'author'       => 'Impulsos Digitales',
+        'homepage'     => 'https://github.com/' . SENTINEL_GITHUB_REPO,
+        'requires'     => '5.6',
+        'tested'       => '6.5',
+        'last_updated' => date( 'Y-m-d' ),
+        'sections'     => array( 'description' => 'Conector REST API para reportes SentinelIDPY.' ),
+    );
+}
+// --- Fin auto-update ---
 
 add_action( 'rest_api_init', function () {
     register_rest_route( 'sentinel/v1', '/stats', array(
@@ -188,17 +276,21 @@ function sentinel_get_matomo_data(&$debug_msg, $matomo_period = 'month', $matomo
         ) );
 
         // Extraer resumen de visitas
+        // NOTE: DataTable::getColumns() returns column NAMES (not values) — must use getFirstRow()->getColumns()
         $summary = array();
-        if ( is_object( $visits_data ) && method_exists( $visits_data, 'getColumns' ) ) {
-            $summary = $visits_data->getColumns();
-        } elseif ( is_object( $visits_data ) && method_exists( $visits_data, 'getFirstRow' ) ) {
+        if ( $visits_data instanceof \Piwik\DataTable\Map ) {
+            // Range period with daily/weekly breakdown — merge all sub-tables
+            $merged = $visits_data->mergeChildren();
+            $row = $merged->getFirstRow();
+            $summary = $row ? $row->getColumns() : array();
+        } elseif ( $visits_data instanceof \Piwik\DataTable ) {
             $row = $visits_data->getFirstRow();
             $summary = $row ? $row->getColumns() : array();
         } elseif ( is_array( $visits_data ) ) {
             $summary = $visits_data;
         }
 
-        error_log( 'Sentinel: Matomo data retrieved - visits=' . ( $summary['nb_visits'] ?? 0 ) . ', visitors=' . ( $summary['nb_uniq_visitors'] ?? 0 ) . ', actions=' . ( $summary['nb_actions'] ?? 0 ) );
+        error_log( 'Sentinel: Matomo data retrieved - visits=' . ( $summary['nb_visits'] ?? 0 ) . ', visitors=' . ( $summary['nb_uniq_visitors'] ?? 0 ) . ', actions=' . ( $summary['nb_actions'] ?? 0 ) . ', data_class=' . ( is_object($visits_data) ? get_class($visits_data) : 'array' ) );
 
         // Extraer top paginas
         $top_pages = array();
@@ -225,16 +317,18 @@ function sentinel_get_matomo_data(&$debug_msg, $matomo_period = 'month', $matomo
         ) );
 
         $prev_summary = array();
-        if ( is_object( $prev_month_data ) && method_exists( $prev_month_data, 'getColumns' ) ) {
-            $prev_summary = $prev_month_data->getColumns();
-        } elseif ( is_object( $prev_month_data ) && method_exists( $prev_month_data, 'getFirstRow' ) ) {
+        if ( $prev_month_data instanceof \Piwik\DataTable\Map ) {
+            $merged_prev = $prev_month_data->mergeChildren();
+            $prev_row = $merged_prev->getFirstRow();
+            $prev_summary = $prev_row ? $prev_row->getColumns() : array();
+        } elseif ( $prev_month_data instanceof \Piwik\DataTable ) {
             $prev_row = $prev_month_data->getFirstRow();
             $prev_summary = $prev_row ? $prev_row->getColumns() : array();
         } elseif ( is_array( $prev_month_data ) ) {
             $prev_summary = $prev_month_data;
         }
 
-        error_log( 'Sentinel: Matomo prev month - visits=' . ( $prev_summary['nb_visits'] ?? 0 ) );
+        error_log( 'Sentinel: Matomo prev month - visits=' . ( $prev_summary['nb_visits'] ?? 0 ) . ', data_class=' . ( is_object($prev_month_data) ? get_class($prev_month_data) : 'array' ) );
 
         // Desglose por dispositivo (Desktop vs Mobile)
         $device_data = \Piwik\API\Request::processRequest( 'DevicesDetection.getType', array(
@@ -404,10 +498,34 @@ function sentinel_get_matomo_data(&$debug_msg, $matomo_period = 'month', $matomo
  * Consulta la base de datos para obtener los bloqueos de los últimos 30 días con métricas detalladas.
  */
 function get_wordfence_blocked_stats() {
+    try {
+        return sentinel_stats_inner();
+    } catch ( \Throwable $e ) {
+        error_log( 'Sentinel FATAL: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
+        return array(
+            'status' => 'error',
+            'fatal'  => $e->getMessage(),
+            'file'   => basename( $e->getFile() ),
+            'line'   => $e->getLine(),
+        );
+    }
+}
+
+function sentinel_stats_inner() {
     global $wpdb;
 
     $table_name = $wpdb->prefix . 'wfHits';
-    $wordfence_available = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
+    // SHOW TABLES LIKE returns the actual table name; just check it's non-empty (avoids case-sensitive == comparison)
+    $found_table = $wpdb->get_var( "SHOW TABLES LIKE '" . $wpdb->esc_like( $table_name ) . "'" );
+    if ( empty( $found_table ) ) {
+        // Try lowercase variant (lower_case_table_names=1 stores all tables lowercase)
+        $found_table = $wpdb->get_var( "SHOW TABLES LIKE '" . $wpdb->esc_like( strtolower( $table_name ) ) . "'" );
+    }
+    $wordfence_available = ! empty( $found_table );
+    if ( $wordfence_available ) {
+        $table_name = $found_table;
+    }
+    error_log( 'Sentinel: Wordfence table check for ' . $wpdb->prefix . 'wfHits' . ', found=' . ( $found_table ? $found_table : 'none' ) );
 
     $wf_start = isset($_GET['wf_start']) ? (int) $_GET['wf_start'] : time() - (30 * 24 * 60 * 60);
     $wf_end = isset($_GET['wf_end']) ? (int) $_GET['wf_end'] : time();
@@ -421,6 +539,21 @@ function get_wordfence_blocked_stats() {
     $last_scan = 'No disponible';
 
     if ($wordfence_available) {
+        // Diagnostico: cuantas filas hay en la tabla y que action values existen
+        $wf_total_rows = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+        $wf_actions_in_range = $wpdb->get_col( $wpdb->prepare(
+            "SELECT DISTINCT action FROM {$table_name} WHERE ctime >= %f AND ctime <= %f LIMIT 30",
+            $wf_start, $wf_end
+        ) );
+        $wf_max_ctime = (float) $wpdb->get_var("SELECT MAX(ctime) FROM {$table_name}");
+        $wf_debug_info = array(
+            'table' => $table_name,
+            'total_rows_in_table' => $wf_total_rows,
+            'actions_in_range' => $wf_actions_in_range,
+            'max_ctime_date' => $wf_max_ctime > 0 ? date('Y-m-d H:i:s', (int)$wf_max_ctime) : 'none',
+            'query_range' => date('Y-m-d', (int)$wf_start) . ' to ' . date('Y-m-d', (int)$wf_end),
+        );
+
         // Wordfence usa variantes de action: 'blocked', 'blocked:loginLockout', 'blocked:countryBlock', etc.
         $blocked_like = $wpdb->esc_like('blocked') . '%';
 
@@ -430,7 +563,7 @@ function get_wordfence_blocked_stats() {
             $wf_start, $wf_end, $blocked_like
         );
         $total_attacks = (int) $wpdb->get_var( $total_query );
-        error_log( 'Sentinel: Wordfence total_attacks=' . $total_attacks . ' (period: ' . date('Y-m-d', (int)$wf_start) . ' to ' . date('Y-m-d', (int)$wf_end) . ')' );
+        error_log( 'Sentinel: Wordfence total_attacks=' . $total_attacks . ' (period: ' . date('Y-m-d', (int)$wf_start) . ' to ' . date('Y-m-d', (int)$wf_end) . ', table_rows=' . $wf_total_rows . ', actions=' . implode(',', $wf_actions_in_range) . ')' );
 
         // 2. Top 5 Malicious IPs
         $top_ips_query = $wpdb->prepare(
@@ -495,24 +628,27 @@ function get_wordfence_blocked_stats() {
     }
 
     // 6. Server Health & Info
-    $disk_total = disk_total_space(ABSPATH);
-    $disk_free = disk_free_space(ABSPATH);
-    $disk_used = $disk_total - $disk_free;
-    $disk_percentage = $disk_total > 0 ? round(($disk_used / $disk_total) * 100, 2) : 0;
-
-    // Convertir a GB para cálculos de barra de progreso
+    // Use actual WordPress site size instead of full server disk (which is misleading on shared hosting)
     $gb_divisor = 1024 * 1024 * 1024;
-    $disk_total_gb = round($disk_total / $gb_divisor, 2);
-    $disk_free_gb = round($disk_free / $gb_divisor, 2);
-    $disk_used_gb = round($disk_used / $gb_divisor, 2);
+    $site_size_bytes = 0;
+
+    // Try shell du first (fastest, works if enabled)
+    $du_out = @shell_exec('du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
+    if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
+        $site_size_bytes = (int) $m[1];
+    } else {
+        // Fallback: just measure wp-content (uploads/plugins/themes)
+        $du_content = @shell_exec('du -sb ' . escapeshellarg(WP_CONTENT_DIR) . ' 2>/dev/null');
+        if ($du_content && preg_match('/^(\d+)/', trim($du_content), $m)) {
+            $site_size_bytes = (int) $m[1];
+        }
+    }
+
+    $site_size_gb = $site_size_bytes > 0 ? round($site_size_bytes / $gb_divisor, 2) : null;
+    error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', site_size_gb=' . $site_size_gb);
 
     $server_info = array(
-        'disk_total' => size_format($disk_total),
-        'disk_free' => size_format($disk_free),
-        'disk_used_percentage' => $disk_percentage,
-        'disk_total_gb' => $disk_total_gb,
-        'disk_free_gb' => $disk_free_gb,
-        'disk_used_gb' => $disk_used_gb,
+        'site_size_gb' => $site_size_gb,
         'php_version' => PHP_VERSION,
         'wp_version' => get_bloginfo('version'),
         'server_ip' => $_SERVER['SERVER_ADDR'] ?? 'Unknown'
@@ -520,12 +656,9 @@ function get_wordfence_blocked_stats() {
 
     // 7. Recent Plugin Updates (via transients)
     $recent_updates = array();
-    $upgrade_log = get_option('wp_core_block_plugin_updates'); // Custom option if exists, otherwise fallback
-    
-    // Fallback: Get last 5 recently updated plugins from the 'plugin_updates' transient or similar
-    // Since WP doesn't have a native "log" of updates easily accessible, we check the 'update_plugins' transient
-    // for what IS available or use a basic list of active plugins as proxy if no log found.
-    // Realistically, for this snippet, we'll try to find any "last update" data.
+    if ( ! function_exists( 'get_plugins' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
     $plugins = get_plugins();
     $active_plugins = get_option('active_plugins');
     $count = 0;
@@ -582,17 +715,20 @@ function get_wordfence_blocked_stats() {
 
     // 10b. Site Health Score
     $site_health_score = array( 'status' => 'good', 'good' => 0, 'recommended' => 0, 'critical' => 0 );
-    if ( class_exists( 'WP_Site_Health' ) ) {
-        require_once ABSPATH . 'wp-admin/includes/class-wp-site-health.php';
-        $health = WP_Site_Health::get_instance();
-        if ( method_exists( $health, 'get_test_count' ) ) {
-            $counts = $health->get_test_count();
-            $site_health_score = array(
-                'status'      => ( $counts['critical'] ?? 0 ) > 0 ? 'critical' : ( ( $counts['recommended'] ?? 0 ) > 0 ? 'recommended' : 'good' ),
-                'good'        => $counts['good'] ?? 0,
-                'recommended' => $counts['recommended'] ?? 0,
-                'critical'    => $counts['critical'] ?? 0,
-            );
+    $site_health_file = ABSPATH . 'wp-admin/includes/class-wp-site-health.php';
+    if ( file_exists( $site_health_file ) ) {
+        require_once $site_health_file;
+        if ( class_exists( 'WP_Site_Health' ) && method_exists( 'WP_Site_Health', 'get_instance' ) ) {
+            $health = WP_Site_Health::get_instance();
+            if ( method_exists( $health, 'get_test_count' ) ) {
+                $counts = $health->get_test_count();
+                $site_health_score = array(
+                    'status'      => ( $counts['critical'] ?? 0 ) > 0 ? 'critical' : ( ( $counts['recommended'] ?? 0 ) > 0 ? 'recommended' : 'good' ),
+                    'good'        => $counts['good'] ?? 0,
+                    'recommended' => $counts['recommended'] ?? 0,
+                    'critical'    => $counts['critical'] ?? 0,
+                );
+            }
         }
     }
 
@@ -613,7 +749,8 @@ function get_wordfence_blocked_stats() {
             'top_urls' => $top_urls,
             'top_reasons' => $top_reasons,
             'top_usernames' => $top_usernames,
-            'last_scan' => $last_scan
+            'last_scan' => $last_scan,
+            'debug' => isset($wf_debug_info) ? $wf_debug_info : array('table_available' => false),
         ),
         'infrastructure' => $server_info,
         'maintenance' => array(

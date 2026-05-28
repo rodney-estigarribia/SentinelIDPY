@@ -18,7 +18,7 @@ class HTMLPDFGenerator:
     def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None,
                  infra_data=None, ssl_days=None, hoja_de_ruta=None, metrics_data=None,
                  wordfence_data=None, maintenance_data=None, recommendations=None, timeframe_name="Últimos 30 días",
-                 audit_type=None, cta_implementation_text=None):
+                 audit_type=None, cta_implementation_text=None, audit_cost=None):
         self.cliente_nombre = cliente_nombre
         self.improved_text = improved_text
         self.timeframe_name = timeframe_name
@@ -35,6 +35,7 @@ class HTMLPDFGenerator:
         self.recommendations = recommendations or []
         self.audit_type = audit_type
         self.cta_implementation_text = cta_implementation_text or "Comenzar implementación de mejoras propuestas"
+        self.audit_cost = audit_cost
 
     def _format_duration(self, seconds):
         minutes = int(seconds) // 60
@@ -113,16 +114,20 @@ class HTMLPDFGenerator:
             arrow = "▲" if trend >= 0 else "▼"
             return f'<div class="metric-trend {cls}">{arrow} {trend:+.0f}%</div>'
 
+        nb_visits = self.metrics_data.get('nb_visits', 0)
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
+        has_unique_visitors = not (visitors == 0 and nb_visits > 0)
         ppv = self.metrics_data.get('nb_actions_per_visit', 0)
         avg_time = self._format_duration(
             self.metrics_data.get('avg_time_on_site', 0))
         avg_time_val = self.metrics_data.get('avg_time_on_site', 0)
         bounce = self.metrics_data.get('bounce_rate', 0)
 
-        cards = [
-            (f"{visitors:,}", "Visitantes únicos", trend_html(
-                calc_trend(visitors, prev.get('nb_uniq_visitors')))),
+        cards = []
+        if has_unique_visitors:
+            cards.append((f"{visitors:,}", "Visitantes únicos", trend_html(
+                calc_trend(visitors, prev.get('nb_uniq_visitors')))))
+        cards += [
             (f"{ppv:.1f}", "Páginas por visita", trend_html(
                 calc_trend(ppv, prev.get('nb_actions_per_visit')))),
             (avg_time, "Tiempo promedio", trend_html(
@@ -131,7 +136,8 @@ class HTMLPDFGenerator:
                 calc_trend(bounce, prev.get('bounce_rate')), invert=True)),
         ]
 
-        html = '<div class="metrics-grid">'
+        cols = len(cards)
+        html = f'<div class="metrics-grid" style="grid-template-columns: {"1fr " * cols};">'
         for value, label, trend in cards:
             html += f'''
                 <div class="metric-card">
@@ -256,114 +262,61 @@ class HTMLPDFGenerator:
 
         return f'''
         <div class="section">
-            <h2 class="section-title">Los Siguientes Pasos</h2>
+            <h2 class="section-title">Siguientes Pasos</h2>
             <div class="steps-container">
                 {steps_html}
             </div>
-            <div style="font-size:8px;color:var(--text-secondary);font-style:italic;margin-top:6px;">* Dinero estimado basado en análisis de sitio y mercado de la industria actual.</div>
         </div>'''
 
     def _build_financial_section(self):
-        if not self.recommendations:
-            return ""
-
-        from recommendation_engine import RecommendationEngine
-        summary = RecommendationEngine.financial_summary(self.recommendations)
-        if not summary or summary['total_monthly_return'] == 0:
-            return ""
-
-        investment_rows = ""
-        for item in summary['items']:
-            if item['investment'] > 0:
-                investment_rows += f'<div class="financial-row"><div class="financial-label">{item["action"]}</div><div class="financial-value">Gs. {item["investment"]:,}</div></div>'
-
-        return_rows = ""
-        for item in summary['items']:
-            if item['monthly_return'] > 0:
-                return_rows += f'<div class="financial-row"><div class="financial-label">{item["action"]}</div><div class="financial-value">Gs. {item["monthly_return"]:,}/mes</div></div>'
-
-        payback = summary['payback_months']
-        payback_text = f"~{payback:.0f} mes" if payback <= 1.5 else f"~{payback:.0f} meses"
-        roi_3m_pct = int((summary['roi_3_months'] / summary['total_investment'])
-                         * 100) if summary['total_investment'] > 0 else 0
-
-        return f'''
-        <div class="section">
-            <h2 class="section-title">Resumen Financiero</h2>
-            <div class="financial-summary">
-                <div class="financial-section-label">INVERSIÓN TOTAL:</div>
-                {investment_rows}
-                <div class="financial-divider"></div>
-                <div class="financial-total"><div>TOTAL INVERSIÓN:</div><div>Gs. {summary["total_investment"]:,}</div></div>
-
-                <div style="margin-top: 15px; border-top: 1px solid rgba(0, 217, 255, 0.2); padding-top: 12px;">
-                    <div class="financial-section-label">RETORNO MENSUAL ESTIMADO:</div>
-                </div>
-                {return_rows}
-                <div class="financial-divider"></div>
-                <div class="financial-total"><div>RETORNO MENSUAL TOTAL:</div><div>Gs. {summary["total_monthly_return"]:,}</div></div>
-
-                <div class="roi-metrics">
-                    <div class="roi-metric"><div class="roi-value">{payback_text}</div><div class="roi-label">Recuperación</div></div>
-                    <div class="roi-metric"><div class="roi-value">{roi_3m_pct}%</div><div class="roi-label">ROI a 3 meses</div></div>
-                </div>
-            </div>
-            <div style="font-size:9px;color:var(--text-secondary);font-style:italic;margin-top:8px;">* Dinero estimado basado en análisis de sitio y mercado de la industria actual.</div>
-        </div>'''
+        return ""
 
     def _build_cta_section(self):
-        audit_title = f"Próximo Paso - Auditoría Estratégica: {self.audit_type}" if self.audit_type else "Próximo Paso - Auditoría Estratégica"
+        calendar_url = os.getenv('CALENDAR_URL', '')
+        calendar_line = f'<div class="cta-phase-text">Agendar: {calendar_url}</div>' if calendar_url else ''
+        cost_line = f'<div class="cta-phase-text" style="margin-top:5px;"><strong>Costo de auditoría:</strong> Gs. {self.audit_cost}</div>' if self.audit_cost else ''
+        subtitle = f'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Auditoría Estratégica: {self.audit_type}</div>' if self.audit_type else ''
         return f'''
         <div class="cta-section">
-            <h3 class="cta-title">{audit_title}</h3>
+            <h3 class="cta-title">Próximos Pasos</h3>
+            {subtitle}
             <div class="cta-phase">
-                <div class="cta-phase-title">INMEDIATO (Esta semana):</div>
-                <div class="cta-phase-text">Agendar auditoría estratégica con Rodney</div>
-                <div class="cta-phase-text">WhatsApp: +595 981 123456</div>
-                <div class="cta-phase-text">Email: rodney@impulsosdigitales.com</div>
-                <div class="cta-phase-text">Calendario: https://calendly.com/impulsosdigitales</div>
-                <div class="cta-phase-text" style="margin-top: 5px;"><strong>Tiempo:</strong> 2-3 horas | <strong>Costo:</strong> Gs. 500.000 (plan completo)</div>
+                <div class="cta-phase-title">LO ANTES POSIBLE (Esta semana o la próxima):</div>
+                <div class="cta-phase-text">Agendar auditoría estratégica</div>
+                {calendar_line}
+                {cost_line}
             </div>
             <div class="cta-phase" style="margin-top: 10px;">
-                <div class="cta-phase-title">CORTO PLAZO (Próximas 2 semanas):</div>
-                <div class="cta-phase-text">Recibir reporte de auditoría con puntos críticos priorizados</div>
-                <div class="cta-phase-text">{self.cta_implementation_text}</div>
+                <div class="cta-phase-title">A CORTO PLAZO (Próximas 2 a 4 semanas):</div>
+                <div class="cta-phase-text">Recibir reporte con puntos de mejora</div>
+                <div class="cta-phase-text">Comenzar ajustes de diseño</div>
             </div>
             <div class="cta-phase">
-                <div class="cta-phase-title">SEGUIMIENTO (Cada 30 días):</div>
-                <div class="cta-phase-text">Medir cambios en bounce, conversión y abandono</div>
-                <div class="cta-phase-text">Ajustar estrategia según datos del próximo reporte</div>
+                <div class="cta-phase-title">SEGUIMIENTO PERIÓDICO:</div>
+                <div class="cta-phase-text">Mantenimiento constante ya incluido + resúmenes estratégicos y de mantenimiento</div>
+                <div class="cta-phase-text">Alineación estratégica conforme necesidades del cliente</div>
             </div>
         </div>'''
 
     # ─── PAGE 2 BUILDERS ──────────────────────────────────────────
 
     def _build_storage_section(self):
-        # Explicit None check: only skip if data is None or completely missing
         if self.infra_data is None:
-            logger.warning(
-                "[STORAGE_SECTION] Infrastructure data is None - skipping storage section")
+            return ""
+        site_size_gb = self.infra_data.get('site_size_gb')
+        if not site_size_gb:
             return ""
 
-        # Check if data exists and has valid disk information
-        disk_total = self.infra_data.get('disk_total_gb', 0)
-        if not disk_total or disk_total == 0:
-            logger.warning(
-                f"[STORAGE_SECTION] Invalid disk data: {self.infra_data}")
-            return ""
+        def fmt_size(gb):
+            if gb >= 1000:
+                return f"{gb/1024:.1f} TB"
+            return f"{gb:.1f} GB"
 
-        pct = self.infra_data.get('disk_used_percentage', 0)
-        used = self.infra_data.get('disk_used_gb', 0)
-        total = disk_total
-
-        logger.info(
-            f"[STORAGE_SECTION] Building storage section: {used}GB / {total}GB ({pct}%)")
-
-        status = "Contás con muy buen espacio disponible." if pct < 80 else "Tu espacio en disco está llegando al límite."
+        size_str = fmt_size(site_size_gb)
         return f'''
         <div class="section">
-            <h2 class="section-title">Almacenamiento del Servidor</h2>
-            <div class="detail-card"><div class="detail-label">Uso de disco</div><div class="detail-value">{used} GB usados de {total} GB totales ({pct}%)</div><div class="step-detail" style="margin-top:5px;">{status}</div></div>
+            <h2 class="section-title">Almacenamiento del Sitio</h2>
+            <div class="detail-card"><div class="detail-label">Espacio utilizado por el sitio</div><div class="detail-value">{size_str}</div><div class="step-detail" style="margin-top:5px;">Incluye archivos, plugins, temas y medios subidos.</div></div>
         </div>'''
 
     def _build_maintenance_section(self):
@@ -391,24 +344,27 @@ class HTMLPDFGenerator:
             plugins_status = f"{pending_plugins} pendientes" if pending_plugins > 0 else "Sin datos"
         plugins_class = "text-danger" if pending_plugins > 0 else "text-success"
 
+        card_style = "flex:1;background:#f5f8fa;padding:10px 12px;border-radius:6px;border:1px solid rgba(0,102,204,0.15);"
+        label_style = "font-size:9px;color:var(--text-secondary);text-transform:uppercase;font-weight:600;margin-bottom:4px;letter-spacing:0.3px;"
+        value_style = "font-weight:700;color:var(--text-white);font-size:13px;margin-bottom:4px;"
         return f'''
         <div class="section">
             <h2 class="section-title">Estado del Ecosistema</h2>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-                <div style="background:#f5f8fa;padding:10px 15px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;align-items:center;">
-                    <div style="font-weight:600;color:var(--text-white);font-size:12px;">WordPress</div>
-                    <div style="font-weight:500;color:var(--text-secondary);font-size:11px;">v{wp_version}</div>
-                    <div class="{wp_class}" style="font-size:11px;font-weight:500;text-align:right;">{wp_status}</div>
+            <div style="display:flex;gap:8px;">
+                <div style="{card_style}">
+                    <div style="{label_style}">WordPress</div>
+                    <div style="{value_style}">v{wp_version}</div>
+                    <div class="{wp_class}" style="font-size:10px;">{wp_status}</div>
                 </div>
-                <div style="background:#f5f8fa;padding:10px 15px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;align-items:center;">
-                    <div style="font-weight:600;color:var(--text-white);font-size:12px;">Motor PHP</div>
-                    <div style="font-weight:500;color:var(--text-secondary);font-size:11px;">v{php_version}</div>
-                    <div class="{php_class}" style="font-size:11px;font-weight:500;text-align:right;">{php_status}</div>
+                <div style="{card_style}">
+                    <div style="{label_style}">Motor PHP</div>
+                    <div style="{value_style}">v{php_version}</div>
+                    <div class="{php_class}" style="font-size:10px;">{php_status}</div>
                 </div>
-                <div style="background:#f5f8fa;padding:10px 15px;border-radius:6px;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;align-items:center;">
-                    <div style="font-weight:600;color:var(--text-white);font-size:12px;">Plugins</div>
-                    <div style="font-weight:500;color:var(--text-secondary);font-size:11px;">{total_plugins} activos</div>
-                    <div class="{plugins_class}" style="font-size:11px;font-weight:500;text-align:right;">{plugins_status}</div>
+                <div style="{card_style}">
+                    <div style="{label_style}">Plugins</div>
+                    <div style="{value_style}">{total_plugins} activos</div>
+                    <div class="{plugins_class}" style="font-size:10px;">{plugins_status}</div>
                 </div>
             </div>
         </div>'''
@@ -437,18 +393,20 @@ class HTMLPDFGenerator:
             return ""
         visits = self.metrics_data.get('nb_visits', 0)
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
+        has_unique_visitors = not (visitors == 0 and visits > 0)
         avg_time = self._format_duration(
             self.metrics_data.get('avg_time_on_site', 0))
         bounce = self.metrics_data.get('bounce_rate', 0)
         top_pages = self.metrics_data.get('top_pages', [])
         page_rows = "".join(
             f"<tr><td>{p.get('label', '')}</td><td>{p.get('nb_visits', 0)}</td><td>{p.get('nb_hits', 0)}</td></tr>" for p in top_pages)
+        visitors_card = f'<div class="detail-card"><div class="detail-label">Visitantes Únicos</div><div class="detail-value">{visitors:,}</div></div>' if has_unique_visitors else ''
         return f'''
         <div class="section">
             <h2 class="section-title">Análisis de Visibilidad</h2>
             <div class="detail-grid">
                 <div class="detail-card"><div class="detail-label">Visitas</div><div class="detail-value">{visits:,}</div></div>
-                <div class="detail-card"><div class="detail-label">Visitantes Únicos</div><div class="detail-value">{visitors:,}</div></div>
+                {visitors_card}
                 <div class="detail-card"><div class="detail-label">Tiempo Promedio</div><div class="detail-value">{avg_time}</div></div>
                 <div class="detail-card"><div class="detail-label">Tasa de Rebote</div><div class="detail-value">{bounce:.1f}%</div></div>
             </div>
@@ -541,6 +499,10 @@ class HTMLPDFGenerator:
         html = html.replace('{{images_section}}',
                             self._build_images_section())
 
+        company_website = os.getenv('COMPANY_WEBSITE', '')
+        company_website_html = f' — {company_website}' if company_website else ''
+        html = html.replace('{{company_website}}', company_website_html)
+
         if not os.path.exists("reportes"):
             os.makedirs("reportes")
 
@@ -554,8 +516,7 @@ if __name__ == "__main__":
     gen = HTMLPDFGenerator(
         "CGA",
         "Hemos optimizado el tiempo de respuesta del servidor.",
-        infra_data={'disk_used_percentage': 36,
-                    'disk_used_gb': 4476, 'disk_total_gb': 12336},
+        infra_data={'site_size_gb': 3.7, 'php_version': '8.2.1', 'wp_version': '6.5'},
         ssl_days=45,
         hoja_de_ruta=(
             "- Reducir bounce rate en mobile (58%)\n"

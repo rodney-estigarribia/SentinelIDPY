@@ -31,7 +31,7 @@ ALLOWED_USERS = [int(i.strip()) for i in os.getenv("ALLOWED_USERS", "").split(",
 CLIENTS_FILE = "clientes.json"
 
 # Estados de la conversación
-INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA, AUDITORIA_TIPO, AUDITORIA_CUSTOM = range(12)
+INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA, AUDITORIA_TIPO, AUDITORIA_CUSTOM, COSTO_AUDITORIA = range(13)
 
 # Configurar logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -338,7 +338,7 @@ async def handle_auditoria_tipo(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data['cta_implementation_text'] = impl_text
         await query.edit_message_text(f"Auditoría: *{audit_type}*", parse_mode='Markdown')
 
-    return await ask_hoja_de_ruta(query, context)
+    return await ask_audit_cost(query, context)
 
 async def handle_auditoria_custom(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja el texto libre para tipo de auditoría personalizado."""
@@ -346,9 +346,49 @@ async def handle_auditoria_custom(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['audit_type'] = audit_type
     context.user_data['cta_implementation_text'] = f"Comenzar implementación de {audit_type.lower()}"
     await update.message.reply_text(f"Auditoría personalizada: *{audit_type}*", parse_mode='Markdown')
-    return await ask_hoja_de_ruta(update, context)
+    return await ask_audit_cost(update, context)
 
-async def ask_hoja_de_ruta(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ask_audit_cost(update, context: ContextTypes.DEFAULT_TYPE):
+    """Pregunta el costo de la auditoría estratégica."""
+    keyboard = [
+        [InlineKeyboardButton("Gs. 300.000", callback_data="cost_300"),
+         InlineKeyboardButton("Gs. 500.000", callback_data="cost_500")],
+        [InlineKeyboardButton("Gs. 800.000", callback_data="cost_800"),
+         InlineKeyboardButton("Gs. 1.000.000", callback_data="cost_1000")],
+        [InlineKeyboardButton("Sin costo / No incluir", callback_data="cost_none")],
+        [InlineKeyboardButton("❌ Cancelar", callback_data="cancel_report")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "¿Cuál es el costo de la auditoría estratégica?",
+        reply_markup=reply_markup
+    )
+    return COSTO_AUDITORIA
+
+async def handle_audit_cost(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Guarda el costo seleccionado y avanza a la hoja de ruta."""
+    query = update.callback_query
+    await query.answer()
+
+    COST_MAP = {
+        "cost_300": "300.000",
+        "cost_500": "500.000",
+        "cost_800": "800.000",
+        "cost_1000": "1.000.000",
+    }
+
+    cb = query.data
+    if cb == "cost_none":
+        context.user_data['audit_cost'] = None
+        await query.edit_message_text("Sin costo de auditoría.")
+    elif cb in COST_MAP:
+        cost = COST_MAP[cb]
+        context.user_data['audit_cost'] = cost
+        await query.edit_message_text(f"Costo: *Gs. {cost}*", parse_mode='Markdown')
+
+    return await ask_hoja_de_ruta(query, context)
+
+async def ask_hoja_de_ruta(update, context: ContextTypes.DEFAULT_TYPE):
     """Pregunta al consultor por recomendaciones estratégicas."""
     client_name = context.user_data['client']['nombre']
     keyboard = [
@@ -449,6 +489,7 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data_recommendations = context.user_data.get('data_recommendations', [])
     audit_type = context.user_data.get('audit_type')
     cta_implementation_text = context.user_data.get('cta_implementation_text')
+    audit_cost = context.user_data.get('audit_cost')
     logger.info(f"Generating report - infra: {infra_data}, ssl: {ssl_days}, metrics: {metrics_data}")
     pdf_path = None
 
@@ -456,7 +497,7 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
         selected_tf = context.user_data.get('selected_tf', {'label': 'Últimos 30 días'})
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'], audit_type, cta_implementation_text)
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'], audit_type, cta_implementation_text, audit_cost)
         logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
@@ -534,6 +575,7 @@ def main():
             ],
             AUDITORIA_TIPO: [CallbackQueryHandler(handle_auditoria_tipo)],
             AUDITORIA_CUSTOM: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_auditoria_custom)],
+            COSTO_AUDITORIA: [CallbackQueryHandler(handle_audit_cost)],
             HOJA_DE_RUTA: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, process_hoja_de_ruta),
                 CommandHandler('skip', skip_hoja_de_ruta)

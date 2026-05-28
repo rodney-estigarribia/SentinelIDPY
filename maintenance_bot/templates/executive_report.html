@@ -19,7 +19,7 @@
             --text-white: #1A1A1A;
             --text-secondary: #404040;
             --text-muted: #2D2D2D;
-            --accent-green: #2ECC71;
+            --accent-green: #1a7a3a;
             --accent-red: #E74C3C;
             --accent-gold: #F7931E;
         }
@@ -46,8 +46,8 @@
         /* ===== HEADER ===== */
         .header {
             border-top: 4px solid var(--cyan-accent);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
             position: relative;
         }
 
@@ -57,7 +57,7 @@
             width: 100%;
             height: 1px;
             background: linear-gradient(90deg, var(--cyan-accent), transparent);
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         .header-title {
@@ -78,7 +78,7 @@
 
         /* ===== SECTIONS ===== */
         .section {
-            margin-bottom: 35px;
+            margin-bottom: 18px;
         }
 
         .section-title {
@@ -249,6 +249,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
+            page-break-inside: avoid;
         }
 
         .step {
@@ -308,9 +309,9 @@
             background: linear-gradient(135deg, rgba(0, 102, 204, 0.08), rgba(0, 115, 230, 0.04));
             border: 2px solid var(--cyan-accent);
             border-radius: 8px;
-            padding: 20px;
-            margin-top: 30px;
-            margin-bottom: 35px;
+            padding: 15px 20px;
+            margin-top: 12px;
+            margin-bottom: 0;
             position: relative;
         }
 
@@ -408,16 +409,10 @@
         <!-- LOS SIGUIENTES PASOS -->
         {{steps_section}}
 
-        <!-- PAGE BREAK before FINANCIAL -->
-        <div class="page-break"></div>
-
-        <!-- RESUMEN FINANCIERO -->
-        {{financial_section}}
-
         <!-- CTA -->
         {{cta_section}}
 
-        <!-- PAGE BREAK -->
+        <!-- PAGE BREAK before technical detail -->
         <div class="page-break"></div>
 
         <!-- PAGE 2: TECHNICAL DETAIL -->
@@ -458,7 +453,7 @@
 
         <div class="footer">
             <p>© 2026 Impulsos Digitales. Reporte Confidencial - Preparado para {{cliente_nombre}}</p>
-            <p>Para consultas o seguimiento, contactar a: Rodney Mendoza</p>
+            <p>Para consultas o seguimiento, contactar a: Impulsos Digitales{{company_website}}</p>
         </div>
     </div>
 </body>
