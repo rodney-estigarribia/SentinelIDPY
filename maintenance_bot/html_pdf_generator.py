@@ -1,6 +1,7 @@
 import datetime
 import os
 import logging
+from urllib.parse import urlparse
 from weasyprint import HTML
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,9 @@ class HTMLPDFGenerator:
     def _format_duration(self, seconds):
         minutes = int(seconds) // 60
         secs = int(seconds) % 60
-        return f"{minutes}:{secs:02d}"
+        if minutes == 0:
+            return f"{secs} seg"
+        return f"{minutes} min {secs:02d} seg"
 
     # ─── SECTION BUILDERS ─────────────────────────────────────────
 
@@ -139,9 +142,9 @@ class HTMLPDFGenerator:
         if has_unique_visitors:
             cards.append((f"{visitors:,}", "Visitantes únicos", trend_html(calc_trend(visitors, prev.get('nb_uniq_visitors'))), ''))
         cards += [
-            (f"{ppv:.1f}", "Páginas por visita", trend_html(calc_trend(ppv, prev.get('nb_actions_per_visit'))), ppv_badge),
-            (avg_time, "Tiempo promedio", trend_html(calc_trend(avg_time_val, prev.get('avg_time_on_site'))), time_badge),
-            (f"{bounce:.1f}%", "Tasa de rebote", trend_html(calc_trend(bounce, prev.get('bounce_rate')), invert=True), bounce_badge),
+            (f"{ppv:.1f} pág.", "Páginas por visita", trend_html(calc_trend(ppv, prev.get('nb_actions_per_visit'))), ppv_badge),
+            (avg_time, "Tiempo promedio en el sitio", trend_html(calc_trend(avg_time_val, prev.get('avg_time_on_site'))), time_badge),
+            (f"{bounce:.1f}%", "Visitantes que salieron sin navegar (rebote)", trend_html(calc_trend(bounce, prev.get('bounce_rate')), invert=True), bounce_badge),
         ]
 
         cols = len(cards)
@@ -269,11 +272,39 @@ class HTMLPDFGenerator:
                     {details_html}
                 </div>'''
 
+        # Auto-generate metric improvement tips for non-"Bueno" metrics
+        auto_tips_html = ""
+        if self.metrics_data:
+            bounce    = self.metrics_data.get('bounce_rate', 0)
+            avg_t     = self.metrics_data.get('avg_time_on_site', 0)
+            ppv_val   = self.metrics_data.get('nb_actions_per_visit', 0)
+            tips = []
+            if bounce >= 65:
+                tips.append(f"Tasa de rebote alta ({bounce:.1f}%): Mejorar la velocidad de carga y asegurar que el contenido de la home sea relevante para que los visitantes continúen navegando.")
+            elif bounce >= 40:
+                tips.append(f"Tasa de rebote ({bounce:.1f}%): Revisar el diseño y los llamados a la acción para invitar a explorar más páginas.")
+            if avg_t < 60:
+                tips.append(f"Tiempo promedio muy bajo ({self._format_duration(avg_t)}): Enriquecer el contenido con videos o secciones interactivas para que los visitantes permanezcan más tiempo.")
+            elif avg_t < 180:
+                tips.append(f"Tiempo promedio ({self._format_duration(avg_t)}): Agregar contenido interno relacionado y CTAs visibles para aumentar la permanencia en el sitio.")
+            if ppv_val < 2:
+                tips.append(f"Páginas por visita bajas ({ppv_val:.1f} pág.): Mejorar la navegación interna con menús claros y enlaces a contenido relacionado.")
+            elif ppv_val < 3:
+                tips.append(f"Páginas por visita ({ppv_val:.1f} pág.): Incorporar bloques de \"También te puede interesar\" para guiar al visitante hacia más contenido.")
+            if tips:
+                tips_items = "".join(f'<div class="step-detail" style="margin-top:4px;">- {t}</div>' for t in tips)
+                auto_tips_html = f'''
+                <div class="step" style="margin-top:10px;">
+                    <div class="step-number">Oportunidades de mejora detectadas</div>
+                    {tips_items}
+                </div>'''
+
         return f'''
         <div class="section">
             <h2 class="section-title">Siguientes Pasos</h2>
             <div class="steps-container">
                 {steps_html}
+                {auto_tips_html}
             </div>
         </div>'''
 
@@ -388,8 +419,13 @@ class HTMLPDFGenerator:
         ip_chips = "".join(
             f'<span style="display:inline-block;background:#fff0f0;border:1px solid #f5c6cb;border-radius:4px;padding:2px 7px;margin:2px;font-size:10px;">{ip.get("ip","")}&nbsp;<strong>{ip.get("count",0)}</strong></span>'
             for ip in self.wordfence_data.get('top_ips', [])[:5])
+        def strip_domain(url):
+            parsed = urlparse(url)
+            path = parsed.path or url
+            return (path[:50] + '…') if len(path) > 50 else path or url
+
         url_chips = "".join(
-            f'<span style="display:inline-block;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:2px 7px;margin:2px;font-size:10px;">{u.get("url","")[:50]}&nbsp;<strong>{u.get("count",0)}</strong></span>'
+            f'<span style="display:inline-block;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:2px 7px;margin:2px;font-size:10px;">{strip_domain(u.get("url",""))}&nbsp;<strong>{u.get("count",0)}</strong></span>'
             for u in self.wordfence_data.get('top_urls', [])[:3])
         ip_block = f'<div style="margin-top:8px;"><span class="detail-label" style="font-size:10px;">Top IPs bloqueadas:</span><br>{ip_chips}</div>' if ip_chips else ''
         url_block = f'<div style="margin-top:6px;"><span class="detail-label" style="font-size:10px;">Top URLs atacadas:</span><br>{url_chips}</div>' if url_chips else ''
