@@ -1,1 +1,24 @@
+# OS
 .DS_Store
+
+# Environment / secrets
+.env
+*.env
+!*.env.example
+
+# Client data (private — contains client names and URLs)
+maintenance_bot/clientes.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Logs
+*.log
+
+# Test/temp output
+test_html_executive.pdf
+maintenance_bot/output/
