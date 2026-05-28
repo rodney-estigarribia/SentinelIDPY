@@ -114,31 +114,39 @@ class HTMLPDFGenerator:
             arrow = "▲" if trend >= 0 else "▼"
             return f'<div class="metric-trend {cls}">{arrow} {trend:+.0f}%</div>'
 
+        def badge(status):
+            styles = {
+                'bueno':    ('background:#d4edda;color:#155724;', 'Bueno'),
+                'aceptable':('background:#fff3cd;color:#856404;', 'Aceptable'),
+                'mejora':   ('background:#f8d7da;color:#721c24;', 'Oportunidad de mejora'),
+            }
+            style, text = styles.get(status, ('', ''))
+            return f'<div style="display:inline-block;{style}border-radius:3px;padding:1px 5px;font-size:9px;margin-top:3px;">{text}</div>'
+
         nb_visits = self.metrics_data.get('nb_visits', 0)
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
         has_unique_visitors = not (visitors == 0 and nb_visits > 0)
         ppv = self.metrics_data.get('nb_actions_per_visit', 0)
-        avg_time = self._format_duration(
-            self.metrics_data.get('avg_time_on_site', 0))
+        avg_time = self._format_duration(self.metrics_data.get('avg_time_on_site', 0))
         avg_time_val = self.metrics_data.get('avg_time_on_site', 0)
         bounce = self.metrics_data.get('bounce_rate', 0)
 
+        bounce_badge = badge('bueno' if bounce < 40 else ('aceptable' if bounce < 65 else 'mejora'))
+        time_badge   = badge('bueno' if avg_time_val >= 180 else ('aceptable' if avg_time_val >= 60 else 'mejora'))
+        ppv_badge    = badge('bueno' if ppv >= 3 else ('aceptable' if ppv >= 2 else 'mejora'))
+
         cards = []
         if has_unique_visitors:
-            cards.append((f"{visitors:,}", "Visitantes únicos", trend_html(
-                calc_trend(visitors, prev.get('nb_uniq_visitors')))))
+            cards.append((f"{visitors:,}", "Visitantes únicos", trend_html(calc_trend(visitors, prev.get('nb_uniq_visitors'))), ''))
         cards += [
-            (f"{ppv:.1f}", "Páginas por visita", trend_html(
-                calc_trend(ppv, prev.get('nb_actions_per_visit')))),
-            (avg_time, "Tiempo promedio", trend_html(
-                calc_trend(avg_time_val, prev.get('avg_time_on_site')))),
-            (f"{bounce:.1f}%", "Tasa de rebote", trend_html(
-                calc_trend(bounce, prev.get('bounce_rate')), invert=True)),
+            (f"{ppv:.1f}", "Páginas por visita", trend_html(calc_trend(ppv, prev.get('nb_actions_per_visit'))), ppv_badge),
+            (avg_time, "Tiempo promedio", trend_html(calc_trend(avg_time_val, prev.get('avg_time_on_site'))), time_badge),
+            (f"{bounce:.1f}%", "Tasa de rebote", trend_html(calc_trend(bounce, prev.get('bounce_rate')), invert=True), bounce_badge),
         ]
 
         cols = len(cards)
         html = f'<div class="metrics-grid" style="grid-template-columns: {"1fr " * cols};">'
-        for value, label, trend in cards:
+        for value, label, trend, bdg in cards:
             html += f'''
                 <div class="metric-card">
                     <div class="metric-top">
@@ -146,6 +154,7 @@ class HTMLPDFGenerator:
                         {trend}
                     </div>
                     <div class="metric-secondary">{label}</div>
+                    {bdg}
                 </div>'''
         html += '</div>'
         return html
@@ -313,10 +322,12 @@ class HTMLPDFGenerator:
             return f"{gb:.1f} GB"
 
         size_str = fmt_size(site_size_gb)
+        free_gb = self.infra_data.get('disk_free_gb')
+        free_str = f"  &nbsp;|&nbsp;  {fmt_size(free_gb)} disponibles en el servidor" if free_gb else ""
         return f'''
         <div class="section">
             <h2 class="section-title">Almacenamiento del Sitio</h2>
-            <div class="detail-card"><div class="detail-label">Espacio utilizado por el sitio</div><div class="detail-value">{size_str}</div><div class="step-detail" style="margin-top:5px;">Incluye archivos, plugins, temas y medios subidos.</div></div>
+            <div class="detail-card"><div class="detail-label">Espacio utilizado por el sitio</div><div class="detail-value">{size_str}<span style="font-size:11px;color:#666;font-weight:normal;">{free_str}</span></div><div class="step-detail" style="margin-top:5px;">Incluye archivos, plugins, temas y medios subidos.</div></div>
         </div>'''
 
     def _build_maintenance_section(self):
@@ -325,12 +336,12 @@ class HTMLPDFGenerator:
 
         wp_version = self.infra_data.get('wp_version', 'Desconocida') if self.infra_data else 'Desconocida'
         pending_wp = self.maintenance_data.get('pending_updates', {}).get('wordpress', 0) if self.maintenance_data else 0
-        wp_status = "Actualizacion pendiente" if pending_wp > 0 else "Actualizado a la ultima version"
+        wp_status = "Actualización pendiente" if pending_wp > 0 else "Actualizado a la última versión"
         wp_class = "text-danger" if pending_wp > 0 else "text-success"
 
         php_version = self.infra_data.get('php_version', 'Desconocida') if self.infra_data else 'Desconocida'
         is_safe_php = str(php_version).startswith('8.')
-        php_status = "Version segura y compatible" if is_safe_php else f"Requiere actualizacion ({php_version})"
+        php_status = "Versión segura y compatible" if is_safe_php else f"Requiere actualización ({php_version})"
         php_class = "text-success" if is_safe_php else "text-danger"
 
         total_plugins = self.maintenance_data.get('total_active_plugins', 0) if self.maintenance_data else 0
@@ -339,7 +350,7 @@ class HTMLPDFGenerator:
         
         plugins_title = f"{total_plugins} Plugins activos"
         if total_plugins > 0:
-            plugins_status = f"{updated_plugins} al dia y {pending_plugins} pendientes" if pending_plugins > 0 else "100% actualizados a la ultima version"
+            plugins_status = f"{updated_plugins} al día y {pending_plugins} pendientes" if pending_plugins > 0 else "100% actualizados a la última versión"
         else:
             plugins_status = f"{pending_plugins} pendientes" if pending_plugins > 0 else "Sin datos"
         plugins_class = "text-danger" if pending_plugins > 0 else "text-success"
@@ -374,18 +385,25 @@ class HTMLPDFGenerator:
             return ""
         total = self.wordfence_data.get('total_attacks', 0)
         last_scan = self.wordfence_data.get('last_scan', 'No disponible')
-        ip_rows = "".join(
-            f"<tr><td>{ip.get('ip', '')}</td><td>{ip.get('count', 0)}</td></tr>" for ip in self.wordfence_data.get('top_ips', [])[:5])
-        url_rows = "".join(
-            f"<tr><td>{u.get('url', '')[:60]}</td><td>{u.get('count', 0)}</td></tr>" for u in self.wordfence_data.get('top_urls', [])[:3])
+        ip_chips = "".join(
+            f'<span style="display:inline-block;background:#fff0f0;border:1px solid #f5c6cb;border-radius:4px;padding:2px 7px;margin:2px;font-size:10px;">{ip.get("ip","")}&nbsp;<strong>{ip.get("count",0)}</strong></span>'
+            for ip in self.wordfence_data.get('top_ips', [])[:5])
+        url_chips = "".join(
+            f'<span style="display:inline-block;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:2px 7px;margin:2px;font-size:10px;">{u.get("url","")[:50]}&nbsp;<strong>{u.get("count",0)}</strong></span>'
+            for u in self.wordfence_data.get('top_urls', [])[:3])
+        ip_block = f'<div style="margin-top:8px;"><span class="detail-label" style="font-size:10px;">Top IPs bloqueadas:</span><br>{ip_chips}</div>' if ip_chips else ''
+        url_block = f'<div style="margin-top:6px;"><span class="detail-label" style="font-size:10px;">Top URLs atacadas:</span><br>{url_chips}</div>' if url_chips else ''
+        scan_ok = last_scan and last_scan != 'No disponible' and '1970' not in last_scan
+        scan_line = f'<div class="step-detail" style="margin-top:5px;">Último escaneo: {last_scan}</div>' if scan_ok else ''
         return f'''
         <div class="section">
             <h2 class="section-title">Detalle de Seguridad</h2>
-            <div class="detail-card"><div class="detail-label">Últimos 30 días</div><div class="detail-value text-success">{total:,} ataques bloqueados</div><div class="step-detail" style="margin-top:5px;">Último escaneo: {last_scan}</div></div>
-            <h3 class="section-title" style="margin-top:15px;font-size:12px;">Top IPs Bloqueadas</h3>
-            <div class="table-container"><table><thead><tr><th>IP</th><th>Intentos</th></tr></thead><tbody>{ip_rows}</tbody></table></div>
-            <h3 class="section-title" style="margin-top:15px;font-size:12px;">Top URLs Atacadas</h3>
-            <div class="table-container"><table><thead><tr><th>URL</th><th>Intentos</th></tr></thead><tbody>{url_rows}</tbody></table></div>
+            <div class="detail-card">
+                <div class="detail-label">Últimos 30 días</div>
+                <div class="detail-value text-success">{total:,} ataques bloqueados</div>
+                {scan_line}
+                {ip_block}{url_block}
+            </div>
         </div>'''
 
     def _build_analytics_section(self):

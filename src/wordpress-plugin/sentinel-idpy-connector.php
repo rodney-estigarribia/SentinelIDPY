@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 2.4
+ * Version: 2.5
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '2.4' );
+define( 'SENTINEL_PLUGIN_VERSION', '2.5' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -631,7 +631,7 @@ function sentinel_stats_inner() {
         // Wordfence Malware Scan
         if (class_exists('wfConfig')) {
             $last_scan_time = wfConfig::get('lastScanCompleted', 0);
-            if ($last_scan_time > 0) {
+            if ((int) $last_scan_time > 0) {
                 $last_scan = date('Y-m-d H:i:s', (int) $last_scan_time);
             }
         }
@@ -657,8 +657,14 @@ function sentinel_stats_inner() {
     $site_size_gb = $site_size_bytes > 0 ? round($site_size_bytes / $gb_divisor, 2) : null;
     error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', site_size_gb=' . $site_size_gb);
 
+    $disk_free_bytes = @disk_free_space( ABSPATH );
+    $disk_free_gb    = ( $disk_free_bytes !== false && $disk_free_bytes > 0 )
+        ? round( $disk_free_bytes / $gb_divisor, 2 )
+        : null;
+
     $server_info = array(
         'site_size_gb' => $site_size_gb,
+        'disk_free_gb' => $disk_free_gb,
         'php_version' => PHP_VERSION,
         'wp_version' => get_bloginfo('version'),
         'server_ip' => $_SERVER['SERVER_ADDR'] ?? 'Unknown'
