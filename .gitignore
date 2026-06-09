@@ -8,6 +8,7 @@
 
 # Client data (private — contains client names and URLs)
 maintenance_bot/clientes.json
+sites.json
 
 # Python
 __pycache__/

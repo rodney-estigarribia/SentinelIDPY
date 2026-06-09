@@ -1,4 +1,5 @@
 import datetime
+import math
 import os
 import logging
 from urllib.parse import urlparse
@@ -19,7 +20,7 @@ class HTMLPDFGenerator:
     def __init__(self, cliente_nombre, improved_text, antes_img=None, despues_img=None,
                  infra_data=None, ssl_days=None, hoja_de_ruta=None, metrics_data=None,
                  wordfence_data=None, maintenance_data=None, recommendations=None, timeframe_name="Últimos 30 días",
-                 audit_type=None, cta_implementation_text=None, audit_cost=None):
+                 audit_type=None, cta_implementation_text=None, audit_cost=None, disk_quota_gb=None):
         self.cliente_nombre = cliente_nombre
         self.improved_text = improved_text
         self.timeframe_name = timeframe_name
@@ -37,6 +38,7 @@ class HTMLPDFGenerator:
         self.audit_type = audit_type
         self.cta_implementation_text = cta_implementation_text or "Comenzar implementación de mejoras propuestas"
         self.audit_cost = audit_cost
+        self.disk_quota_gb = disk_quota_gb
 
     def _format_duration(self, seconds):
         minutes = int(seconds) // 60
@@ -119,12 +121,12 @@ class HTMLPDFGenerator:
 
         def badge(status):
             styles = {
-                'bueno':    ('background:#d4edda;color:#155724;', 'Bueno'),
-                'aceptable':('background:#fff3cd;color:#856404;', 'Aceptable'),
-                'mejora':   ('background:#f8d7da;color:#721c24;', 'Oportunidad de mejora'),
+                'bueno':    ('background-color:transparent;border:1px solid rgba(46,204,113,0.3);color:#1e8449;', 'Bueno'),
+                'aceptable':('background-color:transparent;border:1px solid rgba(243,156,18,0.3);color:#d68910;', 'Aceptable'),
+                'mejora':   ('background-color:transparent;border:1px solid rgba(231,76,60,0.3);color:#c0392b;', 'Oportunidad de mejora'),
             }
             style, text = styles.get(status, ('', ''))
-            return f'<div style="display:inline-block;{style}border-radius:3px;padding:1px 5px;font-size:9px;margin-top:3px;">{text}</div>'
+            return f'<div style="display:inline-block;{style}border-radius:3px;padding:2px 6px;font-size:9px;font-weight:600;margin-top:3px;white-space:nowrap;">{text}</div>'
 
         nb_visits = self.metrics_data.get('nb_visits', 0)
         visitors = self.metrics_data.get('nb_uniq_visitors', 0)
@@ -134,29 +136,34 @@ class HTMLPDFGenerator:
         avg_time_val = self.metrics_data.get('avg_time_on_site', 0)
         bounce = self.metrics_data.get('bounce_rate', 0)
 
+        ppv_ceil  = math.ceil(ppv)
+        bounce_int = round(bounce)
+
         bounce_badge = badge('bueno' if bounce < 40 else ('aceptable' if bounce < 65 else 'mejora'))
         time_badge   = badge('bueno' if avg_time_val >= 180 else ('aceptable' if avg_time_val >= 60 else 'mejora'))
         ppv_badge    = badge('bueno' if ppv >= 3 else ('aceptable' if ppv >= 2 else 'mejora'))
+
+        label_style = "font-size:9px;color:var(--text-secondary);text-transform:uppercase;font-weight:600;margin-bottom:4px;letter-spacing:0.3px;"
 
         cards = []
         if has_unique_visitors:
             cards.append((f"{visitors:,}", "Visitantes únicos", trend_html(calc_trend(visitors, prev.get('nb_uniq_visitors'))), ''))
         cards += [
-            (f"{ppv:.1f} pág.", "Páginas por visita", trend_html(calc_trend(ppv, prev.get('nb_actions_per_visit'))), ppv_badge),
-            (avg_time, "Tiempo promedio en el sitio", trend_html(calc_trend(avg_time_val, prev.get('avg_time_on_site'))), time_badge),
-            (f"{bounce:.1f}%", "Visitantes que salieron sin navegar (rebote)", trend_html(calc_trend(bounce, prev.get('bounce_rate')), invert=True), bounce_badge),
+            (f"{ppv_ceil} pág.", "Páginas por visita", trend_html(calc_trend(ppv, prev.get('nb_actions_per_visit'))), ppv_badge),
+            (avg_time, "Tiempo promedio", trend_html(calc_trend(avg_time_val, prev.get('avg_time_on_site'))), time_badge),
+            (f"{bounce_int}%", "Tasa de rebote", trend_html(calc_trend(bounce, prev.get('bounce_rate')), invert=True), bounce_badge),
         ]
 
         cols = len(cards)
         html = f'<div class="metrics-grid" style="grid-template-columns: {"1fr " * cols};">'
         for value, label, trend, bdg in cards:
             html += f'''
-                <div class="metric-card">
-                    <div class="metric-top">
+                <div class="metric-card" style="text-align:left;">
+                    <div style="{label_style}">{label}</div>
+                    <div class="metric-top" style="justify-content:flex-start;">
                         <div class="metric-main">{value}</div>
                         {trend}
                     </div>
-                    <div class="metric-secondary">{label}</div>
                     {bdg}
                 </div>'''
         html += '</div>'
@@ -190,8 +197,8 @@ class HTMLPDFGenerator:
         mobile_pct = (mobile['nb_visits'] / total_visits *
                       100) if total_visits > 0 else 0
 
-        desktop_status = '<div class="device-good">Comportamiento óptimo</div>' if desktop_bounce < 40 else '<div class="device-alert">Requiere atención</div>'
-        mobile_status = '<div class="device-alert">Requiere optimización urgente</div>' if mobile_bounce > 50 else '<div class="device-good">Comportamiento aceptable</div>'
+        desktop_badge = '<span class="device-good">Óptimo</span>' if desktop_bounce < 40 else '<span class="device-alert">Atención</span>'
+        mobile_badge  = '<span class="device-alert">Urgente</span>' if mobile_bounce > 50 else '<span class="device-good">Aceptable</span>'
 
         # Browsers & OS (top 2 each)
         browsers = self.metrics_data.get('browsers', [])[:2] if self.metrics_data else []
@@ -206,32 +213,40 @@ class HTMLPDFGenerator:
                 parts.append(f'{i["label"]} {pct:.0f}%')
             return ' · '.join(parts)
 
-        browser_stat = f'<div class="device-stat"><span class="device-stat-label">Nav: </span><span class="device-stat-value">{format_top2(browsers)}</span></div>' if browsers else ''
-        os_stat = f'<div class="device-stat"><span class="device-stat-label">SO: </span><span class="device-stat-value">{format_top2(os_families)}</span></div>' if os_families else ''
+        stat_style = "font-size:10px;margin-top:3px;"
+        label_s = "color:var(--text-secondary);"
+        value_s = "color:var(--text-white);font-weight:600;"
+        browser_line = f'<div style="{stat_style}"><span style="{label_s}">Nav: </span><span style="{value_s}">{format_top2(browsers)}</span></div>' if browsers else ''
+        os_line      = f'<div style="{stat_style}"><span style="{label_s}">SO: </span><span style="{value_s}">{format_top2(os_families)}</span></div>' if os_families else ''
 
+        header_style = "width:100%;border-collapse:collapse;"
+        name_style   = "font-size:11px;font-weight:600;color:var(--text-white);"
+        card_style   = "background-color:var(--bg-lighter);border:1px solid rgba(0,102,204,0.2);border-radius:8px;padding:8px 12px;"
         return f'''
         <div class="section">
             <h2 class="section-title">Comportamiento por Dispositivo</h2>
-            <div class="device-grid">
-                <div class="device-card">
-                    <div class="device-name">Desktop</div>
-                    <div class="device-stats-inline">
-                        <div class="device-stat"><span class="device-stat-label">Visitas: </span><span class="device-stat-value">{desktop["nb_visits"]:,} ({desktop_pct:.0f}%)</span></div>
-                        <div class="device-stat"><span class="device-stat-label">Rebote: </span><span class="device-stat-value">{desktop_bounce:.1f}%</span></div>
-                        {browser_stat}
+            <table style="width:100%;border-collapse:separate;border-spacing:6px 0;"><tr>
+                <td style="width:50%;vertical-align:top;padding:0;">
+                    <div style="{card_style}">
+                        <table style="{header_style}"><tr>
+                            <td style="{name_style}">Desktop</td>
+                            <td style="text-align:right;">{desktop_badge}</td>
+                        </tr></table>
+                        <div style="{stat_style}"><span style="{label_s}">Visitas: </span><span style="{value_s}">{desktop["nb_visits"]:,} ({desktop_pct:.0f}%)</span>&nbsp;&nbsp;<span style="{label_s}">Rebote: </span><span style="{value_s}">{round(desktop_bounce)}%</span></div>
+                        {browser_line}
                     </div>
-                    {desktop_status}
-                </div>
-                <div class="device-card">
-                    <div class="device-name">Mobile</div>
-                    <div class="device-stats-inline">
-                        <div class="device-stat"><span class="device-stat-label">Visitas: </span><span class="device-stat-value">{mobile["nb_visits"]:,} ({mobile_pct:.0f}%)</span></div>
-                        <div class="device-stat"><span class="device-stat-label">Rebote: </span><span class="device-stat-value">{mobile_bounce:.1f}%</span></div>
-                        {os_stat}
+                </td>
+                <td style="width:50%;vertical-align:top;padding:0;padding-left:6px;">
+                    <div style="{card_style}">
+                        <table style="{header_style}"><tr>
+                            <td style="{name_style}">Mobile</td>
+                            <td style="text-align:right;">{mobile_badge}</td>
+                        </tr></table>
+                        <div style="{stat_style}"><span style="{label_s}">Visitas: </span><span style="{value_s}">{mobile["nb_visits"]:,} ({mobile_pct:.0f}%)</span>&nbsp;&nbsp;<span style="{label_s}">Rebote: </span><span style="{value_s}">{round(mobile_bounce)}%</span></div>
+                        {os_line}
                     </div>
-                    {mobile_status}
-                </div>
-            </div>
+                </td>
+            </tr></table>
         </div>'''
 
     def _build_steps_section(self):
@@ -272,39 +287,11 @@ class HTMLPDFGenerator:
                     {details_html}
                 </div>'''
 
-        # Auto-generate metric improvement tips for non-"Bueno" metrics
-        auto_tips_html = ""
-        if self.metrics_data:
-            bounce    = self.metrics_data.get('bounce_rate', 0)
-            avg_t     = self.metrics_data.get('avg_time_on_site', 0)
-            ppv_val   = self.metrics_data.get('nb_actions_per_visit', 0)
-            tips = []
-            if bounce >= 65:
-                tips.append(f"Tasa de rebote alta ({bounce:.1f}%): Mejorar la velocidad de carga y asegurar que el contenido de la home sea relevante para que los visitantes continúen navegando.")
-            elif bounce >= 40:
-                tips.append(f"Tasa de rebote ({bounce:.1f}%): Revisar el diseño y los llamados a la acción para invitar a explorar más páginas.")
-            if avg_t < 60:
-                tips.append(f"Tiempo promedio muy bajo ({self._format_duration(avg_t)}): Enriquecer el contenido con videos o secciones interactivas para que los visitantes permanezcan más tiempo.")
-            elif avg_t < 180:
-                tips.append(f"Tiempo promedio ({self._format_duration(avg_t)}): Agregar contenido interno relacionado y CTAs visibles para aumentar la permanencia en el sitio.")
-            if ppv_val < 2:
-                tips.append(f"Páginas por visita bajas ({ppv_val:.1f} pág.): Mejorar la navegación interna con menús claros y enlaces a contenido relacionado.")
-            elif ppv_val < 3:
-                tips.append(f"Páginas por visita ({ppv_val:.1f} pág.): Incorporar bloques de \"También te puede interesar\" para guiar al visitante hacia más contenido.")
-            if tips:
-                tips_items = "".join(f'<div class="step-detail" style="margin-top:4px;">- {t}</div>' for t in tips)
-                auto_tips_html = f'''
-                <div class="step" style="margin-top:10px;">
-                    <div class="step-number">Oportunidades de mejora detectadas</div>
-                    {tips_items}
-                </div>'''
-
         return f'''
-        <div class="section">
-            <h2 class="section-title">Siguientes Pasos</h2>
+        <div class="section" style="margin-bottom:6px;">
+            <h2 class="section-title" style="margin-bottom:8px;">Siguientes Pasos</h2>
             <div class="steps-container">
                 {steps_html}
-                {auto_tips_html}
             </div>
         </div>'''
 
@@ -315,11 +302,47 @@ class HTMLPDFGenerator:
         calendar_url = os.getenv('CALENDAR_URL', '')
         calendar_line = f'<div class="cta-phase-text">Agendar: {calendar_url}</div>' if calendar_url else ''
         cost_line = f'<div class="cta-phase-text" style="margin-top:5px;"><strong>Costo de auditoría:</strong> Gs. {self.audit_cost}</div>' if self.audit_cost else ''
-        subtitle = f'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Auditoría Estratégica: {self.audit_type}</div>' if self.audit_type else ''
+
+        # Oportunidades de mejora (auto-generated from metrics)
+        oportunidades_html = ""
+        if self.metrics_data:
+            bounce_v  = self.metrics_data.get('bounce_rate', 0)
+            avg_t     = self.metrics_data.get('avg_time_on_site', 0)
+            ppv_val   = self.metrics_data.get('nb_actions_per_visit', 0)
+            tips = []
+            if bounce_v >= 65:
+                tips.append(f"Tasa de rebote alta ({round(bounce_v)}%): Mejorar la velocidad de carga y asegurar que el contenido de la home sea relevante para que los visitantes continúen navegando.")
+            elif bounce_v >= 40:
+                tips.append(f"Tasa de rebote ({round(bounce_v)}%): Revisar el diseño y los llamados a la acción para invitar a explorar más páginas.")
+            if avg_t < 60:
+                tips.append(f"Tiempo promedio muy bajo ({self._format_duration(avg_t)}): Enriquecer el contenido con videos o secciones interactivas para que los visitantes permanezcan más tiempo.")
+            elif avg_t < 180:
+                tips.append(f"Tiempo promedio ({self._format_duration(avg_t)}): Agregar contenido interno relacionado y CTAs visibles para aumentar la permanencia en el sitio.")
+            if ppv_val < 2:
+                tips.append(f"Páginas por visita bajas ({math.ceil(ppv_val)} pág.): Mejorar la navegación interna con menús claros y enlaces a contenido relacionado.")
+            elif ppv_val < 3:
+                tips.append(f"Páginas por visita ({math.ceil(ppv_val)} pág.): Incorporar bloques de \"También te puede interesar\" para guiar al visitante hacia más contenido.")
+            if tips:
+                tips_items = "".join(f'<div class="cta-phase-text">- {t}</div>' for t in tips)
+                oportunidades_html = f'''
+            <div class="cta-phase">
+                <div class="cta-phase-title">OPORTUNIDADES DE MEJORA:</div>
+                {tips_items}
+            </div>'''
+
+        # Audit type phase
+        auditoria_html = ""
+        if self.audit_type:
+            auditoria_html = f'''
+            <div class="cta-phase" style="margin-top:10px;">
+                <div class="cta-phase-title">Auditoría Estratégica:</div>
+                <div class="cta-phase-text">{self.audit_type}</div>
+            </div>'''
+
         return f'''
         <div class="cta-section">
-            <h3 class="cta-title">Próximos Pasos</h3>
-            {subtitle}
+            {oportunidades_html}
+            {auditoria_html}
             <div class="cta-phase">
                 <div class="cta-phase-title">LO ANTES POSIBLE (Esta semana o la próxima):</div>
                 <div class="cta-phase-text">Agendar auditoría estratégica</div>
@@ -353,12 +376,13 @@ class HTMLPDFGenerator:
             return f"{gb:.1f} GB"
 
         size_str = fmt_size(site_size_gb)
-        free_gb = self.infra_data.get('disk_free_gb')
-        free_str = f"  &nbsp;|&nbsp;  {fmt_size(free_gb)} disponibles en el servidor" if free_gb else ""
+        quota_str = ""
+        if self.disk_quota_gb:
+            quota_str = f"  &nbsp;|&nbsp;  {fmt_size(self.disk_quota_gb)} asignados"
         return f'''
         <div class="section">
             <h2 class="section-title">Almacenamiento del Sitio</h2>
-            <div class="detail-card"><div class="detail-label">Espacio utilizado por el sitio</div><div class="detail-value">{size_str}<span style="font-size:11px;color:#666;font-weight:normal;">{free_str}</span></div><div class="step-detail" style="margin-top:5px;">Incluye archivos, plugins, temas y medios subidos.</div></div>
+            <div class="detail-card"><div class="detail-label">Espacio utilizado por el sitio</div><div class="detail-value">{size_str}<span style="font-size:11px;color:#666;font-weight:normal;">{quota_str}</span></div><div class="step-detail" style="margin-top:5px;">Incluye archivos, plugins, temas y medios subidos.</div></div>
         </div>'''
 
     def _build_maintenance_section(self):
@@ -454,15 +478,15 @@ class HTMLPDFGenerator:
         top_pages = self.metrics_data.get('top_pages', [])
         page_rows = "".join(
             f"<tr><td>{p.get('label', '')}</td><td>{p.get('nb_visits', 0)}</td><td>{p.get('nb_hits', 0)}</td></tr>" for p in top_pages)
+        bounce_int = round(bounce)
         visitors_card = f'<div class="detail-card"><div class="detail-label">Visitantes Únicos</div><div class="detail-value">{visitors:,}</div></div>' if has_unique_visitors else ''
         return f'''
         <div class="section">
             <h2 class="section-title">Análisis de Visibilidad</h2>
-            <div class="detail-grid">
+            <div class="detail-grid" style="grid-template-columns: 1fr 1fr 1fr;">
                 <div class="detail-card"><div class="detail-label">Visitas</div><div class="detail-value">{visits:,}</div></div>
-                {visitors_card}
                 <div class="detail-card"><div class="detail-label">Tiempo Promedio</div><div class="detail-value">{avg_time}</div></div>
-                <div class="detail-card"><div class="detail-label">Tasa de Rebote</div><div class="detail-value">{bounce:.1f}%</div></div>
+                <div class="detail-card"><div class="detail-label">Tasa de Rebote</div><div class="detail-value">{bounce_int}%</div></div>
             </div>
             <h3 class="section-title" style="font-size:12px;">Páginas más visitadas</h3>
             <div class="table-container"><table><thead><tr><th>Página</th><th>Visitas</th><th>Hits</th></tr></thead><tbody>{page_rows}</tbody></table></div>

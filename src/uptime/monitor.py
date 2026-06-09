@@ -15,14 +15,14 @@ if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # Cargar sitios desde archivo JSON centralizado
-SITES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "sites.json")
+SITES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "maintenance_bot", "clientes.json")
 
 try:
     with open(SITES_FILE, "r") as f:
         SITES = json.load(f)
 except FileNotFoundError:
     print(f"Error: No se encontró el archivo de configuración de sitios en {SITES_FILE}.")
-    print("Asegúrate de crear 'sites.json' en la raíz del proyecto.")
+    print("Asegúrate de crear 'maintenance_bot/clientes.json' en el proyecto.")
     sys.exit(1)
 except json.JSONDecodeError:
     print(f"Error: El archivo {SITES_FILE} no tiene un formato JSON válido.")
@@ -53,7 +53,7 @@ def check_urls():
     failed_sites = []
 
     for site in SITES:
-        name = site.get("name", "Desconocido")
+        name = site.get("nombre", "Desconocido")
         url = site.get("url")
         
         if not url:

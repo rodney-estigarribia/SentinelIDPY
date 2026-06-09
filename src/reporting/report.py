@@ -15,14 +15,14 @@ if not all([TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, WF_REPORT_TOKEN]):
     raise ValueError("Faltan variables de entorno críticas (TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, o WF_REPORT_TOKEN). Operación abortada.")
 
 # Cargar sitios desde archivo JSON centralizado
-SITES_FILE = "/tmp/sites_mock.json"
+SITES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "maintenance_bot", "clientes.json")
 
 try:
     with open(SITES_FILE, "r") as f:
         SITES = json.load(f)
 except FileNotFoundError:
     print(f"Error: No se encontró el archivo de configuración de sitios en {SITES_FILE}.")
-    print("Asegúrate de crear 'sites.json' en la raíz del proyecto.")
+    print("Asegúrate de crear 'maintenance_bot/clientes.json' en el proyecto.")
     sys.exit(1)
 except json.JSONDecodeError:
     print(f"Error: El archivo {SITES_FILE} no tiene un formato JSON válido.")
@@ -285,11 +285,11 @@ def main():
     results = []
     
     for site in SITES:
-        print(f"  -> {site['name']}...")
+        print(f"  -> {site['nombre']}...")
         site_data = fetch_site_stats(site['url'])
         
         results.append({
-            "name": site['name'],
+            "name": site['nombre'],
             "data": site_data
         })
         

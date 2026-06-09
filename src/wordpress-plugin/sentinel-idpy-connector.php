@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 2.6
+ * Version: 2.7
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '2.6' );
+define( 'SENTINEL_PLUGIN_VERSION', '2.7' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -643,14 +643,16 @@ function sentinel_stats_inner() {
     $site_size_bytes = 0;
 
     // Try shell du first (fastest, works if enabled)
-    $du_out = @shell_exec('du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
-    if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
-        $site_size_bytes = (int) $m[1];
-    } else {
-        // Fallback: just measure wp-content (uploads/plugins/themes)
-        $du_content = @shell_exec('du -sb ' . escapeshellarg(WP_CONTENT_DIR) . ' 2>/dev/null');
-        if ($du_content && preg_match('/^(\d+)/', trim($du_content), $m)) {
+    if (function_exists('shell_exec')) {
+        $du_out = @shell_exec('du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
+        if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
             $site_size_bytes = (int) $m[1];
+        } else {
+            // Fallback: just measure wp-content (uploads/plugins/themes)
+            $du_content = @shell_exec('du -sb ' . escapeshellarg(WP_CONTENT_DIR) . ' 2>/dev/null');
+            if ($du_content && preg_match('/^(\d+)/', trim($du_content), $m)) {
+                $site_size_bytes = (int) $m[1];
+            }
         }
     }
 

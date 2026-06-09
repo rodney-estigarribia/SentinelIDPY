@@ -129,7 +129,7 @@
         }
 
         .health-card-number {
-            font-size: 18px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--cyan-accent);
             margin-bottom: 2px;
@@ -177,7 +177,7 @@
         }
 
         .metric-main {
-            font-size: 18px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--text-white);
         }
@@ -214,14 +214,15 @@
             border-radius: 8px;
             padding: 8px 12px;
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
         }
 
         .device-card::before { display: none; }
 
-        .device-name { font-size: 11px; font-weight: 600; color: var(--text-white); white-space: nowrap; min-width: 70px; }
-        .device-stats-inline { display: flex; gap: 12px; flex: 1; align-items: center; }
+        .device-name { font-size: 11px; font-weight: 600; color: var(--text-white); }
+        .device-stats-inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .device-stat { font-size: 10px; white-space: nowrap; }
         .device-stat-label { color: var(--text-secondary); }
         .device-stat-value { color: var(--text-white); font-weight: 600; }

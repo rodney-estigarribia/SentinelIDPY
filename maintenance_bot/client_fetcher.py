@@ -3,6 +3,7 @@ import logging
 import os
 import ssl
 import socket
+import time
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -27,7 +28,6 @@ class ClientDataFetcher:
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
         }
-        import time
         params = {
             'token': WF_REPORT_TOKEN,
             'matomo_period': matomo_period,
@@ -40,50 +40,53 @@ class ClientDataFetcher:
         if wf_end is not None:
             params['wf_end'] = wf_end
 
-        try:
-            logger.info(f"[FETCH] Starting request to: {endpoint}")
-            response = requests.get(endpoint, headers=headers, params=params, timeout=15, verify=False)
-            logger.info(f"[FETCH] Response status code: {response.status_code}")
-            response.raise_for_status()
-            data = response.json()
-            logger.info(f"[FETCH] Success - Data keys received: {list(data.keys())}")
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                logger.info(f"[FETCH] Attempt {attempt}/{max_attempts} → {endpoint}")
+                params['_'] = int(time.time())  # fresh cache-bust on each attempt
+                response = requests.get(endpoint, headers=headers, params=params, timeout=25, verify=False)
+                logger.info(f"[FETCH] Response status: {response.status_code}")
+                response.raise_for_status()
+                data = response.json()
+                logger.info(f"[FETCH] Success on attempt {attempt} - keys: {list(data.keys())}")
 
-            # Diagnóstico de cada sección
-            infra = data.get('infrastructure', {})
-            if infra:
-                logger.info(f"[FETCH] Infrastructure: disk_total_gb={infra.get('disk_total_gb')}, plugins_key_present=True")
-            else:
-                logger.warning(f"[FETCH] Infrastructure: MISSING from response")
+                infra = data.get('infrastructure', {})
+                if infra:
+                    logger.info(f"[FETCH] Infrastructure: disk_total_gb={infra.get('disk_total_gb')}")
+                else:
+                    logger.warning(f"[FETCH] Infrastructure: MISSING from response")
 
-            maintenance = data.get('maintenance', {})
-            logger.info(f"[FETCH] Maintenance: total_active_plugins={maintenance.get('total_active_plugins', 'MISSING')}, pending={maintenance.get('pending_updates', 'MISSING')}")
+                maintenance = data.get('maintenance', {})
+                logger.info(f"[FETCH] Maintenance: total_active_plugins={maintenance.get('total_active_plugins', 'MISSING')}, pending={maintenance.get('pending_updates', 'MISSING')}")
 
-            wf = data.get('wordfence', {})
-            logger.info(f"[FETCH] Wordfence: total_attacks={wf.get('total_attacks', 'MISSING')}, top_ips_count={len(wf.get('top_ips', []))}")
+                wf = data.get('wordfence', {})
+                logger.info(f"[FETCH] Wordfence: total_attacks={wf.get('total_attacks', 'MISSING')}, top_ips_count={len(wf.get('top_ips', []))}")
 
-            metricas = data.get('metricas')
-            if metricas:
-                logger.info(f"[FETCH] Metricas: nb_visits={metricas.get('nb_visits')}, nb_uniq_visitors={metricas.get('nb_uniq_visitors')}, bounce_rate={metricas.get('bounce_rate')}")
-            else:
-                matomo_debug = data.get('matomo_debug', 'sin detalle')
-                logger.warning(f"[FETCH] Metricas: MISSING - matomo_debug='{matomo_debug}'")
+                metricas = data.get('metricas')
+                if metricas:
+                    logger.info(f"[FETCH] Metricas: nb_visits={metricas.get('nb_visits')}, bounce_rate={metricas.get('bounce_rate')}")
+                else:
+                    matomo_debug = data.get('matomo_debug', 'sin detalle')
+                    logger.warning(f"[FETCH] Metricas: MISSING - matomo_debug='{matomo_debug}'")
 
-            return data
-        except requests.exceptions.Timeout as e:
-            logger.error(f"[FETCH] Timeout error for {client_url}: {e}")
-            return None
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"[FETCH] Connection error for {client_url}: {e}")
-            return None
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"[FETCH] HTTP error for {client_url}: {response.status_code if 'response' in locals() else 'unknown'} - {e}")
-            return None
-        except requests.exceptions.RequestException as e:
-            logger.error(f"[FETCH] Request error for {client_url}: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"[FETCH] Unexpected error from {client_url}: {type(e).__name__} - {e}")
-            return None
+                return data
+
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                logger.warning(f"[FETCH] Attempt {attempt} failed (network): {e}")
+            except requests.exceptions.HTTPError as e:
+                status = response.status_code if 'response' in locals() else 'unknown'
+                logger.warning(f"[FETCH] Attempt {attempt} failed (HTTP {status}): {e}")
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"[FETCH] Attempt {attempt} failed (request): {e}")
+            except Exception as e:
+                logger.warning(f"[FETCH] Attempt {attempt} failed (unexpected): {type(e).__name__} - {e}")
+
+            if attempt < max_attempts:
+                time.sleep(3)
+
+        logger.error(f"[FETCH] All {max_attempts} attempts failed for {client_url}")
+        return None
 
     @staticmethod
     def extract_metrics(data: dict) -> dict:

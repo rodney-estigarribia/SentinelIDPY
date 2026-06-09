@@ -31,7 +31,7 @@ ALLOWED_USERS = [int(i.strip()) for i in os.getenv("ALLOWED_USERS", "").split(",
 CLIENTS_FILE = "clientes.json"
 
 # Estados de la conversación
-INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA, AUDITORIA_TIPO, AUDITORIA_CUSTOM, COSTO_AUDITORIA = range(13)
+INICIO, SELECCION_PERIODO, BITACORA, REVISION_IA, EDITAR_IA, CAPTURA_ANTES, CAPTURA_DESPUES, HOJA_DE_RUTA, REVISION_RUTA, EDITAR_RUTA, AUDITORIA_TIPO, AUDITORIA_CUSTOM, COSTO_AUDITORIA, DISCO_QUOTA, DISCO_QUOTA_INPUT = range(15)
 
 # Configurar logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -46,6 +46,11 @@ def load_clients():
             return json.load(f)
     except FileNotFoundError:
         return []
+
+def save_clients(clients):
+    with open(CLIENTS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(clients, f, ensure_ascii=False, indent=2)
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manejador inicial para /revisar con verificación de usuario"""
@@ -87,15 +92,18 @@ async def client_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['client'] = client
     context.user_data['session_id'] = uuid.uuid4().hex[:8]
 
+    disco = client.get('disco_gb')
+    disco_str = f"{disco} GB" if disco else "no configurada"
     keyboard = [
-        [InlineKeyboardButton("1 Mes", callback_data="tfcat_1m"),
-         InlineKeyboardButton("1 Trimestre", callback_data="tfcat_3m")],
-        [InlineKeyboardButton("6 Meses", callback_data="tfcat_6m"),
-         InlineKeyboardButton("1 Año", callback_data="tfcat_1y")]
+        [InlineKeyboardButton(f"Continuar ({disco_str})", callback_data="disco_ok")],
+        [InlineKeyboardButton("Actualizar cuota", callback_data="disco_update")],
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(f"Cliente seleccionado: *{client['nombre']}*\n\nSeleccione la categoría del período a reportar:", parse_mode='Markdown', reply_markup=reply_markup)
-    return SELECCION_PERIODO
+    await query.edit_message_text(
+        f"Cliente: *{client['nombre']}*\nCuota de disco: {disco_str}",
+        parse_mode='Markdown',
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    return DISCO_QUOTA
 
 async def period_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Maneja la seleccion de categoria y periodo, y luego carga los datos."""
@@ -184,6 +192,15 @@ async def period_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
         )
         return BITACORA
+
+async def skip_bitacora(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Omite la bitácora cuando no hay mejoras que reportar."""
+    context.user_data['final_text'] = ""
+    await update.message.reply_text(
+        "Sin mejoras este período.\n\n📸 Carga una foto del *ANTES* o envía /skip.",
+        parse_mode='Markdown'
+    )
+    return CAPTURA_ANTES
 
 async def process_bitacora(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Envía la bitácora a la IA con límites de seguridad."""
@@ -303,6 +320,7 @@ async def ask_auditoria_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE)
         [InlineKeyboardButton("Mejoras SEO y visibilidad", callback_data="audit_seo"),
          InlineKeyboardButton("Migración de plataforma", callback_data="audit_migration")],
         [InlineKeyboardButton("Otro (escribir)", callback_data="audit_custom")],
+        [InlineKeyboardButton("Sin recomendaciones por ahora", callback_data="audit_none")],
         [InlineKeyboardButton("❌ Cancelar", callback_data="cancel_report")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -327,6 +345,13 @@ async def handle_auditoria_tipo(update: Update, context: ContextTypes.DEFAULT_TY
     }
 
     cb = query.data
+
+    if cb == "audit_none":
+        context.user_data['audit_type'] = None
+        context.user_data['audit_cost'] = None
+        context.user_data['hoja_de_ruta'] = None
+        await query.edit_message_text("Sin recomendaciones este período.")
+        return await generate_report(query, context)
 
     if cb == "audit_custom":
         await query.edit_message_text("Escribi el tipo de mejora que recomiendas:")
@@ -497,7 +522,8 @@ async def generate_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Sanitizar nombre del cliente para evitar Path Traversal
         safe_name = "".join(c for c in client['nombre'] if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
         selected_tf = context.user_data.get('selected_tf', {'label': 'Últimos 30 días'})
-        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'], audit_type, cta_implementation_text, audit_cost)
+        disk_quota_gb = client.get('disco_gb')
+        pdf_gen = PDFGenerator(client['nombre'], text, antes, despues, infra_data, ssl_days, hoja_de_ruta, metrics_data, wordfence_data, maintenance_data, data_recommendations, selected_tf['label'], audit_type, cta_implementation_text, audit_cost, disk_quota_gb)
         logger.info(f"PDFGenerator initialized with infra_data: {pdf_gen.infra_data}, ssl_days: {pdf_gen.ssl_days}")
         filename = f"Reporte_{safe_name}_{uuid.uuid4().hex[:6]}.pdf"
         
@@ -554,6 +580,72 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ConversationHandler.END
 
+async def handle_disco_quota(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Confirms or triggers update of the client's disk quota."""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "disco_ok":
+        return await _ask_period(query, context)
+
+    client = context.user_data['client']
+    disco = client.get('disco_gb')
+    actual_str = f"{disco} GB" if disco else "no configurada"
+    await query.edit_message_text(
+        f"Cuota actual de *{client['nombre']}*: {actual_str}\n\nEscribe la nueva cuota en GB (ej: 20):",
+        parse_mode='Markdown'
+    )
+    return DISCO_QUOTA_INPUT
+
+async def handle_disco_quota_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Receives new GB value, saves it, then proceeds to period selection."""
+    text = update.message.text.strip().replace(',', '.')
+    try:
+        gb = float(text)
+        if gb <= 0:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text("Valor no válido. Escribe un número positivo (ej: 20):")
+        return DISCO_QUOTA_INPUT
+
+    clients = load_clients()
+    client = context.user_data['client']
+    for c in clients:
+        if c['id'] == client['id']:
+            c['disco_gb'] = gb
+            break
+    save_clients(clients)
+    client['disco_gb'] = gb
+    context.user_data['client'] = client
+
+    keyboard = [
+        [InlineKeyboardButton("1 Mes", callback_data="tfcat_1m"),
+         InlineKeyboardButton("1 Trimestre", callback_data="tfcat_3m")],
+        [InlineKeyboardButton("6 Meses", callback_data="tfcat_6m"),
+         InlineKeyboardButton("1 Año", callback_data="tfcat_1y")]
+    ]
+    await update.message.reply_text(
+        f"Cuota actualizada a *{gb} GB*.\n\nSeleccione la categoría del período a reportar:",
+        parse_mode='Markdown',
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    return SELECCION_PERIODO
+
+async def _ask_period(query, context: ContextTypes.DEFAULT_TYPE):
+    client = context.user_data['client']
+    keyboard = [
+        [InlineKeyboardButton("1 Mes", callback_data="tfcat_1m"),
+         InlineKeyboardButton("1 Trimestre", callback_data="tfcat_3m")],
+        [InlineKeyboardButton("6 Meses", callback_data="tfcat_6m"),
+         InlineKeyboardButton("1 Año", callback_data="tfcat_1y")]
+    ]
+    await query.edit_message_text(
+        f"Cliente: *{client['nombre']}*\n\nSeleccione la categoría del período a reportar:",
+        parse_mode='Markdown',
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    return SELECCION_PERIODO
+
 def main():
     app = Application.builder().token(TOKEN).build()
 
@@ -561,8 +653,13 @@ def main():
         entry_points=[CommandHandler('review', start)],
         states={
             INICIO: [CallbackQueryHandler(client_selected)],
+            DISCO_QUOTA: [CallbackQueryHandler(handle_disco_quota)],
+            DISCO_QUOTA_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_disco_quota_input)],
             SELECCION_PERIODO: [CallbackQueryHandler(period_selected)],
-            BITACORA: [MessageHandler(filters.TEXT & ~filters.COMMAND, process_bitacora)],
+            BITACORA: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, process_bitacora),
+                CommandHandler('skip', skip_bitacora),
+            ],
             REVISION_IA: [CallbackQueryHandler(confirm_ia)],
             EDITAR_IA: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_edit_ia)],
             CAPTURA_ANTES: [
