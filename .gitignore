@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE
+.vscode/
+
+# Bot (kept locally, not tracked here)
+maintenance_bot/
+src/uptime/
+src/reporting/
+requirements.txt
+Makefile
+docs/
+reportes/
+mock_sentinel_server.py
+.planning/
