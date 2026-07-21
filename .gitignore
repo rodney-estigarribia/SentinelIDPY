@@ -1,0 +1,6 @@
+# Subproject repos (managed independently)
+plugin/
+bot/
+
+# macOS
+.DS_Store
