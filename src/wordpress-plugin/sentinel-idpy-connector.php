@@ -656,8 +656,28 @@ function sentinel_stats_inner() {
         }
     }
 
-    $site_size_gb = $site_size_bytes > 0 ? round($site_size_bytes / $gb_divisor, 2) : null;
-    error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', site_size_gb=' . $site_size_gb);
+    if ($site_size_bytes === 0) {
+        // Fallback: calcular tamaño de wp-content usando iterador PHP
+        $site_size_bytes = sentinel_get_directory_size_fallback( WP_CONTENT_DIR );
+    }
+
+    // Calcular tamaño de la base de datos MySQL y sumarlo
+    $db_size_bytes = 0;
+    try {
+        $db_size_query = $wpdb->get_row( $wpdb->prepare(
+            "SELECT SUM(data_length + index_length) AS size FROM information_schema.TABLES WHERE table_schema = %s",
+            DB_NAME
+        ) );
+        if ( $db_size_query && isset( $db_size_query->size ) ) {
+            $db_size_bytes = (int) $db_size_query->size;
+        }
+    } catch ( \Throwable $e ) {
+        error_log( 'Sentinel: Error calculando el tamaño de la DB: ' . $e->getMessage() );
+    }
+
+    $total_site_size_bytes = $site_size_bytes + $db_size_bytes;
+    $site_size_gb = $total_site_size_bytes > 0 ? round($total_site_size_bytes / $gb_divisor, 2) : null;
+    error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', db_size_bytes=' . $db_size_bytes . ', total_site_size_gb=' . $site_size_gb);
 
     $disk_free_bytes = @disk_free_space( ABSPATH );
     $disk_free_gb    = ( $disk_free_bytes !== false && $disk_free_bytes > 0 )
@@ -811,4 +831,38 @@ function sentinel_debug_headers( WP_REST_Request $request ) {
             'server_var' => $_SERVER['HTTP_X_WF_REPORT_TOKEN'] ?? 'NOT SET',
         )
     );
+}
+
+/**
+ * Calcula recursivamente el tamaño de un directorio en bytes como respaldo si shell_exec no está disponible.
+ */
+function sentinel_get_directory_size_fallback( $path ) {
+    $size = 0;
+    if ( ! file_exists( $path ) ) {
+        return 0;
+    }
+    if ( is_file( $path ) ) {
+        return (int) filesize( $path );
+    }
+
+    try {
+        $dir = new \RecursiveDirectoryIterator( $path, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNFOLLOW_SYMLINKS );
+        $files = new \RecursiveIteratorIterator( $dir, \RecursiveIteratorIterator::CHILD_FIRST );
+        
+        $start_time = time();
+        foreach ( $files as $file ) {
+            // Límite de seguridad: si tarda más de 5 segundos, abortar para no colgar PHP
+            if ( time() - $start_time > 5 ) {
+                error_log('Sentinel: Fallback de tamaño de directorio superó el tiempo límite de 5 segundos.');
+                break;
+            }
+            if ( $file->isFile() ) {
+                $size += $file->getSize();
+            }
+        }
+    } catch ( \Throwable $e ) {
+        error_log( 'Sentinel Error: No se pudo calcular el tamaño del directorio mediante PHP Fallback: ' . $e->getMessage() );
+    }
+    
+    return $size;
 }
