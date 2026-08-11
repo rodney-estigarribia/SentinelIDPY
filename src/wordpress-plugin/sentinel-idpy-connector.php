@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 2.9
+ * Version: 3.0
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '2.9' );
+define( 'SENTINEL_PLUGIN_VERSION', '3.0' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -637,6 +637,49 @@ function sentinel_stats_inner() {
         }
     }
 
+    // Wordfence rules check
+    $wf_rules_ok = true;
+    $wf_rules_detail = 'No instalado';
+    if (class_exists('wfConfig')) {
+        $last_rules_update_failed = wfConfig::get('lastRulesUpdateFailed', false);
+        $rules_last_updated = wfConfig::get('rulesLastUpdated', 0);
+        
+        if (class_exists('wfWAF')) {
+            try {
+                $waf = \wfWAF::getInstance();
+                if ($waf && method_exists($waf, 'getStorageEngine')) {
+                    $storage = $waf->getStorageEngine();
+                    if ($storage && method_exists($storage, 'getConfig')) {
+                        $waf_last_updated = $storage->getConfig('rulesLastUpdated');
+                        if ($waf_last_updated > $rules_last_updated) {
+                            $rules_last_updated = $waf_last_updated;
+                        }
+                        $waf_failed = $storage->getConfig('lastRulesUpdateFailed');
+                        if ($waf_failed) {
+                            $last_rules_update_failed = true;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Ignore
+            }
+        }
+
+        if ($last_rules_update_failed) {
+            $wf_rules_ok = false;
+            $wf_rules_detail = 'Falló última actualización';
+            if ($rules_last_updated > 0) {
+                $wf_rules_detail .= ' (Última exitosa: ' . date('Y-m-d H:i', $rules_last_updated) . ')';
+            }
+        } else {
+            $wf_rules_ok = true;
+            $wf_rules_detail = 'Actualizadas';
+            if ($rules_last_updated > 0) {
+                $wf_rules_detail .= ' (' . date('Y-m-d H:i', $rules_last_updated) . ')';
+            }
+        }
+    }
+
     // 6. Server Health & Info
     // Use actual WordPress site size instead of full server disk (which is misleading on shared hosting)
     $gb_divisor = 1024 * 1024 * 1024;
@@ -788,6 +831,8 @@ function sentinel_stats_inner() {
             'top_reasons' => $top_reasons,
             'top_usernames' => $top_usernames,
             'last_scan' => $last_scan,
+            'rules_ok' => $wf_rules_ok,
+            'rules_detail' => $wf_rules_detail,
             'debug' => isset($wf_debug_info) ? $wf_debug_info : array('table_available' => false),
         ),
         'infrastructure' => $server_info,
@@ -829,7 +874,20 @@ function sentinel_debug_headers( WP_REST_Request $request ) {
             'request_get_header_underscore' => $request->get_header('x_wf_report_token'),
             'request_get_header_hyphen' => $request->get_header('x-wf-report-token'),
             'server_var' => $_SERVER['HTTP_X_WF_REPORT_TOKEN'] ?? 'NOT SET',
-        )
+            'saved_token_length' => strlen(get_wf_report_token()),
+            'saved_token_md5' => md5(get_wf_report_token())
+        ),
+        'wordfence_keys' => class_exists('wfConfig') ? array(
+            'rulesLastUpdated' => wfConfig::get('rulesLastUpdated'),
+            'lastRulesUpdateSuccess' => wfConfig::get('lastRulesUpdateSuccess'),
+            'lastRulesUpdateFailed' => wfConfig::get('lastRulesUpdateFailed'),
+            'wafRulesLastUpdated' => wfConfig::get('wafRulesLastUpdated'),
+        ) : 'N/A',
+        'wordfence_waf_keys' => class_exists('wfWAF') ? array(
+            'rulesLastUpdated' => \wfWAF::getInstance()->getStorageEngine()->getConfig('rulesLastUpdated'),
+            'lastRulesUpdateSuccess' => \wfWAF::getInstance()->getStorageEngine()->getConfig('lastRulesUpdateSuccess'),
+            'lastRulesUpdateFailed' => \wfWAF::getInstance()->getStorageEngine()->getConfig('lastRulesUpdateFailed'),
+        ) : 'N/A'
     );
 }
 
