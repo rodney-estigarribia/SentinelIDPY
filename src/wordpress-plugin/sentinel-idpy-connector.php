@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 3.0
+ * Version: 3.1
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '3.0' );
+define( 'SENTINEL_PLUGIN_VERSION', '3.1' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -685,15 +685,26 @@ function sentinel_stats_inner() {
     $gb_divisor = 1024 * 1024 * 1024;
     $site_size_bytes = 0;
 
-    // Try shell du first (fastest, works if enabled)
+    // Detectar el directorio home (padre de public_html/httpdocs/etc) para coincidir con la cuota de cPanel
+    $target_dir = ABSPATH;
+    $document_roots = array('/public_html', '/public_shtml', '/httpdocs', '/httpsdocs', '/www');
+    foreach ($document_roots as $root) {
+        $pos = strpos($target_dir, $root);
+        if ($pos !== false) {
+            $target_dir = substr($target_dir, 0, $pos);
+            break;
+        }
+    }
+
+    // Intentar obtener el tamaño mediante shell du (es rápido e incluye carpetas de mail, tmp, etc. en el home)
     if (function_exists('shell_exec')) {
-        $du_out = @shell_exec('du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
+        $du_out = @shell_exec('du -sb ' . escapeshellarg($target_dir) . ' 2>/dev/null');
         if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
             $site_size_bytes = (int) $m[1];
         } else {
-            // Fallback: just measure wp-content (uploads/plugins/themes)
-            $du_content = @shell_exec('du -sb ' . escapeshellarg(WP_CONTENT_DIR) . ' 2>/dev/null');
-            if ($du_content && preg_match('/^(\d+)/', trim($du_content), $m)) {
+            // Fallback a ABSPATH si falla
+            $du_abspath = @shell_exec('du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
+            if ($du_abspath && preg_match('/^(\d+)/', trim($du_abspath), $m)) {
                 $site_size_bytes = (int) $m[1];
             }
         }
