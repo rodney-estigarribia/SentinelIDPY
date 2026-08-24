@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 3.2
+ * Version: 3.3
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '3.2' );
+define( 'SENTINEL_PLUGIN_VERSION', '3.3' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -665,12 +665,21 @@ function sentinel_stats_inner() {
             }
         }
 
+        $rules_last_updated = empty($rules_last_updated) ? 0 : (int) $rules_last_updated;
+        $max_age = 4 * 24 * 60 * 60; // 4 days
+
         if ($last_rules_update_failed) {
             $wf_rules_ok = false;
             $wf_rules_detail = 'Falló última actualización';
             if ($rules_last_updated > 0) {
                 $wf_rules_detail .= ' (Última exitosa: ' . date('Y-m-d H:i', $rules_last_updated) . ')';
             }
+        } elseif ($rules_last_updated === 0) {
+            $wf_rules_ok = false;
+            $wf_rules_detail = 'Nunca actualizadas';
+        } elseif ((time() - $rules_last_updated) > $max_age) {
+            $wf_rules_ok = false;
+            $wf_rules_detail = 'Desactualizadas (Última: ' . date('Y-m-d H:i', $rules_last_updated) . ')';
         } else {
             $wf_rules_ok = true;
             $wf_rules_detail = 'Actualizadas';
@@ -682,79 +691,93 @@ function sentinel_stats_inner() {
 
     // 6. Server Health & Info
     // Use actual WordPress site size instead of full server disk (which is misleading on shared hosting)
+    // Caching disk space and database size calculations for 12 hours to prevent performance bottlenecks/timeouts.
     $gb_divisor = 1024 * 1024 * 1024;
-    $site_size_bytes = 0;
     $site_size_gb = null;
     $disk_free_gb = null;
 
-    try {
-        // Detectar el directorio home (padre de public_html/httpdocs/etc) para coincidir con la cuota de cPanel
-        $target_dir = ABSPATH;
-        $document_roots = array('/public_html', '/public_shtml', '/httpdocs', '/httpsdocs', '/www');
-        foreach ($document_roots as $root) {
-            $pos = strpos($target_dir, $root);
-            if ($pos !== false) {
-                $target_dir = substr($target_dir, 0, $pos);
-                break;
-            }
-        }
-
-        // Verificar si shell_exec está deshabilitado en php.ini
-        $disabled_functions = explode(',', ini_get('disable_functions'));
-        $disabled_functions = array_map('trim', $disabled_functions);
-        $shell_exec_enabled = function_exists('shell_exec') && !in_array('shell_exec', $disabled_functions);
-
-        // Intentar obtener el tamaño mediante shell du con un límite de tiempo de 3 segundos
-        if ($shell_exec_enabled) {
-            try {
-                $du_out = @shell_exec('timeout 3 du -sb ' . escapeshellarg($target_dir) . ' 2>/dev/null');
-                if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
-                    $site_size_bytes = (int) $m[1];
-                } else {
-                    // Fallback a ABSPATH con límite de 3 segundos
-                    $du_abspath = @shell_exec('timeout 3 du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
-                    if ($du_abspath && preg_match('/^(\d+)/', trim($du_abspath), $m)) {
-                        $site_size_bytes = (int) $m[1];
-                    }
-                }
-            } catch (\Throwable $e) {
-                // Silenciar errores de shell_exec
-            }
-        }
-
-        if ($site_size_bytes === 0) {
-            // Fallback: calcular tamaño de wp-content usando iterador PHP
-            $site_size_bytes = sentinel_get_directory_size_fallback( WP_CONTENT_DIR );
-        }
-
-        // Calcular tamaño de la base de datos MySQL y sumarlo
-        $db_size_bytes = 0;
+    $cache_key = 'sentinel_storage_info';
+    $cached_storage = get_transient($cache_key);
+    if (is_array($cached_storage) && isset($cached_storage['site_size_gb']) && isset($cached_storage['disk_free_gb'])) {
+        $site_size_gb = $cached_storage['site_size_gb'];
+        $disk_free_gb = $cached_storage['disk_free_gb'];
+    } else {
+        $site_size_bytes = 0;
         try {
-            $db_size_query = $wpdb->get_row( $wpdb->prepare(
-                "SELECT SUM(data_length + index_length) AS size FROM information_schema.TABLES WHERE table_schema = %s",
-                DB_NAME
-            ) );
-            if ( $db_size_query && isset( $db_size_query->size ) ) {
-                $db_size_bytes = (int) $db_size_query->size;
+            // Detectar el directorio home (padre de public_html/httpdocs/etc) para coincidir con la cuota de cPanel
+            $target_dir = ABSPATH;
+            $document_roots = array('/public_html', '/public_shtml', '/httpdocs', '/httpsdocs', '/www');
+            foreach ($document_roots as $root) {
+                $pos = strpos($target_dir, $root);
+                if ($pos !== false) {
+                    $target_dir = substr($target_dir, 0, $pos);
+                    break;
+                }
             }
-        } catch ( \Throwable $e ) {
-            error_log( 'Sentinel: Error calculando el tamaño de la DB: ' . $e->getMessage() );
+
+            // Verificar si shell_exec está deshabilitado en php.ini
+            $disabled_functions = explode(',', ini_get('disable_functions'));
+            $disabled_functions = array_map('trim', $disabled_functions);
+            $shell_exec_enabled = function_exists('shell_exec') && !in_array('shell_exec', $disabled_functions);
+
+            // Intentar obtener el tamaño mediante shell du con un límite de tiempo de 3 segundos
+            if ($shell_exec_enabled) {
+                try {
+                    $du_out = @shell_exec('timeout 3 du -sb ' . escapeshellarg($target_dir) . ' 2>/dev/null');
+                    if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
+                        $site_size_bytes = (int) $m[1];
+                    } else {
+                        // Fallback a ABSPATH con límite de 3 segundos
+                        $du_abspath = @shell_exec('timeout 3 du -sb ' . escapeshellarg(ABSPATH) . ' 2>/dev/null');
+                        if ($du_abspath && preg_match('/^(\d+)/', trim($du_abspath), $m)) {
+                            $site_size_bytes = (int) $m[1];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Silenciar errores de shell_exec
+                }
+            }
+
+            if ($site_size_bytes === 0) {
+                // Fallback: calcular tamaño de wp-content usando iterador PHP
+                $site_size_bytes = sentinel_get_directory_size_fallback( WP_CONTENT_DIR );
+            }
+
+            // Calcular tamaño de la base de datos MySQL y sumarlo
+            $db_size_bytes = 0;
+            try {
+                $db_size_query = $wpdb->get_row( $wpdb->prepare(
+                    "SELECT SUM(data_length + index_length) AS size FROM information_schema.TABLES WHERE table_schema = %s",
+                    DB_NAME
+                ) );
+                if ( $db_size_query && isset( $db_size_query->size ) ) {
+                    $db_size_bytes = (int) $db_size_query->size;
+                }
+            } catch ( \Throwable $e ) {
+                error_log( 'Sentinel: Error calculando el tamaño de la DB: ' . $e->getMessage() );
+            }
+
+            $total_site_size_bytes = $site_size_bytes + $db_size_bytes;
+            $site_size_gb = $total_site_size_bytes > 0 ? round($total_site_size_bytes / $gb_divisor, 2) : null;
+            error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', db_size_bytes=' . $db_size_bytes . ', total_site_size_gb=' . $site_size_gb);
+
+            // Espacio libre
+            $disk_free_enabled = function_exists('disk_free_space') && !in_array('disk_free_space', $disabled_functions);
+            if ($disk_free_enabled) {
+                $disk_free_bytes = @disk_free_space( ABSPATH );
+                $disk_free_gb    = ( $disk_free_bytes !== false && $disk_free_bytes > 0 )
+                    ? round( $disk_free_bytes / $gb_divisor, 2 )
+                    : null;
+            }
+        } catch (\Throwable $e) {
+            error_log('Sentinel: Error calculando almacenamiento: ' . $e->getMessage());
         }
 
-        $total_site_size_bytes = $site_size_bytes + $db_size_bytes;
-        $site_size_gb = $total_site_size_bytes > 0 ? round($total_site_size_bytes / $gb_divisor, 2) : null;
-        error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', db_size_bytes=' . $db_size_bytes . ', total_site_size_gb=' . $site_size_gb);
-
-        // Espacio libre
-        $disk_free_enabled = function_exists('disk_free_space') && !in_array('disk_free_space', $disabled_functions);
-        if ($disk_free_enabled) {
-            $disk_free_bytes = @disk_free_space( ABSPATH );
-            $disk_free_gb    = ( $disk_free_bytes !== false && $disk_free_bytes > 0 )
-                ? round( $disk_free_bytes / $gb_divisor, 2 )
-                : null;
-        }
-    } catch (\Throwable $e) {
-        error_log('Sentinel: Error calculando almacenamiento: ' . $e->getMessage());
+        $cached_storage = array(
+            'site_size_gb' => $site_size_gb,
+            'disk_free_gb' => $disk_free_gb,
+        );
+        set_transient( $cache_key, $cached_storage, 12 * HOUR_IN_SECONDS );
     }
 
     $server_info = array(
