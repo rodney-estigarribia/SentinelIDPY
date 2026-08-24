@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 3.3
+ * Version: 3.4
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '3.3' );
+define( 'SENTINEL_PLUGIN_VERSION', '3.4' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -666,6 +666,15 @@ function sentinel_stats_inner() {
         }
 
         $rules_last_updated = empty($rules_last_updated) ? 0 : (int) $rules_last_updated;
+
+        // Fallback to file modification time of rules.php (default file-based WAF)
+        if ($rules_last_updated === 0) {
+            $rules_file = WP_CONTENT_DIR . '/wflogs/rules.php';
+            if (file_exists($rules_file)) {
+                $rules_last_updated = (int) @filemtime($rules_file);
+            }
+        }
+
         $max_age = 4 * 24 * 60 * 60; // 4 days
 
         if ($last_rules_update_failed) {
@@ -935,6 +944,7 @@ function sentinel_debug_headers( WP_REST_Request $request ) {
             'lastRulesUpdateSuccess' => wfConfig::get('lastRulesUpdateSuccess'),
             'lastRulesUpdateFailed' => wfConfig::get('lastRulesUpdateFailed'),
             'wafRulesLastUpdated' => wfConfig::get('wafRulesLastUpdated'),
+            'rules_file_mtime' => file_exists(WP_CONTENT_DIR . '/wflogs/rules.php') ? filemtime(WP_CONTENT_DIR . '/wflogs/rules.php') : 'NOT FOUND',
         ) : 'N/A',
         'wordfence_waf_keys' => class_exists('wfWAF') ? array(
             'rulesLastUpdated' => \wfWAF::getInstance()->getStorageEngine()->getConfig('rulesLastUpdated'),
