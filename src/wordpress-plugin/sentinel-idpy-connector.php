@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 3.8
+ * Version: 4.0
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '3.8' );
+define( 'SENTINEL_PLUGIN_VERSION', '4.0' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -703,9 +703,7 @@ function sentinel_stats_inner() {
     // Caching disk space and database size calculations for 12 hours to prevent performance bottlenecks/timeouts.
     $gb_divisor = 1024 * 1024 * 1024;
     $site_size_gb = null;
-    $disk_free_gb = null;
-
-    $cache_key = 'sentinel_storage_info_v2';
+    $cache_key = 'sentinel_storage_info_v4';
     $cached_storage = get_transient($cache_key);
     if (is_array($cached_storage) && isset($cached_storage['site_size_gb']) && isset($cached_storage['disk_free_gb'])) {
         $site_size_gb = $cached_storage['site_size_gb'];
@@ -729,7 +727,7 @@ function sentinel_stats_inner() {
             // Simplificamos verificación: basta con saber si existe la función. 
             // Si está deshabilitada por configuración de seguridad adicional, el llamado fallará silenciosamente sin colgarse.
             $shell_exec_enabled = function_exists('shell_exec');
-
+ 
             // Intentar obtener el tamaño mediante shell du con múltiples variantes resilientes
             if ($shell_exec_enabled) {
                 try {
@@ -772,8 +770,13 @@ function sentinel_stats_inner() {
             }
 
             if ($site_size_bytes === 0) {
-                // Fallback: calcular tamaño de wp-content usando iterador PHP robusto
-                $site_size_bytes = sentinel_get_directory_size_fallback( WP_CONTENT_DIR, $start_time_fallback, $completed );
+                // Fallback: calcular tamaño usando iterador PHP robusto.
+                // Si el directorio home es legible, lo usamos; de lo contrario, el sitio completo (ABSPATH).
+                $path_to_scan = ABSPATH;
+                if (!empty($target_dir) && $target_dir !== '/' && @is_readable($target_dir)) {
+                    $path_to_scan = $target_dir;
+                }
+                $site_size_bytes = sentinel_get_directory_size_fallback( $path_to_scan, $start_time_fallback, $completed );
             }
 
             // Calcular tamaño de la base de datos MySQL usando SHOW TABLE STATUS (evita bloqueos de information_schema)
@@ -949,6 +952,32 @@ function sentinel_stats_inner() {
  * Debug endpoint to show all headers received by the server
  */
 function sentinel_debug_headers( WP_REST_Request $request ) {
+    global $wpdb;
+    
+    // Detectar el directorio home
+    $target_dir = ABSPATH;
+    $document_roots = array('/public_html', '/public_shtml', '/httpdocs', '/httpsdocs', '/www');
+    foreach ($document_roots as $root) {
+        $pos = strpos($target_dir, $root);
+        if ($pos !== false) {
+            $target_dir = substr($target_dir, 0, $pos);
+            break;
+        }
+    }
+    
+    $shell_exec_enabled = function_exists('shell_exec');
+    
+    // DB size usando SHOW TABLE STATUS
+    $db_size_bytes = 0;
+    try {
+        $tables = $wpdb->get_results("SHOW TABLE STATUS");
+        if (is_array($tables)) {
+            foreach ($tables as $table) {
+                $db_size_bytes += (int) (isset($table->Data_length) ? $table->Data_length : 0) + (int) (isset($table->Index_length) ? $table->Index_length : 0);
+            }
+        }
+    } catch (\Throwable $e) {}
+
     return array(
         'message'          => 'Headers Debug Info',
         'plugin_version'   => defined('SENTINEL_PLUGIN_VERSION') ? SENTINEL_PLUGIN_VERSION : 'unknown',
@@ -979,22 +1008,12 @@ function sentinel_debug_headers( WP_REST_Request $request ) {
             'lastRulesUpdateFailed' => \wfWAF::getInstance()->getStorageEngine()->getConfig('lastRulesUpdateFailed'),
         ) : 'N/A',
         'storage_debug' => array(
-            'target_dir' => isset($target_dir) ? $target_dir : 'N/A',
+            'target_dir' => $target_dir,
             'abspath' => ABSPATH,
-            'shell_exec_enabled' => isset($shell_exec_enabled) ? $shell_exec_enabled : false,
-            'du_commands_test' => (function() {
-                $target_dir = ABSPATH;
-                $document_roots = array('/public_html', '/public_shtml', '/httpdocs', '/httpsdocs', '/www');
-                foreach ($document_roots as $root) {
-                    $pos = strpos($target_dir, $root);
-                    if ($pos !== false) {
-                        $target_dir = substr($target_dir, 0, $pos);
-                        break;
-                    }
-                }
-                $shell_enabled = function_exists('shell_exec');
+            'shell_exec_enabled' => $shell_exec_enabled,
+            'du_commands_test' => (function() use ($target_dir, $shell_exec_enabled) {
                 $du_results = array();
-                if ($shell_enabled) {
+                if ($shell_exec_enabled) {
                     $cmds_to_test = array(
                         'du_sb_target' => 'du -sb ' . escapeshellarg($target_dir),
                         'du_sb_abspath' => 'du -sb ' . escapeshellarg(ABSPATH),
@@ -1011,8 +1030,8 @@ function sentinel_debug_headers( WP_REST_Request $request ) {
                 }
                 return $du_results;
             })(),
-            'db_size_bytes' => isset($db_size_bytes) ? $db_size_bytes : 0,
-            'saved_transient' => get_transient('sentinel_storage_info_v2')
+            'db_size_bytes' => $db_size_bytes,
+            'saved_transient' => get_transient('sentinel_storage_info_v4')
         )
     );
 }
@@ -1036,6 +1055,9 @@ function sentinel_get_directory_size_fallback( $path, &$start_time = null, &$com
     if ( ! file_exists( $path ) ) {
         return 0;
     }
+    if ( is_link( $path ) ) {
+        return 0; // Evitar contar enlaces simbólicos en la raíz
+    }
     if ( is_file( $path ) ) {
         return (int) @filesize( $path );
     }
@@ -1050,6 +1072,9 @@ function sentinel_get_directory_size_fallback( $path, &$start_time = null, &$com
             continue;
         }
         $fullpath = $path . '/' . $file;
+        if ( is_link( $fullpath ) ) {
+            continue; // Evitar entrar en bucles o contar dos veces carpetas con enlaces simbólicos (ej. /home/user/www -> public_html)
+        }
         if ( is_dir( $fullpath ) ) {
             $size += sentinel_get_directory_size_fallback( $fullpath, $start_time, $completed );
             if ( !$completed ) {
