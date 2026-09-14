@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 4.0
+ * Version: 4.1
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '4.0' );
+define( 'SENTINEL_PLUGIN_VERSION', '4.1' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -507,9 +507,9 @@ function sentinel_get_matomo_data(&$debug_msg, $matomo_period = 'month', $matomo
 /**
  * Consulta la base de datos para obtener los bloqueos de los últimos 30 días con métricas detalladas.
  */
-function get_wordfence_blocked_stats() {
+function get_wordfence_blocked_stats( $request = null ) {
     try {
-        return sentinel_stats_inner();
+        return sentinel_stats_inner( $request );
     } catch ( \Throwable $e ) {
         error_log( 'Sentinel FATAL: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() );
         return array(
@@ -521,8 +521,16 @@ function get_wordfence_blocked_stats() {
     }
 }
 
-function sentinel_stats_inner() {
+function sentinel_stats_inner( $request = null ) {
     global $wpdb;
+
+    $mode = '';
+    if ( $request instanceof WP_REST_Request ) {
+        $mode = (string) $request->get_param('mode');
+    } elseif ( isset( $_GET['mode'] ) ) {
+        $mode = (string) sanitize_text_field( $_GET['mode'] );
+    }
+    $is_uptime_mode = ( $mode === 'uptime' );
 
     $table_name = $wpdb->prefix . 'wfHits';
     // SHOW TABLES LIKE returns the actual table name; just check it's non-empty (avoids case-sensitive == comparison)
@@ -535,7 +543,7 @@ function sentinel_stats_inner() {
     if ( $wordfence_available ) {
         $table_name = $found_table;
     }
-    error_log( 'Sentinel: Wordfence table check for ' . $wpdb->prefix . 'wfHits' . ', found=' . ( $found_table ? $found_table : 'none' ) );
+    error_log( 'Sentinel: Wordfence table check for ' . $wpdb->prefix . 'wfHits' . ', found=' . ( $found_table ? $found_table : 'none' ) . ' (mode: ' . ($is_uptime_mode ? 'uptime' : 'full') . ')' );
 
     $wf_start = isset($_GET['wf_start']) ? (int) $_GET['wf_start'] : time() - (30 * 24 * 60 * 60);
     $wf_end = isset($_GET['wf_end']) ? (int) $_GET['wf_end'] : time();
@@ -548,7 +556,7 @@ function sentinel_stats_inner() {
     $top_usernames = array();
     $last_scan = 'No disponible';
 
-    if ($wordfence_available) {
+    if ( ! $is_uptime_mode && $wordfence_available ) {
         // Diagnostico: cuantas filas hay en la tabla y que action values existen
         $wf_total_rows = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
         $wf_actions_in_range = $wpdb->get_col( $wpdb->prepare(
@@ -858,16 +866,18 @@ function sentinel_stats_inner() {
 
     // 9. SSL Status
     $ssl_days_left = 'N/A';
-    $site_url = get_site_url();
-    if (strpos($site_url, 'https') === 0) {
-        $url_parts = parse_url($site_url);
-        $host = $url_parts['host'];
-        $get = @stream_context_create(array("ssl" => array("capture_peer_cert" => True)));
-        $read = @stream_socket_client("ssl://" . $host . ":443", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $get);
-        if ($read) {
-            $cont = stream_context_get_params($read);
-            $cert = openssl_x509_parse($cont["options"]["ssl"]["peer_certificate"]);
-            $ssl_days_left = round(($cert['validTo_time_t'] - time()) / 86400);
+    if ( ! $is_uptime_mode ) {
+        $site_url = get_site_url();
+        if (strpos($site_url, 'https') === 0) {
+            $url_parts = parse_url($site_url);
+            $host = $url_parts['host'];
+            $get = @stream_context_create(array("ssl" => array("capture_peer_cert" => True)));
+            $read = @stream_socket_client("ssl://" . $host . ":443", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $get);
+            if ($read) {
+                $cont = stream_context_get_params($read);
+                $cert = openssl_x509_parse($cont["options"]["ssl"]["peer_certificate"]);
+                $ssl_days_left = round(($cert['validTo_time_t'] - time()) / 86400);
+            }
         }
     }
 
@@ -888,31 +898,34 @@ function sentinel_stats_inner() {
 
     // 10b. Site Health Score
     $site_health_score = array( 'status' => 'good', 'good' => 0, 'recommended' => 0, 'critical' => 0 );
-    $site_health_file = ABSPATH . 'wp-admin/includes/class-wp-site-health.php';
-    if ( file_exists( $site_health_file ) ) {
-        require_once $site_health_file;
-        if ( class_exists( 'WP_Site_Health' ) && method_exists( 'WP_Site_Health', 'get_instance' ) ) {
-            $health = WP_Site_Health::get_instance();
-            if ( method_exists( $health, 'get_test_count' ) ) {
-                $counts = $health->get_test_count();
-                $site_health_score = array(
-                    'status'      => ( $counts['critical'] ?? 0 ) > 0 ? 'critical' : ( ( $counts['recommended'] ?? 0 ) > 0 ? 'recommended' : 'good' ),
-                    'good'        => $counts['good'] ?? 0,
-                    'recommended' => $counts['recommended'] ?? 0,
-                    'critical'    => $counts['critical'] ?? 0,
-                );
+    if ( ! $is_uptime_mode ) {
+        $site_health_file = ABSPATH . 'wp-admin/includes/class-wp-site-health.php';
+        if ( file_exists( $site_health_file ) ) {
+            require_once $site_health_file;
+            if ( class_exists( 'WP_Site_Health' ) && method_exists( 'WP_Site_Health', 'get_instance' ) ) {
+                $health = WP_Site_Health::get_instance();
+                if ( method_exists( $health, 'get_test_count' ) ) {
+                    $counts = $health->get_test_count();
+                    $site_health_score = array(
+                        'status'      => ( $counts['critical'] ?? 0 ) > 0 ? 'critical' : ( ( $counts['recommended'] ?? 0 ) > 0 ? 'recommended' : 'good' ),
+                        'good'        => $counts['good'] ?? 0,
+                        'recommended' => $counts['recommended'] ?? 0,
+                        'critical'    => $counts['critical'] ?? 0,
+                    );
+                }
             }
         }
     }
 
-
-    $matomo_period = isset($_GET['matomo_period']) ? sanitize_text_field($_GET['matomo_period']) : 'month';
-    $matomo_date = isset($_GET['matomo_date']) ? sanitize_text_field($_GET['matomo_date']) : 'today';
-    $matomo_prev_date = isset($_GET['matomo_prev_date']) ? sanitize_text_field($_GET['matomo_prev_date']) : 'lastMonth';
-
     // 11. Matomo Analytics (if available)
-    $debug_msg = '';
-    $matomo_data = sentinel_get_matomo_data($debug_msg, $matomo_period, $matomo_date, $matomo_prev_date);
+    $debug_msg = $is_uptime_mode ? 'Modo uptime - Matomo omitido' : '';
+    $matomo_data = null;
+    if ( ! $is_uptime_mode ) {
+        $matomo_period = isset($_GET['matomo_period']) ? sanitize_text_field($_GET['matomo_period']) : 'month';
+        $matomo_date = isset($_GET['matomo_date']) ? sanitize_text_field($_GET['matomo_date']) : 'today';
+        $matomo_prev_date = isset($_GET['matomo_prev_date']) ? sanitize_text_field($_GET['matomo_prev_date']) : 'lastMonth';
+        $matomo_data = sentinel_get_matomo_data($debug_msg, $matomo_period, $matomo_date, $matomo_prev_date);
+    }
 
     $response = array(
         'status' => 'success',
