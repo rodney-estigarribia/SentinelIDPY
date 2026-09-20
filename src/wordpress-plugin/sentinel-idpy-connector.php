@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 4.1
+ * Version: 4.2
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '4.1' );
+define( 'SENTINEL_PLUGIN_VERSION', '4.2' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -711,11 +711,24 @@ function sentinel_stats_inner( $request = null ) {
     // Caching disk space and database size calculations for 12 hours to prevent performance bottlenecks/timeouts.
     $gb_divisor = 1024 * 1024 * 1024;
     $site_size_gb = null;
+    $disk_free_gb = null;
     $cache_key = 'sentinel_storage_info_v4';
     $cached_storage = get_transient($cache_key);
+    $last_known_storage = get_option('sentinel_storage_info_last');
+
     if (is_array($cached_storage) && isset($cached_storage['site_size_gb']) && isset($cached_storage['disk_free_gb'])) {
         $site_size_gb = $cached_storage['site_size_gb'];
         $disk_free_gb = $cached_storage['disk_free_gb'];
+    } elseif ($is_uptime_mode && is_array($last_known_storage) && isset($last_known_storage['site_size_gb'])) {
+        // En modo uptime: Si el transient expiró pero tenemos el valor persistente, lo usamos de inmediato.
+        // Esto evita que un chequeo recurrente de uptime se cuelgue 30+ segundos ejecutando du en disco frío.
+        $site_size_gb = $last_known_storage['site_size_gb'];
+        if (function_exists('disk_free_space')) {
+            $free_bytes = @disk_free_space(ABSPATH);
+            $disk_free_gb = ($free_bytes !== false && $free_bytes > 0) ? round($free_bytes / $gb_divisor, 2) : ($last_known_storage['disk_free_gb'] ?? null);
+        } else {
+            $disk_free_gb = $last_known_storage['disk_free_gb'] ?? null;
+        }
     } else {
         $site_size_bytes = 0;
         $start_time_fallback = null;
@@ -732,19 +745,18 @@ function sentinel_stats_inner( $request = null ) {
                 }
             }
 
-            // Simplificamos verificación: basta con saber si existe la función. 
-            // Si está deshabilitada por configuración de seguridad adicional, el llamado fallará silenciosamente sin colgarse.
             $shell_exec_enabled = function_exists('shell_exec');
  
-            // Intentar obtener el tamaño mediante shell du con múltiples variantes resilientes
+            // Intentar obtener el tamaño mediante shell du con timeout estricto
             if ($shell_exec_enabled) {
                 try {
+                    // En modo uptime solo permitimos 5s para no bloquear; en modo reporte hasta 10s
+                    $du_timeout = $is_uptime_mode ? 5 : 10;
                     $cmds = array(
-                        'timeout 12 du -sb ' . escapeshellarg($target_dir),
-                        'du -sb ' . escapeshellarg($target_dir),
-                        '/usr/bin/timeout 12 /usr/bin/du -sb ' . escapeshellarg($target_dir),
-                        '/usr/bin/du -sb ' . escapeshellarg($target_dir),
-                        '/bin/du -sb ' . escapeshellarg($target_dir)
+                        "timeout {$du_timeout} du -sb " . escapeshellarg($target_dir),
+                        "/usr/bin/timeout {$du_timeout} /usr/bin/du -sb " . escapeshellarg($target_dir),
+                        "timeout {$du_timeout} du -sb " . escapeshellarg(ABSPATH),
+                        "/usr/bin/timeout {$du_timeout} /usr/bin/du -sb " . escapeshellarg(ABSPATH)
                     );
                     
                     foreach ($cmds as $cmd) {
@@ -754,32 +766,13 @@ function sentinel_stats_inner( $request = null ) {
                             break;
                         }
                     }
-
-                    // Si falló para el home, intentar para ABSPATH
-                    if ($site_size_bytes === 0) {
-                        $cmds_abspath = array(
-                            'timeout 12 du -sb ' . escapeshellarg(ABSPATH),
-                            'du -sb ' . escapeshellarg(ABSPATH),
-                            '/usr/bin/timeout 12 /usr/bin/du -sb ' . escapeshellarg(ABSPATH),
-                            '/usr/bin/du -sb ' . escapeshellarg(ABSPATH),
-                            '/bin/du -sb ' . escapeshellarg(ABSPATH)
-                        );
-                        foreach ($cmds_abspath as $cmd) {
-                            $du_out = @shell_exec($cmd . ' 2>/dev/null');
-                            if ($du_out && preg_match('/^(\d+)/', trim($du_out), $m)) {
-                                $site_size_bytes = (int) $m[1];
-                                break;
-                            }
-                        }
-                    }
                 } catch (\Throwable $e) {
                     error_log('Sentinel: Error running du via shell_exec: ' . $e->getMessage());
                 }
             }
 
-            if ($site_size_bytes === 0) {
-                // Fallback: calcular tamaño usando iterador PHP robusto.
-                // Si el directorio home es legible, lo usamos; de lo contrario, el sitio completo (ABSPATH).
+            if ($site_size_bytes === 0 && ! $is_uptime_mode) {
+                // Fallback con iterador PHP solo en modo reporte completo (no en uptime para no colgar)
                 $path_to_scan = ABSPATH;
                 if (!empty($target_dir) && $target_dir !== '/' && @is_readable($target_dir)) {
                     $path_to_scan = $target_dir;
@@ -801,7 +794,7 @@ function sentinel_stats_inner( $request = null ) {
             }
 
             $total_site_size_bytes = $site_size_bytes + $db_size_bytes;
-            $site_size_gb = $total_site_size_bytes > 0 ? round($total_site_size_bytes / $gb_divisor, 2) : null;
+            $site_size_gb = $total_site_size_bytes > 0 ? round($total_site_size_bytes / $gb_divisor, 2) : (isset($last_known_storage['site_size_gb']) ? $last_known_storage['site_size_gb'] : null);
             error_log('Sentinel: site_size_bytes=' . $site_size_bytes . ', db_size_bytes=' . $db_size_bytes . ', total_site_size_gb=' . $site_size_gb);
 
             // Espacio libre
@@ -810,20 +803,21 @@ function sentinel_stats_inner( $request = null ) {
                 $disk_free_bytes = @disk_free_space( ABSPATH );
                 $disk_free_gb    = ( $disk_free_bytes !== false && $disk_free_bytes > 0 )
                     ? round( $disk_free_bytes / $gb_divisor, 2 )
-                    : null;
+                    : (isset($last_known_storage['disk_free_gb']) ? $last_known_storage['disk_free_gb'] : null);
             }
         } catch (\Throwable $e) {
             error_log('Sentinel: Error calculando almacenamiento: ' . $e->getMessage());
         }
 
         // Caching: Only save in transient if the calculation succeeded (completed) and returned a non-zero size.
-        // This avoids caching partial sizes (e.g. 0.05 GB due to timeouts/permission failures).
+        // Also persist in WordPress option as resilient fallback.
         if ($completed && $site_size_bytes > 0) {
             $cached_storage = array(
                 'site_size_gb' => $site_size_gb,
                 'disk_free_gb' => $disk_free_gb,
             );
             set_transient( $cache_key, $cached_storage, 12 * HOUR_IN_SECONDS );
+            update_option( 'sentinel_storage_info_last', $cached_storage, 'no' );
         }
     }
 
@@ -837,26 +831,28 @@ function sentinel_stats_inner( $request = null ) {
 
     // 7. Recent Plugin Updates (via transients)
     $recent_updates = array();
-    if ( ! function_exists( 'get_plugins' ) ) {
-        require_once ABSPATH . 'wp-admin/includes/plugin.php';
-    }
-    $plugins = get_plugins();
-    $active_plugins = get_option('active_plugins');
-    $count = 0;
-    foreach($active_plugins as $plugin_path) {
-        if ($count >= 5) break;
-        if (isset($plugins[$plugin_path])) {
-            $recent_updates[] = array(
-                'name' => $plugins[$plugin_path]['Name'],
-                'version' => $plugins[$plugin_path]['Version']
-            );
-            $count++;
+    if ( ! $is_uptime_mode ) {
+        if ( ! function_exists( 'get_plugins' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $plugins = get_plugins();
+        $active_plugins = get_option('active_plugins');
+        $count = 0;
+        foreach($active_plugins as $plugin_path) {
+            if ($count >= 5) break;
+            if (isset($plugins[$plugin_path])) {
+                $recent_updates[] = array(
+                    'name' => $plugins[$plugin_path]['Name'],
+                    'version' => $plugins[$plugin_path]['Version']
+                );
+                $count++;
+            }
         }
     }
 
     // 8. Last Backup Status (UpdraftPlus)
     $last_backup = 'No detectado';
-    if (class_exists('UpdraftPlus')) {
+    if ( ! $is_uptime_mode && class_exists('UpdraftPlus') ) {
         $backup_history = get_option('updraft_backup_history');
         if (!empty($backup_history) && is_array($backup_history)) {
             $latest = max(array_keys($backup_history));
@@ -887,7 +883,7 @@ function sentinel_stats_inner( $request = null ) {
         'themes'    => 0,
         'wordpress' => 0,
     );
-    if ( function_exists( 'wp_get_update_data' ) ) {
+    if ( ! $is_uptime_mode && function_exists( 'wp_get_update_data' ) ) {
         $update_data = wp_get_update_data();
         $pending_updates = array(
             'plugins'   => $update_data['counts']['plugins'] ?? 0,
