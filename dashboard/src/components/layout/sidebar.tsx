@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   LayoutDashboard,
   Globe,
@@ -48,14 +49,20 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
     <aside className="w-64 bg-slate-950 text-slate-200 flex flex-col h-screen border-r border-slate-800 shrink-0 sticky top-0">
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-          <Server className="w-5 h-5" />
+        <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center p-1.5 shrink-0 shadow-md">
+          <Image
+            src="/impulsos-logo.png"
+            alt="Impulsos Digitales"
+            width={28}
+            height={28}
+            className="w-full h-full object-contain"
+          />
         </div>
         <div>
           <h1 className="font-bold tracking-tight text-white flex items-center gap-1.5 text-base">
-            Sentinel<span className="text-emerald-400">IDPY</span>
+            Sentinel<span className="text-sky-400">IDPY</span>
           </h1>
-          <p className="text-xs text-slate-400">Impulsos Digitales Platform</p>
+          <p className="text-xs text-slate-400">Impulsos Digitales</p>
         </div>
       </div>
 
