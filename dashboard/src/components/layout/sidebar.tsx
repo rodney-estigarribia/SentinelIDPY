@@ -101,6 +101,19 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
           </span>
         </div>
         <p className="text-[11px] text-slate-400">Vercel Edge • Neon Postgres</p>
+
+        <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between">
+          <span className="text-[11px] text-slate-400">Sesión Segura</span>
+          <button
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login';
+            }}
+            className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
       </div>
     </aside>
   );
