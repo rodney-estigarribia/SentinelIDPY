@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/uptime",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-rollup",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

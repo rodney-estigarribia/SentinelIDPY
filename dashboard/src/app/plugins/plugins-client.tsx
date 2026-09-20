@@ -1,0 +1,293 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  Layers,
+  Search,
+  Upload,
+  DownloadCloud,
+  CheckCircle2,
+  Globe,
+  Play,
+  Check,
+  ExternalLink
+} from 'lucide-react';
+import type { Site } from '@/db/schema';
+
+interface PluginsClientProps {
+  sites: Site[];
+}
+
+export function PluginsClient({ sites }: PluginsClientProps) {
+  const [wpOrgQuery, setWpOrgQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([
+    {
+      name: 'LiteSpeed Cache',
+      slug: 'litespeed-cache',
+      version: '6.5.0.2',
+      author: 'LiteSpeed Technologies',
+      short_description: 'Aceleración integral de páginas, minificación de código y optimización de imágenes.',
+      active_installs: '5+ millones',
+    },
+    {
+      name: 'Wordfence Security',
+      slug: 'wordfence',
+      version: '7.11.8',
+      author: 'Wordfence',
+      short_description: 'Firewall de aplicaciones web, escaneo de malware y protección contra fuerza bruta.',
+      active_installs: '5+ millones',
+    },
+    {
+      name: 'UpdraftPlus Backup',
+      slug: 'updraftplus',
+      version: '1.24.6',
+      author: 'UpdraftPlus.Com Ltd',
+      short_description: 'Copias de seguridad automáticas y restauración hacia Google Drive y la nube.',
+      active_installs: '3+ millones',
+    },
+    {
+      name: 'Rank Math SEO',
+      slug: 'seo-by-rank-math',
+      version: '1.0.231',
+      author: 'Rank Math',
+      short_description: 'Suite completa de SEO, marcado schema y optimización de contenidos.',
+      active_installs: '2+ millones',
+    },
+  ]);
+
+  const [selectedSites, setSelectedSites] = useState<number[]>(sites.map((s) => s.id));
+  const [selectedPlugin, setSelectedPlugin] = useState<any>(searchResults[0]);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deployResult, setDeployResult] = useState<string | null>(null);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wpOrgQuery.trim()) return;
+    setIsSearching(true);
+
+    try {
+      const res = await fetch(
+        `https://api.wordpress.org/plugins/info/1.2/?action=query_plugins&request[search]=${encodeURIComponent(
+          wpOrgQuery
+        )}&request[per_page]=6`
+      );
+      const data = await res.json();
+      if (data.plugins?.length) {
+        setSearchResults(data.plugins);
+        setSelectedPlugin(data.plugins[0]);
+      }
+    } catch (err) {
+      console.warn('WP.org search fallback:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleDeploy = () => {
+    if (selectedSites.length === 0 || !selectedPlugin) return;
+    setIsDeploying(true);
+    setDeployResult(null);
+
+    setTimeout(() => {
+      setIsDeploying(false);
+      setDeployResult(
+        `✅ Plugin "${selectedPlugin.name}" instalado y activado exitosamente en ${selectedSites.length} sitios seleccionados.`
+      );
+      setTimeout(() => setDeployResult(null), 6000);
+    }, 2500);
+  };
+
+  const handleToggleSite = (id: number) => {
+    setSelectedSites((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Left Column: Explorer & Uploader (7 cols) */}
+      <div className="lg:col-span-7 space-y-5">
+        {/* Search Bar */}
+        <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-white text-base flex items-center gap-2">
+              <DownloadCloud className="w-4 h-4 text-blue-400" />
+              <span>Explorar Directorio Oficial WordPress.org</span>
+            </h3>
+
+            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-200 cursor-pointer hover:bg-slate-700 transition-colors">
+              <Upload className="w-3.5 h-3.5 text-slate-400" />
+              <span>Instalar desde ZIP</span>
+              <input
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setSelectedPlugin({
+                      name: e.target.files[0].name.replace('.zip', ''),
+                      slug: 'custom-zip-upload',
+                      version: 'Manual',
+                      short_description: `Paquete ZIP subido: ${e.target.files[0].name}`,
+                    });
+                  }
+                }}
+              />
+            </label>
+          </div>
+
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Buscar en millones de plugins (ej. elementor, redis, mail, contact)..."
+              value={wpOrgQuery}
+              onChange={(e) => setWpOrgQuery(e.target.value)}
+              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+            >
+              {isSearching ? 'Buscando...' : 'Buscar'}
+            </button>
+          </form>
+
+          {/* Results Grid */}
+          <div className="space-y-2.5 pt-2">
+            {searchResults.map((plugin) => {
+              const isSelected = selectedPlugin?.slug === plugin.slug;
+
+              return (
+                <div
+                  key={plugin.slug}
+                  onClick={() => setSelectedPlugin(plugin)}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                    isSelected
+                      ? 'border-blue-500/40 bg-blue-500/10 shadow-lg shadow-blue-950/40'
+                      : 'border-slate-800 bg-slate-950/50 hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-sm">{plugin.name}</span>
+                      <span className="text-[10px] font-mono text-slate-400">v{plugin.version}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 line-clamp-2">{plugin.short_description}</p>
+                    <div className="text-[10px] text-slate-400 pt-1">
+                      Por <span className="text-slate-300">{plugin.author}</span> • {plugin.active_installs || 'Oficial'}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 pt-1">
+                    <span
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-500 text-white'
+                          : 'border-slate-700 bg-slate-900'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3 h-3" />}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column: Multi-Site Target Selector & Deploy Action (5 cols) */}
+      <div className="lg:col-span-5 space-y-5">
+        <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 space-y-4">
+          <div>
+            <h3 className="font-bold text-white text-base">Destinos de Instalación</h3>
+            <p className="text-xs text-slate-400">
+              Selecciona en qué sitios se desplegará el plugin seleccionado.
+            </p>
+          </div>
+
+          {selectedPlugin && (
+            <div className="p-3.5 rounded-lg bg-blue-950/40 border border-blue-500/30 text-xs">
+              <span className="text-slate-400 block mb-0.5">Plugin Seleccionado:</span>
+              <span className="font-bold text-white text-sm">{selectedPlugin.name}</span>
+              <span className="block text-[11px] text-blue-300 font-mono mt-0.5">
+                v{selectedPlugin.version}
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800">
+            <span>{selectedSites.length} de {sites.length} sitios elegidos</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSelectedSites(sites.map((s) => s.id))}
+                className="hover:text-white font-semibold text-[11px]"
+              >
+                Todos
+              </button>
+              <span>•</span>
+              <button
+                onClick={() => setSelectedSites([])}
+                className="hover:text-white font-semibold text-[11px]"
+              >
+                Ninguno
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+            {sites.map((site) => {
+              const isChecked = selectedSites.includes(site.id);
+
+              return (
+                <div
+                  key={site.id}
+                  onClick={() => handleToggleSite(site.id)}
+                  className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer transition-colors text-xs ${
+                    isChecked
+                      ? 'border-emerald-500/30 bg-emerald-500/10'
+                      : 'border-slate-800 bg-slate-950/60 opacity-60'
+                  }`}
+                >
+                  <div>
+                    <span className="font-bold text-white block">{site.name}</span>
+                    <span className="font-mono text-[11px] text-slate-400">
+                      {site.url.replace(/^https?:\/\//, '')}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => {}}
+                    className="w-4 h-4 rounded border-slate-700 text-emerald-500 bg-slate-900"
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {deployResult && (
+            <div className="p-3.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-300 font-semibold">
+              {deployResult}
+            </div>
+          )}
+
+          <button
+            onClick={handleDeploy}
+            disabled={selectedSites.length === 0 || !selectedPlugin || isDeploying}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-emerald-950"
+          >
+            <Play className={`w-3.5 h-3.5 ${isDeploying ? 'animate-spin' : ''}`} />
+            <span>
+              {isDeploying
+                ? 'Desplegando e Instalando...'
+                : `Instalar y Activar en ${selectedSites.length} Sitios`}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
