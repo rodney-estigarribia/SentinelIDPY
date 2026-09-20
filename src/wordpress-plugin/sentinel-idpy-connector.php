@@ -121,6 +121,115 @@ add_action( 'rest_api_init', function () {
         'callback' => 'sentinel_debug_headers',
         'permission_callback' => '__return_true'
     ) );
+    // Updates
+    register_rest_route( 'sentinel/v1', '/updates', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_updates',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/updates/apply', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_apply_updates',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Plugins
+    register_rest_route( 'sentinel/v1', '/plugins', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_plugins',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/plugins/install', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_install_plugin',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/plugins/toggle', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_toggle_plugin',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Themes
+    register_rest_route( 'sentinel/v1', '/themes', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_themes',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Users
+    register_rest_route( 'sentinel/v1', '/users', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_users',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/users/reset-password', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_reset_user_password',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Backups
+    register_rest_route( 'sentinel/v1', '/backups', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_backups',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/backups/run', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_run_backup',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Agency Branding & White Label
+    register_rest_route( 'sentinel/v1', '/agency/branding', array(
+        array(
+            'methods'  => 'GET',
+            'callback' => 'sentinel_get_branding',
+            'permission_callback' => 'verify_wf_report_token'
+        ),
+        array(
+            'methods'  => 'POST',
+            'callback' => 'sentinel_set_branding',
+            'permission_callback' => 'verify_wf_report_token'
+        )
+    ) );
+    // Admin Widgets
+    register_rest_route( 'sentinel/v1', '/admin/widgets', array(
+        array(
+            'methods'  => 'GET',
+            'callback' => 'sentinel_get_widgets',
+            'permission_callback' => 'verify_wf_report_token'
+        ),
+        array(
+            'methods'  => 'POST',
+            'callback' => 'sentinel_set_widgets',
+            'permission_callback' => 'verify_wf_report_token'
+        )
+    ) );
+    // Performance & Cache
+    register_rest_route( 'sentinel/v1', '/performance', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_performance',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/performance/purge', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_purge_cache',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Config Templates & Drift
+    register_rest_route( 'sentinel/v1', '/config/export', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_export_config',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    register_rest_route( 'sentinel/v1', '/config/apply', array(
+        'methods'  => 'POST',
+        'callback' => 'sentinel_apply_config',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // Analytics (6-month local summary)
+    register_rest_route( 'sentinel/v1', '/analytics/summary', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_analytics_summary',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
 } );
 
 /**
@@ -1096,3 +1205,599 @@ function sentinel_get_directory_size_fallback( $path, &$start_time = null, &$com
     closedir( $dh );
     return $size;
 }
+
+// =========================================================================
+// SENTINEL v4.2 EXTENSIONS: UPDATES, PLUGINS, USERS, BRANDING, ANALYTICS
+// =========================================================================
+
+/**
+ * 1. OBTENER DETALLE DE ACTUALIZACIONES PENDIENTES
+ */
+function sentinel_get_updates() {
+    if ( ! function_exists( 'get_plugin_updates' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/update.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        require_once ABSPATH . 'wp-admin/includes/theme.php';
+    }
+
+    $plugin_updates_raw = get_plugin_updates();
+    $plugins = array();
+    foreach ( $plugin_updates_raw as $file => $data ) {
+        $plugins[] = array(
+            'name'            => $data->Name,
+            'slug'            => dirname( $file ) !== '.' ? dirname( $file ) : sanitize_title( $data->Name ),
+            'plugin_file'     => $file,
+            'current_version' => $data->Version,
+            'new_version'     => $data->update->new_version ?? '',
+            'package'         => $data->update->package ?? ''
+        );
+    }
+
+    $theme_updates_raw = get_theme_updates();
+    $themes = array();
+    foreach ( $theme_updates_raw as $stylesheet => $data ) {
+        $themes[] = array(
+            'name'            => $data->get( 'Name' ),
+            'slug'            => $stylesheet,
+            'current_version' => $data->get( 'Version' ),
+            'new_version'     => $data->update['new_version'] ?? '',
+            'package'         => $data->update['package'] ?? ''
+        );
+    }
+
+    $core_updates = get_core_updates();
+    $core = array(
+        'current'          => get_bloginfo( 'version' ),
+        'available'        => null,
+        'update_available' => false,
+    );
+    if ( ! empty( $core_updates ) && isset( $core_updates[0]->response ) && 'upgrade' === $core_updates[0]->response ) {
+        $core['available']        = $core_updates[0]->current;
+        $core['update_available'] = true;
+        $core['package']          = $core_updates[0]->download ?? '';
+    }
+
+    return array(
+        'status'    => 'success',
+        'wordpress' => $core,
+        'plugins'   => $plugins,
+        'themes'    => $themes,
+    );
+}
+
+/**
+ * 2. APLICAR ACTUALIZACIONES EN LOTE
+ */
+function sentinel_apply_updates( WP_REST_Request $request ) {
+    require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    require_once ABSPATH . 'wp-admin/includes/theme.php';
+    require_once ABSPATH . 'wp-admin/includes/misc.php';
+
+    $type  = $request->get_param( 'type' ) ?: 'plugins';
+    $slugs = $request->get_param( 'slugs' ) ?: array();
+
+    $results = array();
+    $skin    = new WP_Ajax_Upgrader_Skin();
+
+    if ( in_array( $type, array( 'plugins', 'all' ), true ) ) {
+        $upgrader = new Plugin_Upgrader( $skin );
+        $all_updates = get_plugin_updates();
+        $files_to_update = array();
+
+        foreach ( $all_updates as $file => $data ) {
+            $slug = dirname( $file ) !== '.' ? dirname( $file ) : sanitize_title( $data->Name );
+            if ( empty( $slugs ) || in_array( $slug, $slugs, true ) || in_array( $file, $slugs, true ) ) {
+                $files_to_update[] = $file;
+            }
+        }
+
+        if ( ! empty( $files_to_update ) ) {
+            $res = $upgrader->bulk_upgrade( $files_to_update );
+            $results['plugins'] = $res;
+        }
+    }
+
+    if ( in_array( $type, array( 'themes', 'all' ), true ) ) {
+        $upgrader = new Theme_Upgrader( $skin );
+        $all_updates = get_theme_updates();
+        $themes_to_update = array();
+
+        foreach ( $all_updates as $stylesheet => $data ) {
+            if ( empty( $slugs ) || in_array( $stylesheet, $slugs, true ) ) {
+                $themes_to_update[] = $stylesheet;
+            }
+        }
+
+        if ( ! empty( $themes_to_update ) ) {
+            $res = $upgrader->bulk_upgrade( $themes_to_update );
+            $results['themes'] = $res;
+        }
+    }
+
+    // Invalidar OPcache tras la actualización
+    if ( function_exists( 'opcache_reset' ) ) {
+        @opcache_reset();
+    }
+
+    return array(
+        'status'  => 'success',
+        'message' => 'Actualizaciones procesadas con éxito',
+        'results' => $results,
+    );
+}
+
+/**
+ * 3. LISTADO COMPLETO DE PLUGINS
+ */
+function sentinel_get_plugins() {
+    if ( ! function_exists( 'get_plugins' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+
+    $all_plugins    = get_plugins();
+    $active_plugins = get_option( 'active_plugins', array() );
+    $updates        = function_exists( 'get_plugin_updates' ) ? get_plugin_updates() : array();
+
+    $list = array();
+    foreach ( $all_plugins as $file => $data ) {
+        $is_active = in_array( $file, $active_plugins, true );
+        $has_update = isset( $updates[ $file ] );
+
+        $list[] = array(
+            'name'             => $data['Name'],
+            'slug'             => dirname( $file ) !== '.' ? dirname( $file ) : sanitize_title( $data['Name'] ),
+            'file'             => $file,
+            'version'          => $data['Version'],
+            'is_active'        => $is_active,
+            'author'           => strip_tags( $data['Author'] ),
+            'description'      => strip_tags( $data['Description'] ),
+            'update_available' => $has_update,
+            'new_version'      => $has_update ? ($updates[ $file ]->update->new_version ?? null) : null,
+        );
+    }
+
+    return array( 'status' => 'success', 'plugins' => $list );
+}
+
+/**
+ * 4. INSTALAR PLUGIN (DESDE SLUG WP.ORG O ZIP)
+ */
+function sentinel_install_plugin( WP_REST_Request $request ) {
+    require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+
+    $slug     = sanitize_text_field( (string) $request->get_param( 'slug' ) );
+    $zip_url  = esc_url_raw( (string) $request->get_param( 'zip_url' ) );
+    $activate = (bool) $request->get_param( 'activate' );
+
+    $skin     = new WP_Ajax_Upgrader_Skin();
+    $upgrader = new Plugin_Upgrader( $skin );
+
+    if ( ! empty( $slug ) ) {
+        $api = plugins_api( 'plugin_information', array( 'slug' => $slug, 'fields' => array( 'sections' => false ) ) );
+        if ( is_wp_error( $api ) ) {
+            return new WP_Error( 'install_failed', $api->get_error_message(), array( 'status' => 400 ) );
+        }
+        $installed = $upgrader->install( $api->download_link );
+    } elseif ( ! empty( $zip_url ) ) {
+        $installed = $upgrader->install( $zip_url );
+    } else {
+        return new WP_Error( 'missing_param', 'Se requiere slug o zip_url', array( 'status' => 400 ) );
+    }
+
+    if ( is_wp_error( $installed ) || false === $installed ) {
+        return new WP_Error( 'install_error', 'No se pudo instalar el plugin.', array( 'status' => 500 ) );
+    }
+
+    $plugin_file = $upgrader->plugin_info();
+    if ( $activate && $plugin_file ) {
+        activate_plugin( $plugin_file );
+    }
+
+    return array(
+        'status'      => 'success',
+        'message'     => 'Plugin instalado exitosamente.',
+        'plugin_file' => $plugin_file,
+    );
+}
+
+/**
+ * 5. ACTIVAR / DESACTIVAR PLUGIN
+ */
+function sentinel_toggle_plugin( WP_REST_Request $request ) {
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+    $file   = sanitize_text_field( (string) $request->get_param( 'file' ) );
+    $slug   = sanitize_text_field( (string) $request->get_param( 'slug' ) );
+    $action = sanitize_text_field( (string) $request->get_param( 'action' ) );
+
+    if ( empty( $file ) && ! empty( $slug ) ) {
+        $all = get_plugins();
+        foreach ( $all as $f => $d ) {
+            if ( dirname( $f ) === $slug || $f === $slug ) {
+                $file = $f;
+                break;
+            }
+        }
+    }
+
+    if ( empty( $file ) ) {
+        return new WP_Error( 'not_found', 'Plugin no encontrado.', array( 'status' => 404 ) );
+    }
+
+    if ( 'activate' === $action ) {
+        $result = activate_plugin( $file );
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'activate_error', $result->get_error_message(), array( 'status' => 500 ) );
+        }
+        return array( 'status' => 'success', 'message' => 'Plugin activado.' );
+    } else {
+        deactivate_plugins( $file );
+        return array( 'status' => 'success', 'message' => 'Plugin desactivado.' );
+    }
+}
+
+/**
+ * 6. LISTAR TEMAS
+ */
+function sentinel_get_themes() {
+    $themes = wp_get_themes();
+    $active = get_stylesheet();
+    $updates = function_exists( 'get_theme_updates' ) ? get_theme_updates() : array();
+
+    $list = array();
+    foreach ( $themes as $stylesheet => $theme ) {
+        $has_update = isset( $updates[ $stylesheet ] );
+        $list[] = array(
+            'name'             => $theme->get( 'Name' ),
+            'slug'             => $stylesheet,
+            'version'          => $theme->get( 'Version' ),
+            'is_active'        => ( $active === $stylesheet ),
+            'author'           => strip_tags( $theme->get( 'Author' ) ),
+            'update_available' => $has_update,
+            'new_version'      => $has_update ? ($updates[ $stylesheet ]->update['new_version'] ?? null) : null,
+        );
+    }
+
+    return array( 'status' => 'success', 'themes' => $list );
+}
+
+/**
+ * 7. LISTADO DE USUARIOS
+ */
+function sentinel_get_users() {
+    $users = get_users( array(
+        'number' => 100,
+        'fields' => array( 'ID', 'user_login', 'user_email', 'display_name', 'user_registered' ),
+    ) );
+
+    $list = array();
+    foreach ( $users as $u ) {
+        $user_obj = get_userdata( $u->ID );
+        $list[] = array(
+            'id'           => $u->ID,
+            'login'        => $u->user_login,
+            'email'        => $u->user_email,
+            'display_name' => $u->display_name,
+            'roles'        => $user_obj ? $user_obj->roles : array(),
+            'registered'   => $u->user_registered,
+        );
+    }
+
+    return array( 'status' => 'success', 'users' => $list );
+}
+
+/**
+ * 8. RESTABLECER CONTRASEÑA DE USUARIO
+ */
+function sentinel_reset_user_password( WP_REST_Request $request ) {
+    $user_id = (int) $request->get_param( 'user_id' );
+    $user = get_user_by( 'id', $user_id );
+
+    if ( ! $user ) {
+        return new WP_Error( 'user_not_found', 'Usuario no encontrado.', array( 'status' => 404 ) );
+    }
+
+    // Disparar flujo oficial de restablecimiento por correo de WordPress
+    $retrieved = retrieve_password( $user->user_login );
+    if ( is_wp_error( $retrieved ) ) {
+        return new WP_Error( 'reset_failed', $retrieved->get_error_message(), array( 'status' => 500 ) );
+    }
+
+    return array(
+        'status'  => 'success',
+        'message' => 'Correo de restablecimiento enviado exitosamente a ' . $user->user_email,
+    );
+}
+
+/**
+ * 9. COPIAS DE SEGURIDAD (UPDRAFTPLUS & ESTADO)
+ */
+function sentinel_get_backups() {
+    $history = get_option( 'updraft_backup_history', array() );
+    $configured = class_exists( 'UpdraftPlus' );
+
+    $last_backup = 'No detectado';
+    if ( ! empty( $history ) && is_array( $history ) ) {
+        $latest = max( array_keys( $history ) );
+        $last_backup = date( 'Y-m-d H:i:s', (int) $latest );
+    }
+
+    return array(
+        'status'           => 'success',
+        'updraft_active'   => $configured,
+        'last_backup'      => $last_backup,
+        'backup_sets_count'=> is_array( $history ) ? count( $history ) : 0,
+    );
+}
+
+function sentinel_run_backup() {
+    if ( ! class_exists( 'UpdraftPlus' ) ) {
+        return new WP_Error( 'not_installed', 'UpdraftPlus no está activo.', array( 'status' => 400 ) );
+    }
+
+    // Programar respaldo inmediato mediante UpdraftPlus
+    wp_schedule_single_event( time() + 5, 'updraft_backup' );
+
+    return array(
+        'status'  => 'success',
+        'message' => 'Copia de seguridad de UpdraftPlus iniciada en segundo plano.',
+    );
+}
+
+/**
+ * 10. AGENCIA Y WHITE-LABEL BRANDING
+ */
+function sentinel_get_branding() {
+    return array(
+        'status'      => 'success',
+        'logo_url'    => get_option( 'sentinel_branding_logo_url', '' ),
+        'bg_color'    => get_option( 'sentinel_branding_bg_color', '#0f172a' ),
+        'bg_image'    => get_option( 'sentinel_branding_bg_image', '' ),
+        'footer_text' => get_option( 'sentinel_branding_footer_text', 'Desarrollado y Gestionado por Impulsos Digitales' ),
+    );
+}
+
+function sentinel_set_branding( WP_REST_Request $request ) {
+    $logo_url    = esc_url_raw( (string) $request->get_param( 'logo_url' ) );
+    $bg_color    = sanitize_hex_color( (string) $request->get_param( 'bg_color' ) );
+    $bg_image    = esc_url_raw( (string) $request->get_param( 'bg_image' ) );
+    $footer_text = sanitize_text_field( (string) $request->get_param( 'footer_text' ) );
+
+    if ( $logo_url !== '' ) update_option( 'sentinel_branding_logo_url', $logo_url );
+    if ( $bg_color ) update_option( 'sentinel_branding_bg_color', $bg_color );
+    if ( $bg_image !== '' ) update_option( 'sentinel_branding_bg_image', $bg_image );
+    if ( $footer_text !== '' ) update_option( 'sentinel_branding_footer_text', $footer_text );
+
+    return array( 'status' => 'success', 'message' => 'Branding actualizado exitosamente.' );
+}
+
+// Inyección de estilos de login personalizados
+add_action( 'login_enqueue_scripts', function () {
+    $logo = get_option( 'sentinel_branding_logo_url' );
+    $bg   = get_option( 'sentinel_branding_bg_color' );
+    $img  = get_option( 'sentinel_branding_bg_image' );
+
+    if ( $logo || $bg || $img ) {
+        echo '<style type="text/css">';
+        if ( $bg || $img ) {
+            echo 'body.login { background-color: ' . esc_attr( $bg ?: '#0f172a' ) . '; ' . ( $img ? 'background-image: url(' . esc_url( $img ) . '); background-size: cover;' : '' ) . ' }';
+        }
+        if ( $logo ) {
+            echo '#login h1 a, .login h1 a { background-image: url(' . esc_url( $logo ) . ') !important; background-size: contain !important; width: 100% !important; height: 80px !important; }';
+        }
+        echo '</style>';
+    }
+} );
+
+// Inyección de pie de página institucional
+add_filter( 'admin_footer_text', function ( $text ) {
+    $custom = get_option( 'sentinel_branding_footer_text' );
+    return ! empty( $custom ) ? wp_kses_post( $custom ) : $text;
+} );
+
+/**
+ * 11. WIDGETS DE ESCRITORIO
+ */
+function sentinel_get_widgets() {
+    return array(
+        'status'         => 'success',
+        'hidden_widgets' => get_option( 'sentinel_hidden_dashboard_widgets', array() ),
+    );
+}
+
+function sentinel_set_widgets( WP_REST_Request $request ) {
+    $hidden = $request->get_param( 'hidden_widgets' );
+    if ( is_array( $hidden ) ) {
+        $sanitized = array_map( 'sanitize_key', $hidden );
+        update_option( 'sentinel_hidden_dashboard_widgets', $sanitized );
+    }
+    return array( 'status' => 'success', 'message' => 'Widgets sincronizados.' );
+}
+
+add_action( 'wp_dashboard_setup', function () {
+    $hidden = get_option( 'sentinel_hidden_dashboard_widgets', array() );
+    if ( is_array( $hidden ) ) {
+        foreach ( $hidden as $widget_id ) {
+            remove_meta_box( $widget_id, 'dashboard', 'normal' );
+            remove_meta_box( $widget_id, 'dashboard', 'side' );
+        }
+    }
+    if ( in_array( 'welcome_panel', (array) $hidden, true ) ) {
+        remove_action( 'welcome_panel', 'wp_welcome_panel' );
+    }
+}, 999 );
+
+/**
+ * 12. RENDIMIENTO Y PURGA DE CACHÉ
+ */
+function sentinel_get_performance() {
+    $cache_plugin = 'Ninguno detectado';
+    if ( defined( 'LSCWP_V' ) ) $cache_plugin = 'LiteSpeed Cache';
+    elseif ( defined( 'WP_ROCKET_VERSION' ) ) $cache_plugin = 'WP Rocket';
+    elseif ( defined( 'W3TC' ) ) $cache_plugin = 'W3 Total Cache';
+    elseif ( function_exists( 'wp_cache_clean_cache' ) ) $cache_plugin = 'WP Super Cache';
+
+    return array(
+        'status'       => 'success',
+        'cache_plugin' => $cache_plugin,
+    );
+}
+
+function sentinel_purge_cache() {
+    // LiteSpeed
+    if ( class_exists( '\LiteSpeed\Purge' ) ) {
+        \LiteSpeed\Purge::purge_all();
+    }
+    // WP Rocket
+    if ( function_exists( 'rocket_clean_domain' ) ) {
+        rocket_clean_domain();
+    }
+    // WP Super Cache
+    if ( function_exists( 'wp_cache_clean_cache' ) ) {
+        global $file_prefix;
+        wp_cache_clean_cache( $file_prefix, true );
+    }
+    // W3TC
+    if ( function_exists( 'w3tc_flush_all' ) ) {
+        w3tc_flush_all();
+    }
+    // OPcache
+    if ( function_exists( 'opcache_reset' ) ) {
+        @opcache_reset();
+    }
+
+    return array( 'status' => 'success', 'message' => 'Caché de servidor purgada con éxito.' );
+}
+
+/**
+ * 13. CONFIGURACIÓN Y DRIFT
+ */
+function sentinel_export_config( WP_REST_Request $request ) {
+    $keys = $request->get_param( 'keys' );
+    $data = array();
+    if ( is_array( $keys ) ) {
+        foreach ( $keys as $k ) {
+            $data[ $k ] = get_option( sanitize_key( $k ), null );
+        }
+    }
+    return array( 'status' => 'success', 'config' => $data );
+}
+
+function sentinel_apply_config( WP_REST_Request $request ) {
+    $payload = $request->get_param( 'payload' );
+    if ( is_array( $payload ) ) {
+        foreach ( $payload as $k => $v ) {
+            update_option( sanitize_key( $k ), $v );
+        }
+    }
+    return array( 'status' => 'success', 'message' => 'Plantilla aplicada al sitio.' );
+}
+
+/**
+ * 14. ANALÍTICA LOCAL ULTRALIGERA (RETENCIÓN DE 6 MESES)
+ */
+function sentinel_create_analytics_table() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'sentinel_analytics';
+    $charset = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE IF NOT EXISTS {$table} (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        hit_date DATE NOT NULL,
+        path VARCHAR(255) NOT NULL,
+        referrer VARCHAR(255) NULL,
+        is_mobile TINYINT(1) DEFAULT 0,
+        ip_hash CHAR(32) NOT NULL,
+        KEY hit_date_idx (hit_date),
+        KEY path_idx (path(191))
+    ) {$charset};";
+
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta( $sql );
+}
+register_activation_hook( __FILE__, 'sentinel_create_analytics_table' );
+
+// Registro ligero de visitas en frontend
+add_action( 'template_redirect', function () {
+    if ( is_admin() || wp_doing_ajax() || wp_doing_cron() || is_user_logged_in() ) {
+        return;
+    }
+
+    $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( $_SERVER['HTTP_USER_AGENT'] ) : '';
+    // Ignorar bots de rastreo conocidos
+    if ( preg_match( '/bot|crawl|spider|slurp|facebook|google/i', $ua ) ) {
+        return;
+    }
+
+    global $wpdb;
+    $table = $wpdb->prefix . 'sentinel_analytics';
+
+    $path      = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( strtok( $_SERVER['REQUEST_URI'], '?' ) ) : '/';
+    $ref       = isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( parse_url( $_SERVER['HTTP_REFERER'], PHP_URL_HOST ) ) : null;
+    $is_mobile = wp_is_mobile() ? 1 : 0;
+    $ip        = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    $ip_hash   = md5( $ip . date( 'Y-m-d' ) ); // Anónimo diario para conteo de visitantes únicos
+
+    $wpdb->query( $wpdb->prepare(
+        "INSERT INTO {$table} (hit_date, path, referrer, is_mobile, ip_hash) VALUES (CURDATE(), %s, %s, %d, %s)",
+        $path, $ref, $is_mobile, $ip_hash
+    ) );
+} );
+
+// Resumen analítico de los últimos 6 meses
+function sentinel_get_analytics_summary() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'sentinel_analytics';
+
+    // Asegurar que la tabla exista
+    sentinel_create_analytics_table();
+
+    // 1. Visitas por mes (últimos 6 meses)
+    $monthly = $wpdb->get_results(
+        "SELECT DATE_FORMAT(hit_date, '%Y-%m') as month, COUNT(*) as visits, COUNT(DISTINCT ip_hash) as unique_visitors 
+         FROM {$table} 
+         WHERE hit_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+         GROUP BY DATE_FORMAT(hit_date, '%Y-%m') 
+         ORDER BY month ASC"
+    );
+
+    // 2. Top 10 páginas
+    $top_pages = $wpdb->get_results(
+        "SELECT path, COUNT(*) as hits 
+         FROM {$table} 
+         WHERE hit_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
+         GROUP BY path 
+         ORDER BY hits DESC LIMIT 10"
+    );
+
+    // 3. Desglose dispositivo
+    $devices = $wpdb->get_results(
+        "SELECT is_mobile, COUNT(*) as count 
+         FROM {$table} 
+         WHERE hit_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
+         GROUP BY is_mobile"
+    );
+
+    return array(
+        'status'    => 'success',
+        'monthly'   => $monthly,
+        'top_pages' => $top_pages,
+        'devices'   => $devices,
+    );
+}
+
+// Limpieza automática semanal de hits mayores a 180 días (6 meses)
+if ( ! wp_next_scheduled( 'sentinel_analytics_prune_cron' ) ) {
+    wp_schedule_event( time(), 'weekly', 'sentinel_analytics_prune_cron' );
+}
+add_action( 'sentinel_analytics_prune_cron', function () {
+    global $wpdb;
+    $table = $wpdb->prefix . 'sentinel_analytics';
+    $wpdb->query( "DELETE FROM {$table} WHERE hit_date < DATE_SUB(CURDATE(), INTERVAL 180 DAY)" );
+} );
+
