@@ -26,6 +26,10 @@ interface SidebarProps {
 export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: SidebarProps) {
   const pathname = usePathname();
 
+  if (pathname === '/login') {
+    return null;
+  }
+
   const navItems = [
     { label: 'Resumen General', href: '/', icon: LayoutDashboard },
     { label: 'Sitios y Activos', href: '/sites', icon: Globe, badge: offlineSitesCount > 0 ? `${offlineSitesCount} caídos` : undefined, badgeVariant: 'danger' },

@@ -122,7 +122,7 @@ function LoginFormContent() {
         <button
           type="button"
           onClick={() => setShowHelper(!showHelper)}
-          className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-300 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-300 transition-colors cursor-pointer"
         >
           <HelpCircle className="w-3.5 h-3.5 text-emerald-400" />
           <span>¿Cómo vincular tu app de autenticación?</span>
@@ -133,20 +133,30 @@ function LoginFormContent() {
             <p className="text-[11px] text-slate-400 leading-relaxed">
               1. Abre <strong>Google Authenticator</strong> (o tu app de OTP favorita).<br />
               2. Toca en <strong>Añadir cuenta (+)</strong> → <strong>Ingresar clave de configuración</strong>.<br />
-              3. En nombre pon <code>SentinelIDPY</code> y en clave pega:
+              3. En nombre pon <code>SentinelIDPY</code> y en tipo de clave elige <em>Basada en tiempo (TOTP)</em>.<br />
+              {process.env.NODE_ENV === 'development' ? (
+                <>4. En clave pega tu clave secreta de desarrollo:</>
+              ) : (
+                <>4. En clave pega la variable <code>OTP_SECRET</code> configurada en tu panel de Vercel.</>
+              )}
             </p>
 
-            <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] text-emerald-300">
-              <span className="truncate">{secretKey}</span>
-              <button
-                onClick={handleCopySecret}
-                className="p-1 text-slate-400 hover:text-white"
-                title="Copiar clave"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-            {copied && <p className="text-[10px] text-emerald-400 font-semibold">¡Copiado al portapapeles!</p>}
+            {process.env.NODE_ENV === 'development' && (
+              <>
+                <div className="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800 font-mono text-[11px] text-emerald-300">
+                  <span className="truncate">{secretKey}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopySecret}
+                    className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    title="Copiar clave"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                {copied && <p className="text-[10px] text-emerald-400 font-semibold">¡Copiado al portapapeles!</p>}
+              </>
+            )}
           </div>
         )}
       </div>
