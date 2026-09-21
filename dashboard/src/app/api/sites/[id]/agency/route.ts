@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dataService } from '@/lib/data-service';
-import { sentinelWpClient } from '@/lib/sentinel-wp-client';
+import { sentinelWpClient, getSiteToken } from '@/lib/sentinel-wp-client';
 
 export async function POST(
   request: Request,
@@ -15,7 +15,7 @@ export async function POST(
     return NextResponse.json({ error: 'Solo aplica a sitios WordPress' }, { status: 400 });
   }
 
-  const token = site.token || process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0';
+  const token = getSiteToken(site);
 
   try {
     const body = await request.json().catch(() => ({}));

@@ -166,11 +166,31 @@ export async function GET() {
       seeded = true;
     }
 
+    // 3. Actualizar tokens reales y limpiar datos mock antiguos de actualizaciones en sitios WordPress
+    const realToken =
+      process.env.WF_REPORT_TOKEN ||
+      '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f';
+
+    await sql`
+      UPDATE sites
+      SET token = ${realToken}
+      WHERE type = 'wordpress' AND (token IS NULL OR LENGTH(token) < 32 OR token = 'a1b2c3d4e5f67890123456789abcdef0');
+    `;
+
+    await sql`
+      UPDATE sites
+      SET pending_updates = '{"plugins": 0, "themes": 0, "wordpress": 0, "details": []}'::jsonb
+      WHERE type = 'wordpress' AND (
+        pending_updates->>'details' IS NOT NULL AND
+        pending_updates->'details'->0->>'slug' IN ('wordfence', 'elementor', 'woocommerce', 'wp-rocket')
+      );
+    `;
+
     return NextResponse.json({
       success: true,
       message: seeded
         ? 'Base de datos inicializada y poblada con datos de clientes exitosamente.'
-        : 'Tablas verificadas. La base de datos ya contenía registros.',
+        : 'Base de datos sincronizada: tokens de seguridad actualizados y estado de actualizaciones limpiado.',
     });
   } catch (error: any) {
     console.error('Error initializing database:', error);

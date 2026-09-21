@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dataService } from '@/lib/data-service';
-import { sentinelWpClient } from '@/lib/sentinel-wp-client';
+import { sentinelWpClient, getSiteToken } from '@/lib/sentinel-wp-client';
 
 export async function POST(
   request: Request,
@@ -21,42 +21,91 @@ export async function POST(
     );
   }
 
-  const token = site.token || process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0';
+  const token = getSiteToken(site);
 
   try {
+    let details: Array<{
+      type: 'plugin' | 'theme' | 'core';
+      slug: string;
+      name: string;
+      currentVersion: string;
+      newVersion: string;
+    }> = [];
+    let pendingUpdates = { plugins: 0, themes: 0, wordpress: 0, details };
+    let extraFields: Record<string, any> = {};
+
+    // 1. Intentar endpoint granular de updates (v4.3+)
     const fresh = await sentinelWpClient.fetchUpdates(site.url, token);
-    if (!fresh) {
-      return NextResponse.json(
-        { error: 'No se pudo obtener el estado de actualizaciones del sitio remoto' },
-        { status: 502 }
-      );
+    if (fresh && fresh.status === 'success') {
+      details = [
+        ...(fresh.plugins || []).map((p) => ({
+          type: 'plugin' as const,
+          name: p.name,
+          slug: p.slug,
+          currentVersion: p.current_version,
+          newVersion: p.new_version,
+        })),
+        ...(fresh.themes || []).map((t) => ({
+          type: 'theme' as const,
+          name: t.name,
+          slug: t.slug,
+          currentVersion: t.current_version,
+          newVersion: t.new_version,
+        })),
+      ];
+
+      pendingUpdates = {
+        plugins: fresh.plugins?.length || 0,
+        themes: fresh.themes?.length || 0,
+        wordpress: fresh.wordpress?.update_available ? 1 : 0,
+        details,
+      };
+
+      if (fresh.wordpress?.current) {
+        extraFields.wpVersion = fresh.wordpress.current;
+      }
+    } else {
+      // 2. Fallback al endpoint de stats (v4.2), que siempre reporta pending_updates reales
+      const stats = await sentinelWpClient.fetchStats(site.url, token);
+      if (stats && stats.maintenance?.pending_updates) {
+        const pCounts = stats.maintenance.pending_updates;
+        pendingUpdates = {
+          plugins: pCounts.plugins || 0,
+          themes: pCounts.themes || 0,
+          wordpress: pCounts.wordpress || 0,
+          details: [],
+        };
+
+        if (stats.infrastructure?.wp_version) {
+          extraFields.wpVersion = stats.infrastructure.wp_version;
+        }
+        if (stats.infrastructure?.php_version) {
+          extraFields.phpVersion = stats.infrastructure.php_version;
+        }
+        if (stats.wordfence) {
+          extraFields.wordfenceStats = {
+            totalAttacks: stats.wordfence.total_attacks,
+            lastScan: stats.wordfence.last_scan,
+            rulesOk: stats.wordfence.rules_ok,
+            rulesDetail: stats.wordfence.rules_detail,
+          };
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'No se pudo contactar el plugin SentinelIDPY en el sitio remoto' },
+          { status: 502 }
+        );
+      }
     }
 
-    const details = [
-      ...(fresh.plugins || []).map((p) => ({
-        type: 'plugin' as const,
-        name: p.name,
-        slug: p.slug,
-        currentVersion: p.current_version,
-        newVersion: p.new_version,
-      })),
-      ...(fresh.themes || []).map((t) => ({
-        type: 'theme' as const,
-        name: t.name,
-        slug: t.slug,
-        currentVersion: t.current_version,
-        newVersion: t.new_version,
-      })),
-    ];
-
-    const pendingUpdates = {
-      plugins: fresh.plugins?.length || 0,
-      themes: fresh.themes?.length || 0,
-      wordpress: fresh.wordpress?.update_available ? 1 : 0,
-      details,
-    };
-
-    const updatedSite = await dataService.updateSite(siteId, { pendingUpdates });
+    // Persistir estado sincronizado en base de datos
+    const updatedSite = await dataService.updateSite(siteId, {
+      token, // Asegura que el sitio tenga el token real guardado
+      pendingUpdates,
+      lastCheckedAt: new Date(),
+      status: 'online',
+      ...extraFields,
+    });
 
     return NextResponse.json({
       success: true,

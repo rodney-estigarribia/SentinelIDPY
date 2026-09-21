@@ -137,6 +137,16 @@ async function safeJsonFetch<T = any>(
   }
 }
 
+export const DEFAULT_WF_REPORT_TOKEN =
+  process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f';
+
+export function getSiteToken(site?: { token?: string | null }): string {
+  if (site?.token && site.token.trim().length >= 32) {
+    return site.token.trim();
+  }
+  return DEFAULT_WF_REPORT_TOKEN;
+}
+
 export const sentinelWpClient = {
   buildUrl(siteUrl: string, path: string, token: string): string {
     const cleanUrl = siteUrl.replace(/\/+$/, '');

@@ -211,7 +211,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'IDPY Admin',
     type: 'wordpress',
     url: 'https://admin.impulsosdigitales.com.py',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 10,
     status: 'online',
     lastStatusCode: 200,
@@ -223,12 +223,10 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     sslDaysLeft: 84,
     siteHealthScore: { status: 'good', good: 16, recommended: 2, critical: 0 },
     pendingUpdates: {
-      plugins: 1,
+      plugins: 0,
       themes: 0,
       wordpress: 0,
-      details: [
-        { type: 'plugin', slug: 'wordfence', name: 'Wordfence Security', currentVersion: '7.11.7', newVersion: '7.11.8' }
-      ]
+      details: []
     },
     wordfenceStats: {
       totalAttacks: 1420,
@@ -262,7 +260,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'CGA Corporativo',
     type: 'wordpress',
     url: 'https://cga.com.py',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 2.1,
     status: 'online',
     lastStatusCode: 200,
@@ -274,15 +272,10 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     sslDaysLeft: 52,
     siteHealthScore: { status: 'good', good: 14, recommended: 3, critical: 0 },
     pendingUpdates: {
-      plugins: 3,
-      themes: 1,
+      plugins: 0,
+      themes: 0,
       wordpress: 0,
-      details: [
-        { type: 'plugin', slug: 'elementor', name: 'Elementor', currentVersion: '3.25.0', newVersion: '3.25.3' },
-        { type: 'plugin', slug: 'contact-form-7', name: 'Contact Form 7', currentVersion: '5.9.8', newVersion: '6.0' },
-        { type: 'plugin', slug: 'updraftplus', name: 'UpdraftPlus', currentVersion: '1.24.4', newVersion: '1.24.6' },
-        { type: 'theme', slug: 'astra', name: 'Astra Theme', currentVersion: '4.8.1', newVersion: '4.8.4' }
-      ]
+      details: []
     },
     wordfenceStats: {
       totalAttacks: 890,
@@ -325,7 +318,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Cope Market Deli',
     type: 'wordpress',
     url: 'https://copemarketdeli.com.py',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 0.5,
     status: 'online',
     lastStatusCode: 200,
@@ -337,14 +330,10 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     sslDaysLeft: 41,
     siteHealthScore: { status: 'recommended', good: 12, recommended: 4, critical: 0 },
     pendingUpdates: {
-      plugins: 2,
+      plugins: 0,
       themes: 0,
-      wordpress: 1,
-      details: [
-        { type: 'core', slug: 'wordpress', name: 'WordPress Core', currentVersion: '6.6.2', newVersion: '6.7.1' },
-        { type: 'plugin', slug: 'woocommerce', name: 'WooCommerce', currentVersion: '9.3.3', newVersion: '9.4.1' },
-        { type: 'plugin', slug: 'wp-mail-smtp', name: 'WP Mail SMTP', currentVersion: '4.1.0', newVersion: '4.2.0' }
-      ]
+      wordpress: 0,
+      details: []
     },
     wordfenceStats: { totalAttacks: 2150, lastScan: '2026-09-17 03:00:00', rulesOk: true },
     performanceInfo: { cachePlugin: 'LiteSpeed Cache', cacheEnabled: true, siteSizeGb: 0.38, diskFreeGb: 0.12 },
@@ -527,7 +516,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'GeneSur',
     type: 'wordpress',
     url: 'https://genesur.com.py',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 1.46,
     status: 'online',
     lastStatusCode: 200,
@@ -538,7 +527,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     phpVersion: '8.2.20',
     sslDaysLeft: 95,
     siteHealthScore: { status: 'good', good: 16, recommended: 2, critical: 0 },
-    pendingUpdates: { plugins: 2, themes: 0, wordpress: 0 },
+    pendingUpdates: { plugins: 0, themes: 0, wordpress: 0, details: [] },
     wordfenceStats: { totalAttacks: 430, rulesOk: true },
     performanceInfo: { siteSizeGb: 0.92, diskFreeGb: 0.54 },
     metadata: {},
@@ -599,7 +588,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Misa Guarani',
     type: 'wordpress',
     url: 'https://misaguarani.com',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 4.0,
     status: 'online',
     lastStatusCode: 200,
@@ -610,7 +599,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     phpVersion: '8.2.20',
     sslDaysLeft: 35,
     siteHealthScore: { status: 'good', good: 15, recommended: 1, critical: 0 },
-    pendingUpdates: { plugins: 1, themes: 0, wordpress: 0 },
+    pendingUpdates: { plugins: 0, themes: 0, wordpress: 0, details: [] },
     wordfenceStats: { totalAttacks: 780, rulesOk: true },
     performanceInfo: { siteSizeGb: 2.7, diskFreeGb: 1.3 },
     metadata: {},
@@ -623,7 +612,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'My Life',
     type: 'wordpress',
     url: 'https://mylife.com.py',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 10.49,
     status: 'online',
     lastStatusCode: 200,
@@ -635,15 +624,10 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     sslDaysLeft: 78,
     siteHealthScore: { status: 'good', good: 17, recommended: 2, critical: 0 },
     pendingUpdates: {
-      plugins: 4,
+      plugins: 0,
       themes: 0,
       wordpress: 0,
-      details: [
-        { type: 'plugin', slug: 'wp-rocket', name: 'WP Rocket', currentVersion: '3.16.2', newVersion: '3.17.0' },
-        { type: 'plugin', slug: 'seo-by-rank-math', name: 'Rank Math SEO', currentVersion: '1.0.228', newVersion: '1.0.231' },
-        { type: 'plugin', slug: 'imagify', name: 'Imagify', currentVersion: '2.2.4', newVersion: '2.2.5' },
-        { type: 'plugin', slug: 'wordfence', name: 'Wordfence Security', currentVersion: '7.11.7', newVersion: '7.11.8' }
-      ]
+      details: []
     },
     wordfenceStats: { totalAttacks: 3120, lastScan: '2026-09-19 02:00:00', rulesOk: true },
     performanceInfo: { cachePlugin: 'WP Rocket', cacheEnabled: true, siteSizeGb: 6.2, diskFreeGb: 4.29 },
