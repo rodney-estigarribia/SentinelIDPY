@@ -164,6 +164,10 @@ html:not(.dark) .bg-slate-100,
 html.light .bg-slate-100 {
   background-color: #f1f5f9 !important;
 }
+html:not(.dark) .bg-slate-950,
+html.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
 
 /* Automatic mapping for card containers written with bg-slate-900 */
 html:not(.dark) .bg-slate-900,

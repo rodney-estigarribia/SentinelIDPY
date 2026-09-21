@@ -277,43 +277,43 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
     switch (cat) {
       case 'dominio':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
             <Globe className="w-3 h-3" /> Dominio
           </span>
         );
       case 'hosting':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
             <Server className="w-3 h-3" /> Hosting / cPanel
           </span>
         );
       case 'servidor_bd':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
             <Database className="w-3 h-3" /> Servidor & BD (Cloud)
           </span>
         );
       case 'app_movil':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
             <Smartphone className="w-3 h-3" /> App Móvil
           </span>
         );
       case 'correo':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-cyan-50 dark:bg-cyan-500/10 text-cyan-800 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
             <Mail className="w-3 h-3" /> Correo
           </span>
         );
       case 'licencia':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20">
             <KeyRound className="w-3 h-3" /> Licencia Software
           </span>
         );
       case 'web_app':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-500/10 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20">
             <FileCode className="w-3 h-3" /> Web App Frontend
           </span>
         );
@@ -326,7 +326,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
       case 'web_wordpress':
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-600/15 text-blue-300 border border-blue-500/30">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
             W WordPress
           </span>
         );
@@ -341,12 +341,12 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
     if (b.responsibility === 'tc_agencia') {
       return (
         <div className="space-y-0.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">
-            <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/40">
+            <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
             TC Agencia (Rodney) ⚠️
           </span>
           {b.cost && (
-            <div className="text-[11px] font-mono text-slate-300">
+            <div className="text-[11px] font-mono text-slate-700 dark:text-slate-300">
               {b.currency} {b.cost.toLocaleString()} / {b.cycle === 'monthly' ? 'mes' : 'año'}
             </div>
           )}
@@ -357,12 +357,12 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
     if (b.responsibility === 'tc_cliente') {
       return (
         <div className="space-y-0.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-            <CreditCard className="w-3 h-3 text-emerald-400" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+            <CreditCard className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
             TC Cliente
           </span>
           {b.cost && (
-            <div className="text-[11px] font-mono text-slate-400">
+            <div className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
               {b.currency} {b.cost.toLocaleString()} / {b.cycle === 'monthly' ? 'mes' : 'año'}
             </div>
           )}
@@ -372,14 +372,14 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
     if (b.responsibility === 'incluido') {
       return (
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
           Incluido en Fee / Host
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
         {b.responsibility || 'Facturación directa'}
       </span>
     );
