@@ -546,10 +546,10 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
       </div>
 
       {/* Services Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-900/80 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="py-3.5 px-4">Servicio / Activo</th>
                 <th className="py-3.5 px-4">Cliente</th>
@@ -561,7 +561,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                 <th className="py-3.5 px-4 text-right">Acción</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
               {filteredSites.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-500">
@@ -574,14 +574,14 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                   return (
                     <tr
                       key={site.id}
-                      className="hover:bg-slate-800/30 transition-colors group"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
                     >
                       {/* Servicio y URL */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-white text-sm flex items-center gap-2">
+                        <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                           <Link
                             href={`/services/${site.id}`}
-                            className="hover:text-sky-400 transition-colors"
+                            className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
                           >
                             {site.name}
                           </Link>
@@ -590,13 +590,13 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                               href={site.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-slate-500 hover:text-slate-300"
+                              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                             >
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                           <span>{site.provider || 'Proveedor general'}</span>
                           {site.url && (
                             <>
@@ -608,7 +608,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                       </td>
 
                       {/* Cliente */}
-                      <td className="py-3.5 px-4 font-medium text-slate-200">
+                      <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">
                         {client ? client.name : 'Sin asignar'}
                       </td>
 

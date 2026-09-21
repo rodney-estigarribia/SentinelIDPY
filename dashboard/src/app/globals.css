@@ -212,17 +212,34 @@ html.light div.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):
   color: #0f172a;
 }
 
-/* Hover background on cards / table rows in light mode */
+/* Hover background on cards / table rows / lists in light mode */
+html:not(.dark) tbody tr:hover,
+html.light tbody tr:hover,
+html:not(.dark) tbody tr:hover > td,
+html.light tbody tr:hover > td,
+html:not(.dark) tr[class*="hover:bg-slate"]:hover,
+html.light tr[class*="hover:bg-slate"]:hover,
+html:not(.dark) [class*="hover:bg-slate-800/"]:hover,
+html.light [class*="hover:bg-slate-800/"]:hover,
+html:not(.dark) [class*="hover:bg-slate-900/"]:hover,
+html.light [class*="hover:bg-slate-900/"]:hover,
+html:not(.dark) [class*="hover:bg-slate-950/"]:hover,
+html.light [class*="hover:bg-slate-950/"]:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Light button and link hovers */
+html:not(.dark) button[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html.light button[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html:not(.dark) a[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html.light a[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html:not(.dark) .hover\:bg-slate-800:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html.light .hover\:bg-slate-800:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
 html:not(.dark) .hover\:bg-slate-900:hover,
 html:not(.dark) [class*="hover:bg-slate-900"]:hover,
 html.light .hover\:bg-slate-900:hover,
 html.light [class*="hover:bg-slate-900"]:hover {
-  background-color: #f1f5f9;
-}
-
-html:not(.dark) .hover\:bg-slate-800:hover:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]),
-html.light .hover\:bg-slate-800:hover:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]) {
-  background-color: #e2e8f0;
+  background-color: #f1f5f9 !important;
 }
 
 /* Hover text in light mode */
