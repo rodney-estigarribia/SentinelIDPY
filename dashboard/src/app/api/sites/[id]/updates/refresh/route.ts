@@ -35,8 +35,9 @@ export async function POST(
     let extraFields: Record<string, any> = {};
 
     // 1. Intentar endpoint granular de updates (v4.3+)
-    const fresh = await sentinelWpClient.fetchUpdates(site.url, token);
-    if (fresh && fresh.status === 'success') {
+    const freshRes = await sentinelWpClient.fetchUpdates(site.url, token);
+    if (freshRes.ok && freshRes.data && freshRes.data.status === 'success') {
+      const fresh = freshRes.data;
       details = [
         ...(fresh.plugins || []).map((p) => ({
           type: 'plugin' as const,
@@ -66,13 +67,14 @@ export async function POST(
       }
     } else {
       // 2. Fallback al endpoint de stats (v4.2), que siempre reporta pending_updates reales
-      const stats = await sentinelWpClient.fetchStats(site.url, token);
-      if (stats && stats.maintenance?.pending_updates) {
-        const pCounts = stats.maintenance.pending_updates;
+      const statsRes = await sentinelWpClient.fetchStats(site.url, token);
+      if (statsRes.ok && statsRes.data && statsRes.data.maintenance?.pending_updates) {
+        const stats = statsRes.data;
+        const pCounts = stats.maintenance?.pending_updates;
         pendingUpdates = {
-          plugins: pCounts.plugins || 0,
-          themes: pCounts.themes || 0,
-          wordpress: pCounts.wordpress || 0,
+          plugins: pCounts?.plugins || 0,
+          themes: pCounts?.themes || 0,
+          wordpress: pCounts?.wordpress || 0,
           details: [],
         };
 
@@ -92,7 +94,10 @@ export async function POST(
         }
       } else {
         return NextResponse.json(
-          { error: 'No se pudo contactar el plugin SentinelIDPY en el sitio remoto' },
+          {
+            error: statsRes.error || 'No se pudo contactar el plugin SentinelIDPY en el sitio remoto',
+            status: statsRes.status,
+          },
           { status: 502 }
         );
       }

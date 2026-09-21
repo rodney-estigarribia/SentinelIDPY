@@ -141,8 +141,10 @@ export const DEFAULT_WF_REPORT_TOKEN =
   process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f';
 
 export function getSiteToken(site?: { token?: string | null }): string {
-  if (site?.token && site.token.trim().length >= 32) {
-    return site.token.trim();
+  const candidate = site?.token?.trim();
+  // Valid master token is 128 chars. Dummy or mock tokens are 32 chars.
+  if (candidate && candidate.length >= 64 && candidate !== 'a1b2c3d4e5f67890123456789abcdef0') {
+    return candidate;
   }
   return DEFAULT_WF_REPORT_TOKEN;
 }
@@ -161,10 +163,11 @@ export const sentinelWpClient = {
 
   getHeaders(token: string) {
     return {
-      'User-Agent': 'SentinelIDPY-AdminPlatform/1.0',
+      'User-Agent': 'SentinelIDPY-MaintenanceBot/1.0',
       'X-WF-Report-Token': token,
       'Accept': 'application/json',
       'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
     };
   },
 
@@ -196,20 +199,18 @@ export const sentinelWpClient = {
     }
   },
 
-  async fetchStats(siteUrl: string, token: string): Promise<WPStatsResponse | null> {
+  async fetchStats(siteUrl: string, token: string): Promise<{ ok: boolean; data?: WPStatsResponse; error?: string; status: number }> {
     const endpoint = this.buildUrl(siteUrl, '/stats', token);
-    const res = await safeJsonFetch<WPStatsResponse>(endpoint, {
+    return safeJsonFetch<WPStatsResponse>(endpoint, {
       headers: this.getHeaders(token),
-    }, 20000);
-    return res.ok && res.data ? res.data : null;
+    }, 15000);
   },
 
-  async fetchUpdates(siteUrl: string, token: string): Promise<WPPendingUpdatesResponse | null> {
+  async fetchUpdates(siteUrl: string, token: string): Promise<{ ok: boolean; data?: WPPendingUpdatesResponse; error?: string; status: number }> {
     const endpoint = this.buildUrl(siteUrl, '/updates', token);
-    const res = await safeJsonFetch<WPPendingUpdatesResponse>(endpoint, {
+    return safeJsonFetch<WPPendingUpdatesResponse>(endpoint, {
       headers: this.getHeaders(token),
-    }, 25000);
-    return res.ok && res.data ? res.data : null;
+    }, 15000);
   },
 
   async applyUpdates(

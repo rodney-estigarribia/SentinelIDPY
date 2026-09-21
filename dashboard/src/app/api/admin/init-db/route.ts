@@ -174,16 +174,13 @@ export async function GET() {
     await sql`
       UPDATE sites
       SET token = ${realToken}
-      WHERE type = 'wordpress' AND (token IS NULL OR LENGTH(token) < 32 OR token = 'a1b2c3d4e5f67890123456789abcdef0');
+      WHERE type = 'wordpress';
     `;
 
     await sql`
       UPDATE sites
       SET pending_updates = '{"plugins": 0, "themes": 0, "wordpress": 0, "details": []}'::jsonb
-      WHERE type = 'wordpress' AND (
-        pending_updates->>'details' IS NOT NULL AND
-        pending_updates->'details'->0->>'slug' IN ('wordfence', 'elementor', 'woocommerce', 'wp-rocket')
-      );
+      WHERE type = 'wordpress';
     `;
 
     return NextResponse.json({

@@ -50,8 +50,9 @@ export async function POST(
     });
 
     // Optionally trigger background refresh of updates for this site
-    sentinelWpClient.fetchUpdates(site.url, token).then(async (fresh) => {
-      if (fresh) {
+    sentinelWpClient.fetchUpdates(site.url, token).then(async (freshRes) => {
+      if (freshRes.ok && freshRes.data) {
+        const fresh = freshRes.data;
         const details = [
           ...(fresh.plugins || []).map((p) => ({
             type: 'plugin' as const,
