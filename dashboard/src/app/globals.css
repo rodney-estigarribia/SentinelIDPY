@@ -2,10 +2,33 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* 
-  SentinelIDPY Theme Engine:
-  Supports System Auto-Detection (prefers-color-scheme), Manual Light Mode, and Manual Dark Mode.
+/*
+  ==========================================================================
+  SentinelIDPY Semantic Design Tokens (shadcn/ui compatible)
+  ==========================================================================
 */
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
 
 /* 1. LIGHT MODE (Default / System Light / Explicit .light) */
 :root,
@@ -14,37 +37,30 @@ html:not(.dark) {
   --background: #f8fafc;
   --foreground: #0f172a;
 
-  /* Slate Scale Inversion for Light Mode */
-  --color-slate-950: #f8fafc; /* Canvas / Page Background (Slate 50) */
-  --color-slate-900: #ffffff; /* Card / Surface Background (Pure White) */
-  --color-slate-800: #e2e8f0; /* Borders / Dividers (Slate 200) */
-  --color-slate-700: #cbd5e1; /* Hover Borders / Subtle Lines (Slate 300) */
-  --color-slate-600: #94a3b8; /* Muted Borders / Decorative (Slate 400) */
-  --color-slate-500: #64748b; /* Medium Muted (Slate 500) */
-  --color-slate-400: #64748b; /* Secondary Text (Slate 500) */
-  --color-slate-300: #334155; /* Tertiary / Menu Text (Slate 700) */
-  --color-slate-200: #1e293b; /* Body / Subtitle Text (Slate 800) */
-  --color-slate-100: #0f172a; /* Primary Headings / Text (Slate 900) */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
 
-  /* High-Contrast Accessible Colors for Badges, Tabs & Accents in Light Mode */
-  --color-sky-300: #0284c7;
-  --color-sky-400: #0369a1;
-  --color-emerald-300: #059669;
-  --color-emerald-400: #047857;
-  --color-amber-300: #d97706;
-  --color-amber-400: #b45309;
-  --color-rose-300: #e11d48;
-  --color-rose-400: #be123c;
-  --color-red-300: #dc2626;
-  --color-red-400: #b91c1c;
-  --color-indigo-300: #4f46e5;
-  --color-indigo-400: #4338ca;
-  --color-blue-300: #2563eb;
-  --color-blue-400: #1d4ed8;
-  --color-cyan-300: #0891b2;
-  --color-cyan-400: #0e7490;
-  --color-purple-300: #9333ea;
-  --color-purple-400: #7e22ce;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #0284c7;
 }
 
 /* 2. DARK MODE (System Dark or Explicit .dark) */
@@ -52,217 +68,208 @@ html.dark {
   --background: #020617;
   --foreground: #f1f5f9;
 
-  --color-slate-950: oklch(12.9% .042 264.695);
-  --color-slate-900: oklch(20.8% .042 265.755);
-  --color-slate-800: oklch(27.9% .041 260.031);
-  --color-slate-700: oklch(37.2% .044 257.287);
-  --color-slate-600: oklch(44.6% .043 257.281);
-  --color-slate-500: oklch(55.4% .046 257.417);
-  --color-slate-400: oklch(70.4% .04 256.788);
-  --color-slate-300: oklch(86.9% .022 252.894);
-  --color-slate-200: oklch(92.9% .013 255.508);
-  --color-slate-100: oklch(96.8% .007 247.896);
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
 
-  --color-sky-300: oklch(82.8% .111 230.318);
-  --color-sky-400: oklch(74.6% .16 232.661);
-  --color-emerald-300: oklch(84.5% .143 164.978);
-  --color-emerald-400: oklch(76.5% .177 163.223);
-  --color-amber-300: oklch(87.9% .169 91.605);
-  --color-amber-400: oklch(82.8% .189 84.429);
-  --color-rose-300: oklch(81% .117 11.638);
-  --color-rose-400: oklch(71.2% .194 13.428);
-  --color-red-300: oklch(80.8% .114 19.571);
-  --color-red-400: oklch(70.4% .191 22.216);
-  --color-indigo-300: oklch(78.5% .115 274.713);
-  --color-indigo-400: oklch(67.3% .182 276.935);
-  --color-blue-300: oklch(80.9% .105 251.813);
-  --color-blue-400: oklch(70.7% .165 254.624);
-  --color-cyan-300: oklch(86.5% .127 207.078);
-  --color-cyan-400: oklch(78.9% .154 211.53);
-  --color-purple-300: oklch(82.7% .119 306.383);
-  --color-purple-400: oklch(71.4% .203 305.504);
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+
+  --primary: #38bdf8;
+  --primary-foreground: #020617;
+
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #f1f5f9;
+
+  --border: #1e293b;
+  --input: #334155;
+  --ring: #38bdf8;
 }
 
-/* 3. Automatic System Preference Detection via Media Query (before JS hydration) */
+/* Automatic System Preference Detection before JS hydration */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     --background: #020617;
     --foreground: #f1f5f9;
 
-    --color-slate-950: oklch(12.9% .042 264.695);
-    --color-slate-900: oklch(20.8% .042 265.755);
-    --color-slate-800: oklch(27.9% .041 260.031);
-    --color-slate-700: oklch(37.2% .044 257.287);
-    --color-slate-600: oklch(44.6% .043 257.281);
-    --color-slate-500: oklch(55.4% .046 257.417);
-    --color-slate-400: oklch(70.4% .04 256.788);
-    --color-slate-300: oklch(86.9% .022 252.894);
-    --color-slate-200: oklch(92.9% .013 255.508);
-    --color-slate-100: oklch(96.8% .007 247.896);
+    --card: #0f172a;
+    --card-foreground: #f1f5f9;
 
-    --color-sky-300: oklch(82.8% .111 230.318);
-    --color-sky-400: oklch(74.6% .16 232.661);
-    --color-emerald-300: oklch(84.5% .143 164.978);
-    --color-emerald-400: oklch(76.5% .177 163.223);
-    --color-amber-300: oklch(87.9% .169 91.605);
-    --color-amber-400: oklch(82.8% .189 84.429);
-    --color-rose-300: oklch(81% .117 11.638);
-    --color-rose-400: oklch(71.2% .194 13.428);
-    --color-red-300: oklch(80.8% .114 19.571);
-    --color-red-400: oklch(70.4% .191 22.216);
-    --color-indigo-300: oklch(78.5% .115 274.713);
-    --color-indigo-400: oklch(67.3% .182 276.935);
-    --color-blue-300: oklch(80.9% .105 251.813);
-    --color-blue-400: oklch(70.7% .165 254.624);
-    --color-cyan-300: oklch(86.5% .127 207.078);
-    --color-cyan-400: oklch(78.9% .154 211.53);
-    --color-purple-300: oklch(82.7% .119 306.383);
-    --color-purple-400: oklch(71.4% .203 305.504);
+    --popover: #0f172a;
+    --popover-foreground: #f1f5f9;
+
+    --primary: #38bdf8;
+    --primary-foreground: #020617;
+
+    --secondary: #1e293b;
+    --secondary-foreground: #f1f5f9;
+
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+
+    --accent: #1e293b;
+    --accent-foreground: #f1f5f9;
+
+    --destructive: #dc2626;
+    --destructive-foreground: #f1f5f9;
+
+    --border: #1e293b;
+    --input: #334155;
+    --ring: #38bdf8;
   }
 }
 
-/* 4. Light Mode Typography & Surface Polish */
-html:not(.dark) :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, select, textarea).text-white,
-html:not(.dark) span.text-white:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-slate-8"]):not([class*="bg-slate-7"]):not(.keep-white),
-html:not(.dark) div.text-white:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-slate-8"]):not([class*="bg-slate-7"]):not(.keep-white) {
+/*
+  ==========================================================================
+  Light Mode Semantic Bridges & Contrast Protections
+  ==========================================================================
+*/
+
+/* Slate text utilities retain high contrast in light mode */
+html:not(.dark) .text-slate-900,
+html.light .text-slate-900 {
   color: #0f172a !important;
 }
-
-/* Sidebar Light Mode Typography & Surfaces: Ensure crisp contrast and no white text */
-html:not(.dark) aside,
-html.light aside {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+html:not(.dark) .text-slate-800,
+html.light .text-slate-800 {
+  color: #1e293b !important;
+}
+html:not(.dark) .text-slate-700,
+html.light .text-slate-700 {
   color: #334155 !important;
 }
-html:not(.dark) aside h1,
-html.light aside h1,
-html:not(.dark) aside .text-white,
-html.light aside .text-white {
-  color: #0f172a !important;
+html:not(.dark) .text-slate-600,
+html.light .text-slate-600 {
+  color: #475569 !important;
 }
-html:not(.dark) aside a:not([class*="bg-sky"]):not([class*="bg-emerald"]),
-html.light aside a:not([class*="bg-sky"]):not([class*="bg-emerald"]) {
-  color: #334155;
-}
-html:not(.dark) aside button:not([class*="bg-sky"]):not([class*="bg-emerald"]),
-html.light aside button:not([class*="bg-sky"]):not([class*="bg-emerald"]) {
-  color: #334155;
-}
-html:not(.dark) aside a:hover,
-html.light aside a:hover,
-html:not(.dark) aside button:hover,
-html.light aside button:hover {
-  color: #0f172a !important;
-  background-color: #f1f5f9 !important;
-}
-html:not(.dark) aside .border-slate-800,
-html.light aside .border-slate-800 {
-  border-color: #e2e8f0 !important;
+html:not(.dark) .text-slate-500,
+html.light .text-slate-500 {
+  color: #64748b !important;
 }
 
-/* Card shadows in light mode for crisp hierarchy */
+/* Light backgrounds in light mode */
+html:not(.dark) .bg-slate-50,
+html.light .bg-slate-50 {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) .bg-slate-100,
+html.light .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Automatic mapping for card containers written with bg-slate-900 */
 html:not(.dark) .bg-slate-900,
 html:not(.dark) .bg-slate-900\/40,
+html:not(.dark) .bg-slate-900\/50,
 html:not(.dark) .bg-slate-900\/60,
-html:not(.dark) .bg-slate-900\/80 {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-900\/90,
+html.light .bg-slate-900,
+html.light .bg-slate-900\/40,
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/90 {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
 
-/* Modal and dialog backdrops in light mode */
-html:not(.dark) .fixed.inset-0.bg-slate-950\/80,
-html:not(.dark) .fixed.inset-0.bg-slate-950\/70 {
-  background-color: rgba(15, 23, 42, 0.45) !important;
+/* Automatic mapping for borders written with border-slate-800 */
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/60,
+html:not(.dark) .border-slate-800\/80,
+html.light .border-slate-800,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/80 {
+  border-color: #e2e8f0;
 }
 
-/* Search input in header in light mode */
-html:not(.dark) header input {
-  background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-}
-html:not(.dark) header input::placeholder {
-  color: #94a3b8 !important;
+/* Automatic mapping for borders written with border-slate-700 */
+html:not(.dark) .border-slate-700,
+html.light .border-slate-700 {
+  border-color: #cbd5e1;
 }
 
-/* Inputs on forms in light mode */
-html:not(.dark) input.bg-slate-950,
-html:not(.dark) select.bg-slate-950,
-html:not(.dark) textarea.bg-slate-950 {
-  background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
+/* Headings with text-white automatically adapt to dark slate in light mode */
+html:not(.dark) :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, select, textarea).text-white,
+html.light :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, select, textarea).text-white,
+html:not(.dark) span.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]),
+html.light span.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]),
+html:not(.dark) div.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]),
+html.light div.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]) {
+  color: #0f172a;
 }
 
-/* 5. LIGHT MODE HOVER RULES (Fixes white-on-white text & background) */
-
-/* In light mode: ANY hover:text-white MUST become dark slate (#0f172a), NOT white! */
-html:not(.dark) .hover\:text-white:hover,
-html:not(.dark) [class*="hover:text-white"]:hover,
-html:not(.dark) .hover\:text-white:hover *,
-html:not(.dark) [class*="hover:text-white"]:hover *,
-html.light .hover\:text-white:hover,
-html.light [class*="hover:text-white"]:hover,
-html.light .hover\:text-white:hover *,
-html.light [class*="hover:text-white"]:hover * {
-  color: #0f172a !important;
-}
-
-/* In light mode: ANY hover:bg-slate-900 MUST become a soft slate-100 (#f1f5f9), NOT pure white! */
+/* Hover background on cards / table rows in light mode */
 html:not(.dark) .hover\:bg-slate-900:hover,
 html:not(.dark) [class*="hover:bg-slate-900"]:hover,
-html:not(.dark) [class*="hover:bg-slate-900\/50"]:hover,
 html.light .hover\:bg-slate-900:hover,
-html.light [class*="hover:bg-slate-900"]:hover,
-html.light [class*="hover:bg-slate-900\/50"]:hover {
-  background-color: #f1f5f9 !important;
+html.light [class*="hover:bg-slate-900"]:hover {
+  background-color: #f1f5f9;
 }
 
-/* In light mode: ANY hover:bg-slate-800 (except colored action buttons) becomes slate-200 (#e2e8f0) */
-html:not(.dark) .hover\:bg-slate-800:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
-html:not(.dark) [class*="hover:bg-slate-800"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
-html.light .hover\:bg-slate-800:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
-html.light [class*="hover:bg-slate-800"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]) {
-  background-color: #e2e8f0 !important;
+html:not(.dark) .hover\:bg-slate-800:hover:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]),
+html.light .hover\:bg-slate-800:hover:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]) {
+  background-color: #e2e8f0;
 }
 
-/* In light mode: ANY hover:bg-slate-700 (except colored action buttons) becomes slate-300 (#cbd5e1) */
-html:not(.dark) .hover\:bg-slate-700:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
-html:not(.dark) [class*="hover:bg-slate-700"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
-html.light .hover\:bg-slate-700:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
-html.light [class*="hover:bg-slate-700"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]) {
-  background-color: #cbd5e1 !important;
+/* Hover text in light mode */
+html:not(.dark) .hover\:text-white:hover,
+html:not(.dark) [class*="hover:text-white"]:hover,
+html.light .hover\:text-white:hover,
+html.light [class*="hover:text-white"]:hover {
+  color: #0f172a;
 }
 
-/* In light mode: Hover on secondary text becomes dark slate (#0f172a) */
-html:not(.dark) .hover\:text-slate-200:hover,
-html:not(.dark) .hover\:text-slate-300:hover,
-html.light .hover\:text-slate-200:hover,
-html.light .hover\:text-slate-300:hover {
-  color: #0f172a !important;
+/* Inputs and dialogs */
+html:not(.dark) header input {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+html:not(.dark) header input::placeholder {
+  color: #94a3b8;
 }
 
-/* Ensure SOLID action buttons retain crisp white text in light mode */
-html:not(.dark) .bg-emerald-600,
-html:not(.dark) .bg-sky-600,
-html:not(.dark) .bg-blue-600,
-html:not(.dark) .bg-indigo-600,
-html:not(.dark) .bg-rose-600,
-html:not(.dark) .bg-red-600 {
+html:not(.dark) .fixed.inset-0.bg-slate-950\/80,
+html:not(.dark) .fixed.inset-0.bg-slate-950\/70,
+html.light .fixed.inset-0.bg-slate-950\/80,
+html.light .fixed.inset-0.bg-slate-950\/70 {
+  background-color: rgba(15, 23, 42, 0.45);
+}
+
+/* Solid action buttons retain pure white text */
+.bg-emerald-600,
+.bg-sky-600,
+.bg-blue-600,
+.bg-indigo-600,
+.bg-rose-600,
+.bg-red-600,
+.bg-\[\#0f172a\] {
   color: #ffffff !important;
 }
-html:not(.dark) .bg-emerald-600 *,
-html:not(.dark) .bg-sky-600 *,
-html:not(.dark) .bg-blue-600 *,
-html:not(.dark) .bg-indigo-600 *,
-html:not(.dark) .bg-rose-600 *,
-html:not(.dark) .bg-red-600 * {
+.bg-emerald-600 *,
+.bg-sky-600 *,
+.bg-blue-600 *,
+.bg-indigo-600 *,
+.bg-rose-600 *,
+.bg-red-600 *,
+.bg-\[\#0f172a\] * {
   color: #ffffff !important;
 }
 
+/* Base Body Styles */
 body {
-  background: var(--color-slate-950);
-  color: var(--color-slate-200);
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.2s ease, color 0.2s ease;
 }

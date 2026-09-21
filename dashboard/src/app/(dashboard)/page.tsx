@@ -97,11 +97,11 @@ export default async function OverviewPage() {
               </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">{totalSites} Sitios</div>
-              <div className="flex items-center gap-2 text-xs text-slate-400 mt-1.5">
-                <span className="text-slate-300 font-semibold">{wpSites} WP</span> • 
-                <span className="text-slate-300 font-semibold">{vercelSites} Vercel</span> • 
-                <span className="text-slate-300 font-semibold">{systemSites} Sistemas</span>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{totalSites} Sitios</div>
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                <span className="text-slate-700 dark:text-slate-300 font-semibold">{wpSites} WP</span> • 
+                <span className="text-slate-700 dark:text-slate-300 font-semibold">{vercelSites} Vercel</span> • 
+                <span className="text-slate-700 dark:text-slate-300 font-semibold">{systemSites} Sistemas</span>
               </div>
             </div>
           </div>
@@ -204,7 +204,7 @@ export default async function OverviewPage() {
 
                       <td className="py-3.5 px-4">
                         {site.type === 'wordpress' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
                             WordPress {site.wpVersion || ''}
                           </span>
                         )}
@@ -213,8 +213,23 @@ export default async function OverviewPage() {
                             ▲ Vercel Onepage
                           </span>
                         )}
-                        {site.type === 'sistema' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        {site.category === 'domains_dns' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                            Dominio / DNS
+                          </span>
+                        )}
+                        {site.category === 'infra' && site.type !== 'wordpress' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+                            Hosting cPanel
+                          </span>
+                        )}
+                        {site.category === 'email_license' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-800 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
+                            Correo / Licencia
+                          </span>
+                        )}
+                        {site.type === 'sistema' && site.category !== 'domains_dns' && site.category !== 'infra' && site.category !== 'email_license' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20">
                             Sistema Webapp
                           </span>
                         )}
@@ -222,11 +237,11 @@ export default async function OverviewPage() {
 
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                          <span className="font-semibold text-slate-200">HTTP {site.lastStatusCode || 200}</span>
-                          <span className="text-[11px] text-slate-400">({site.lastResponseTimeMs || 250}ms)</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">HTTP {site.lastStatusCode || 200}</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">({site.lastResponseTimeMs || 250}ms)</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                           SSL: {site.sslDaysLeft ? `${site.sslDaysLeft} días restantes` : 'OK'}
                         </div>
                       </td>
@@ -235,13 +250,13 @@ export default async function OverviewPage() {
                         {updatesCount > 0 ? (
                           <Link
                             href={`/updates?siteId=${site.id}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25 transition-colors"
                           >
                             <AlertTriangle className="w-3 h-3" />
                             <span>{updatesCount} pendientes</span>
                           </Link>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                             <CheckCircle2 className="w-3 h-3" />
                             Al día
                           </span>
@@ -251,10 +266,10 @@ export default async function OverviewPage() {
                       <td className="py-3.5 px-4">
                         {site.wordfenceStats ? (
                           <div>
-                            <span className="text-slate-200 font-semibold">
+                            <span className="text-slate-800 dark:text-slate-200 font-semibold">
                               {site.wordfenceStats.totalAttacks.toLocaleString()} ataques
                             </span>
-                            <div className="text-[10px] text-slate-400 mt-0.5">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                               {site.wordfenceStats.rulesDetail || 'Reglas activas'}
                             </div>
                           </div>
@@ -263,11 +278,11 @@ export default async function OverviewPage() {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-300">
+                      <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300">
                         {site.lastBackupAt ? (
                           <div>
-                            <span>UpdraftPlus OK</span>
-                            <div className="text-[10px] text-slate-400 mt-0.5">
+                            <span className="font-medium">UpdraftPlus OK</span>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                               Google Drive
                             </div>
                           </div>
@@ -279,7 +294,7 @@ export default async function OverviewPage() {
                       <td className="py-3.5 px-4 text-right">
                         <Link
                           href={`/services/${site.id}`}
-                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700"
+                          className="px-2.5 py-1 rounded bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors border border-slate-300 dark:border-slate-700 shadow-sm"
                         >
                           Gestionar
                         </Link>

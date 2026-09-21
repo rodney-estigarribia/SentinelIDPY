@@ -234,7 +234,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
       </nav>
 
       {/* Footer / Status */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-900/50">
+      <div className="p-4 pb-6 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-900/50">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-slate-700 dark:text-slate-300 font-medium">Conexión Global</span>
           <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
