@@ -50,7 +50,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/cron') ||
-    pathname.startsWith('/api/admin') ||
     pathname === '/login' ||
     pathname.includes('.')
   ) {
@@ -68,6 +67,9 @@ export async function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('sentinel_session')?.value;
 
   if (!sessionCookie || !(await verifyTokenEdge(sessionCookie, SESSION_SECRET))) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'No autorizado: Sesión requerida.' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
