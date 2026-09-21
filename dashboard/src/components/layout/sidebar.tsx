@@ -19,9 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   FolderKanban,
-  MessageSquare
+  DollarSign
 } from 'lucide-react';
-import { TeamSnippetsModal } from '@/components/team/team-snippets-modal';
 
 interface SidebarProps {
   pendingUpdatesCount?: number;
@@ -38,7 +37,6 @@ function WPIcon({ className = 'w-4 h-4' }: { className?: string }) {
 
 export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: SidebarProps) {
   const pathname = usePathname();
-  const [isTeamSnippetsOpen, setIsTeamSnippetsOpen] = useState(false);
 
   if (pathname === '/login') {
     return null;
@@ -50,6 +48,8 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: Side
     { label: 'Servicios y Activos', href: '/services', icon: Globe, badge: offlineSitesCount > 0 ? `${offlineSitesCount} caídos` : undefined, badgeVariant: 'danger' },
     { label: 'Clientes CRM 360°', href: '/clients', icon: Users },
     { label: 'Proyectos & Pipeline', href: '/projects', icon: FolderKanban },
+    { label: 'Finanzas & Objetivos', href: '/finances', icon: DollarSign },
+    { label: 'Equipo Virtual', href: '/team', icon: Sparkles },
   ];
 
   // WordPress Specific Submenu Items
@@ -214,20 +214,6 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: Side
         </div>
 
         <div className="pt-3 border-t border-slate-200 dark:border-slate-800/60 space-y-1">
-          <button
-            type="button"
-            onClick={() => setIsTeamSnippetsOpen(true)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-600/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-600/25 transition-colors text-xs font-semibold cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              <span>Equipo Virtual (Copys)</span>
-            </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-500/30 font-bold">
-              4 Roles
-            </span>
-          </button>
-
           {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -276,11 +262,6 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: Side
           </button>
         </div>
       </div>
-
-      <TeamSnippetsModal
-        isOpen={isTeamSnippetsOpen}
-        onClose={() => setIsTeamSnippetsOpen(false)}
-      />
     </aside>
   );
 }

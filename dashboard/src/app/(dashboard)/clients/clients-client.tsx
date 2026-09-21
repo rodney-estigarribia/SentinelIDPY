@@ -31,9 +31,10 @@ import {
   Building2,
   Briefcase,
   History,
-  Tag
+  Tag,
+  Receipt
 } from 'lucide-react';
-import type { Client, Site, Project, ClientTimelineEvent } from '@/db/schema';
+import type { Client, Site, Project, ClientTimelineEvent, Payment } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
 import { TeamSnippetsModal } from '@/components/team/team-snippets-modal';
 import { Badge, Note } from '@/components/ui';
@@ -42,17 +43,24 @@ interface ClientsClientProps {
   initialClients: Client[];
   sites: Site[];
   initialProjects?: Project[];
+  initialPayments?: Payment[];
 }
 
-export function ClientsClient({ initialClients, sites, initialProjects = [] }: ClientsClientProps) {
+export function ClientsClient({
+  initialClients,
+  sites,
+  initialProjects = [],
+  initialPayments = []
+}: ClientsClientProps) {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [currentSites, setCurrentSites] = useState<Site[]>(sites);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [selectedClient, setSelectedClient] = useState<Client | null>(clients[0] || null);
 
   // Active view tab
-  const [activeTab, setActiveTab] = useState<'infrastructure' | 'timeline' | 'projects'>('infrastructure');
+  const [activeTab, setActiveTab] = useState<'infrastructure' | 'timeline' | 'projects' | 'payments'>('infrastructure');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
@@ -62,6 +70,19 @@ export function ClientsClient({ initialClients, sites, initialProjects = [] }: C
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [isTeamSnippetsOpen, setIsTeamSnippetsOpen] = useState(false);
+  const [isClientPaymentModalOpen, setIsClientPaymentModalOpen] = useState(false);
+
+  // New Client Payment Form State
+  const [newPayAmount, setNewPayAmount] = useState('');
+  const [newPayCurrency, setNewPayCurrency] = useState('PYG');
+  const [newPayDate, setNewPayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newPayConcept, setNewPayConcept] = useState('mantenimiento_mensual');
+  const [newPayDescription, setNewPayDescription] = useState('');
+  const [newPayMethod, setNewPayMethod] = useState('transferencia');
+  const [newPayReceipt, setNewPayReceipt] = useState('');
+  const [newPayProjectId, setNewPayProjectId] = useState<number | ''>('');
+  const [newPayNotes, setNewPayNotes] = useState('');
+  const [isSavingPay, setIsSavingPay] = useState(false);
 
   useEffect(() => {
     setCurrentSites(sites);
@@ -70,6 +91,10 @@ export function ClientsClient({ initialClients, sites, initialProjects = [] }: C
   useEffect(() => {
     setProjects(initialProjects);
   }, [initialProjects]);
+
+  useEffect(() => {
+    setPayments(initialPayments);
+  }, [initialPayments]);
 
   // Client Details Edit State
   const [editName, setEditName] = useState('');
@@ -131,6 +156,67 @@ export function ClientsClient({ initialClients, sites, initialProjects = [] }: C
   const clientProjects = selectedClient
     ? projects.filter((p) => p.clientId === selectedClient.id)
     : [];
+
+  const clientPayments = selectedClient
+    ? payments.filter((p) => p.clientId === selectedClient.id)
+    : [];
+
+  const handleCreateClientPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClient || !newPayAmount || isNaN(Number(newPayAmount))) {
+      alert('Ingresa un monto numérico válido');
+      return;
+    }
+
+    setIsSavingPay(true);
+    try {
+      const res = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: selectedClient.id,
+          projectId: newPayProjectId ? Number(newPayProjectId) : null,
+          amount: Number(newPayAmount),
+          currency: newPayCurrency,
+          date: newPayDate,
+          concept: newPayConcept,
+          description: newPayDescription,
+          paymentMethod: newPayMethod,
+          receiptNumber: newPayReceipt,
+          status: 'completed',
+          notes: newPayNotes,
+        })
+      });
+
+      if (!res.ok) throw new Error('Error al registrar el cobro');
+      const saved = await res.json();
+      setPayments((prev) => [saved, ...prev]);
+      setIsClientPaymentModalOpen(false);
+
+      setNewPayAmount('');
+      setNewPayDescription('');
+      setNewPayReceipt('');
+      setNewPayNotes('');
+      setNewPayProjectId('');
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo registrar el cobro');
+    } finally {
+      setIsSavingPay(false);
+    }
+  };
+
+  const handleDeleteClientPayment = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este cobro?')) return;
+    try {
+      const res = await fetch(`/api/payments/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar');
+      setPayments((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert('Error al eliminar el registro');
+    }
+  };
 
   const agencyPaidServices = clientSites.filter((s) => s.billing?.responsibility === 'tc_agencia');
 
@@ -674,6 +760,18 @@ export function ClientsClient({ initialClients, sites, initialProjects = [] }: C
                 <Briefcase className="w-4 h-4" />
                 <span>Proyectos Pipeline ({clientProjects.length})</span>
               </button>
+
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                  activeTab === 'payments'
+                    ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <DollarSign className="w-4 h-4" />
+                <span>Pagos & Cobros ({clientPayments.length})</span>
+              </button>
             </div>
 
             {/* TAB 1: INFRASTRUCTURE & SERVICES */}
@@ -1161,6 +1259,135 @@ export function ClientsClient({ initialClients, sites, initialProjects = [] }: C
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: PAYMENTS & BILLING */}
+            {activeTab === 'payments' && (
+              <div className="space-y-6 animate-in fade-in">
+                {/* Header with KPI chips & Action */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+                  <div>
+                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-emerald-500" />
+                      <span>Cobros y Facturación de {selectedClient.name}</span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Historial completo de pagos percibidos, facturas emitidas y anticipos de proyectos.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Percibido</span>
+                      <span className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                        ₲ {clientPayments
+                          .filter((p) => p.status === 'completed' && (p.currency || 'PYG') === 'PYG')
+                          .reduce((s, p) => s + (p.amount || 0), 0)
+                          .toLocaleString()}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsClientPaymentModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer shadow-sm shadow-emerald-500/20"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Registrar Cobro</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table of payments */}
+                {clientPayments.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/20">
+                    <Receipt className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <p className="text-xs">No hay cobros registrados para este cliente aún.</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsClientPaymentModalOpen(true)}
+                      className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                    >
+                      + Registrar el primer pago
+                    </button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/40">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                        <tr>
+                          <th className="px-4 py-3">Fecha</th>
+                          <th className="px-4 py-3">Concepto & Descripción</th>
+                          <th className="px-4 py-3">Factura / Recibo</th>
+                          <th className="px-4 py-3">Medio</th>
+                          <th className="px-4 py-3 text-right">Monto</th>
+                          <th className="px-4 py-3 text-center">Estado</th>
+                          <th className="px-4 py-3 text-right">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {clientPayments.map((p) => {
+                          const project = clientProjects.find((pr) => pr.id === p.projectId);
+
+                          return (
+                            <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
+                              <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {p.date}
+                              </td>
+                              <td className="px-4 py-3 max-w-xs">
+                                <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                  {p.concept.replace(/_/g, ' ').toUpperCase()}
+                                </div>
+                                {p.description && (
+                                  <div className="text-[11px] text-slate-500 truncate" title={p.description}>
+                                    {p.description}
+                                  </div>
+                                )}
+                                {project && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
+                                    <Briefcase className="w-2.5 h-2.5" />
+                                    {project.name}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-[11px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {p.receiptNumber || '—'}
+                              </td>
+                              <td className="px-4 py-3 capitalize text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {p.paymentMethod}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                                {p.currency || 'PYG'} {(p.amount || 0).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-center whitespace-nowrap">
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                    p.status === 'completed'
+                                      ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20'
+                                      : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20'
+                                  }`}
+                                >
+                                  {p.status === 'completed' ? 'Cobrado' : 'Pendiente'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteClientPayment(p.id)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                  title="Eliminar registro"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -1755,6 +1982,174 @@ export function ClientsClient({ initialClients, sites, initialProjects = [] }: C
         onClose={() => setIsTeamSnippetsOpen(false)}
         selectedClient={selectedClient}
       />
+
+      {/* Modal: Registrar Cobro para el Cliente Seleccionado */}
+      {isClientPaymentModalOpen && selectedClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-500" />
+                  <span>Registrar Cobro: {selectedClient.name}</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Asienta un pago directo percibido para este cliente.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsClientPaymentModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateClientPayment} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Proyecto Vinculado (Opcional)
+                </label>
+                <select
+                  value={newPayProjectId}
+                  onChange={(e) => setNewPayProjectId(e.target.value ? Number(e.target.value) : '')}
+                  className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                >
+                  <option value="">Ninguno / Pago de Mantenimiento o Servicio General</option>
+                  {clientProjects.map((pr) => (
+                    <option key={pr.id} value={pr.id}>{pr.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Monto Cobrado *
+                  </label>
+                  <input
+                    type="number"
+                    value={newPayAmount}
+                    onChange={(e) => setNewPayAmount(e.target.value)}
+                    placeholder="Ej. 250000"
+                    required
+                    className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Moneda
+                  </label>
+                  <select
+                    value={newPayCurrency}
+                    onChange={(e) => setNewPayCurrency(e.target.value)}
+                    className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="PYG">PYG (₲ Guaraníes)</option>
+                    <option value="USD">USD ($ Dólares)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Fecha de Cobro *
+                  </label>
+                  <input
+                    type="date"
+                    value={newPayDate}
+                    onChange={(e) => setNewPayDate(e.target.value)}
+                    required
+                    className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Concepto
+                  </label>
+                  <select
+                    value={newPayConcept}
+                    onChange={(e) => setNewPayConcept(e.target.value)}
+                    className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="mantenimiento_mensual">Mantenimiento Mensual</option>
+                    <option value="anticipo_proyecto">Anticipo Proyecto (50%)</option>
+                    <option value="saldo_proyecto">Saldo de Entrega Proyecto</option>
+                    <option value="renovacion_anual">Renovación Dominio / Hosting</option>
+                    <option value="consultoria">Consultoría / TI</option>
+                    <option value="otro">Otro Servicio</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Método de Pago
+                  </label>
+                  <select
+                    value={newPayMethod}
+                    onChange={(e) => setNewPayMethod(e.target.value)}
+                    className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="tarjeta">Tarjeta / Pasarela</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Factura / Comprobante
+                  </label>
+                  <input
+                    type="text"
+                    value={newPayReceipt}
+                    onChange={(e) => setNewPayReceipt(e.target.value)}
+                    placeholder="Ej. FAC-2026-027"
+                    className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white font-mono focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Descripción / Detalle
+                </label>
+                <input
+                  type="text"
+                  value={newPayDescription}
+                  onChange={(e) => setNewPayDescription(e.target.value)}
+                  placeholder="Ej. Cuota Mantenimiento Plan Elite Septiembre"
+                  className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsClientPaymentModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingPay}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingPay ? 'Registrando...' : 'Registrar Cobro'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

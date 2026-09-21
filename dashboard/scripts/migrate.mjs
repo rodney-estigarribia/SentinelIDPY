@@ -392,6 +392,35 @@ const INITIAL_PROJECTS = [
   }
 ];
 
+const INITIAL_PAYMENTS = [
+  { id: 1, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-01-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento preventivo Plan Elite Enero 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-001', status: 'completed', notes: 'Transferencia Itaú' },
+  { id: 2, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-01-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento mensual CGA Corporativo', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-002', status: 'completed', notes: 'Facturado con IVA' },
+  { id: 3, clientId: 5, projectId: null, amount: 600000, currency: 'PYG', date: '2026-01-28', concept: 'consultoria', description: 'Soporte y configuración Cloud Render/Postgres', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-003', status: 'completed', notes: 'Consultoría técnica' },
+  { id: 4, clientId: 14, projectId: 1, amount: 1250000, currency: 'PYG', date: '2026-02-10', concept: 'anticipo_proyecto', description: 'Anticipo 50% Sitio Web Corporativo Repar', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-004', status: 'completed', notes: 'Inicio de diseño UI/UX' },
+  { id: 5, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-02-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Febrero 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-005', status: 'completed', notes: '' },
+  { id: 6, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-02-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Febrero 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-006', status: 'completed', notes: '' },
+  { id: 7, clientId: 5, projectId: 3, amount: 2980000, currency: 'PYG', date: '2026-02-27', concept: 'anticipo_proyecto', description: 'Desarrollo Frontend Web v2 y sincronización API', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-007', status: 'completed', notes: 'Desarrollo en curso' },
+  { id: 8, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-03-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Marzo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-008', status: 'completed', notes: '' },
+  { id: 9, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-03-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Marzo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-009', status: 'completed', notes: '' },
+  { id: 10, clientId: 10, projectId: null, amount: 650000, currency: 'PYG', date: '2026-04-12', concept: 'renovacion_anual', description: 'Renovación anual de hosting cPanel 15GB', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-010', status: 'completed', notes: 'Vence abril 2027' },
+  { id: 11, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-04-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Abril 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-011', status: 'completed', notes: '' },
+  { id: 12, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-04-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Abril 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-012', status: 'completed', notes: '' },
+  { id: 13, clientId: 8, projectId: null, amount: 580000, currency: 'PYG', date: '2026-04-26', concept: 'consultoria', description: 'Soporte y configuración Microsoft 365', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-013', status: 'completed', notes: '' },
+  { id: 14, clientId: 13, projectId: null, amount: 350000, currency: 'PYG', date: '2026-05-10', concept: 'renovacion_anual', description: 'Renovación anual hosting cPanel 5GB Mercopar', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-014', status: 'completed', notes: '' },
+  { id: 15, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-05-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Mayo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-015', status: 'completed', notes: '' },
+  { id: 16, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-05-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Mayo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-016', status: 'completed', notes: '' },
+  { id: 17, clientId: 11, projectId: null, amount: 350000, currency: 'PYG', date: '2026-06-12', concept: 'renovacion_anual', description: 'Renovación anual hosting cPanel CNA', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-017', status: 'completed', notes: '' },
+  { id: 18, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-06-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Junio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-018', status: 'completed', notes: '' },
+  { id: 19, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-06-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Junio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-019', status: 'completed', notes: '' },
+  { id: 20, clientId: 9, projectId: null, amount: 480000, currency: 'PYG', date: '2026-07-15', concept: 'renovacion_anual', description: 'Mantenimiento Plan Pro Anual Misa Guaraní', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-020', status: 'completed', notes: '' },
+  { id: 21, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-07-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Julio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-021', status: 'completed', notes: '' },
+  { id: 22, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-07-25', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Julio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-022', status: 'completed', notes: '' },
+  { id: 23, clientId: 6, projectId: 4, amount: 1250000, currency: 'PYG', date: '2026-08-10', concept: 'anticipo_proyecto', description: 'Anticipo Mantenimiento & Auditoría Anual 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-023', status: 'completed', notes: 'Auditoría SEO y catálogo' },
+  { id: 24, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-08-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Agosto 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-024', status: 'completed', notes: '' },
+  { id: 25, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-08-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Agosto 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-025', status: 'completed', notes: '' },
+  { id: 26, clientId: 8, projectId: null, amount: 850000, currency: 'PYG', date: '2026-08-26', concept: 'consultoria', description: 'Servicios de consultoría TI y optimización', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-026', status: 'completed', notes: '' }
+];
+
 async function runMigration() {
   console.log('🚀 [migrate] Running automated database migrations and schema sync...');
   const sql = neon(connectionString);
@@ -492,6 +521,25 @@ async function runMigration() {
   `;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS payments (
+      id SERIAL PRIMARY KEY,
+      client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+      project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+      amount INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'PYG',
+      date TEXT NOT NULL,
+      concept TEXT NOT NULL,
+      description TEXT,
+      payment_method TEXT DEFAULT 'transferencia',
+      receipt_number TEXT,
+      status TEXT DEFAULT 'completed',
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS config_templates (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
@@ -573,6 +621,24 @@ async function runMigration() {
       `;
     }
     await sql`SELECT setval('projects_id_seq', (SELECT GREATEST(MAX(id), 1) FROM projects));`;
+  }
+
+  // 4. Seed payments if table is empty
+  const existingPayments = await sql`SELECT COUNT(*)::int as count FROM payments`;
+  if (existingPayments[0].count === 0) {
+    for (const py of INITIAL_PAYMENTS) {
+      await sql`
+        INSERT INTO payments (
+          id, client_id, project_id, amount, currency, date, concept,
+          description, payment_method, receipt_number, status, notes
+        ) VALUES (
+          ${py.id}, ${py.clientId}, ${py.projectId || null}, ${py.amount}, ${py.currency || 'PYG'},
+          ${py.date}, ${py.concept}, ${py.description || ''}, ${py.paymentMethod || 'transferencia'},
+          ${py.receiptNumber || ''}, ${py.status || 'completed'}, ${py.notes || ''}
+        ) ON CONFLICT (id) DO NOTHING;
+      `;
+    }
+    await sql`SELECT setval('payments_id_seq', (SELECT GREATEST(MAX(id), 1) FROM payments));`;
   }
 
   // 4. Update connector token in WordPress sites

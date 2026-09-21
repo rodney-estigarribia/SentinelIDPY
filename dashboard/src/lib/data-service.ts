@@ -12,6 +12,8 @@ import type {
   NewServiceGroup,
   Project,
   NewProject,
+  Payment,
+  NewPayment,
   ClientTimelineEvent
 } from '@/db/schema';
 
@@ -1192,12 +1194,94 @@ const INITIAL_PROJECTS: Array<Project> = [
   }
 ];
 
+const INITIAL_PAYMENTS: Array<Payment> = [
+  { id: 1, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-01-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento preventivo Plan Elite Enero 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-001', status: 'completed', notes: 'Transferencia Itaú', createdAt: new Date(), updatedAt: new Date() },
+  { id: 2, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-01-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento mensual CGA Corporativo', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-002', status: 'completed', notes: 'Facturado con IVA', createdAt: new Date(), updatedAt: new Date() },
+  { id: 3, clientId: 5, projectId: null, amount: 600000, currency: 'PYG', date: '2026-01-28', concept: 'consultoria', description: 'Soporte y configuración Cloud Render/Postgres', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-003', status: 'completed', notes: 'Consultoría técnica', createdAt: new Date(), updatedAt: new Date() },
+  { id: 4, clientId: 14, projectId: 1, amount: 1250000, currency: 'PYG', date: '2026-02-10', concept: 'anticipo_proyecto', description: 'Anticipo 50% Sitio Web Corporativo Repar', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-004', status: 'completed', notes: 'Inicio de diseño UI/UX', createdAt: new Date(), updatedAt: new Date() },
+  { id: 5, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-02-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Febrero 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-005', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 6, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-02-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Febrero 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-006', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 7, clientId: 5, projectId: 3, amount: 2980000, currency: 'PYG', date: '2026-02-27', concept: 'anticipo_proyecto', description: 'Desarrollo Frontend Web v2 y sincronización API', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-007', status: 'completed', notes: 'Desarrollo en curso', createdAt: new Date(), updatedAt: new Date() },
+  { id: 8, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-03-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Marzo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-008', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 9, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-03-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Marzo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-009', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 10, clientId: 10, projectId: null, amount: 650000, currency: 'PYG', date: '2026-04-12', concept: 'renovacion_anual', description: 'Renovación anual de hosting cPanel 15GB', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-010', status: 'completed', notes: 'Vence abril 2027', createdAt: new Date(), updatedAt: new Date() },
+  { id: 11, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-04-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Abril 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-011', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 12, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-04-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Abril 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-012', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 13, clientId: 8, projectId: null, amount: 580000, currency: 'PYG', date: '2026-04-26', concept: 'consultoria', description: 'Soporte y configuración Microsoft 365', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-013', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 14, clientId: 13, projectId: null, amount: 350000, currency: 'PYG', date: '2026-05-10', concept: 'renovacion_anual', description: 'Renovación anual hosting cPanel 5GB Mercopar', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-014', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 15, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-05-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Mayo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-015', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 16, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-05-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Mayo 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-016', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 17, clientId: 11, projectId: null, amount: 350000, currency: 'PYG', date: '2026-06-12', concept: 'renovacion_anual', description: 'Renovación anual hosting cPanel CNA', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-017', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 18, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-06-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Junio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-018', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 19, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-06-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Junio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-019', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 20, clientId: 9, projectId: null, amount: 480000, currency: 'PYG', date: '2026-07-15', concept: 'renovacion_anual', description: 'Mantenimiento Plan Pro Anual Misa Guaraní', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-020', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 21, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-07-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Julio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-021', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 22, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-07-25', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Julio 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-022', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 23, clientId: 6, projectId: 4, amount: 1250000, currency: 'PYG', date: '2026-08-10', concept: 'anticipo_proyecto', description: 'Anticipo Mantenimiento & Auditoría Anual 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-023', status: 'completed', notes: 'Auditoría SEO y catálogo', createdAt: new Date(), updatedAt: new Date() },
+  { id: 24, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-08-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Agosto 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-024', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 25, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-08-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Agosto 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-025', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() },
+  { id: 26, clientId: 8, projectId: null, amount: 850000, currency: 'PYG', date: '2026-08-26', concept: 'consultoria', description: 'Servicios de consultoría TI y optimización', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-026', status: 'completed', notes: '', createdAt: new Date(), updatedAt: new Date() }
+];
+
+const DEFAULT_FINANCIAL_SETTINGS = {
+  currentLadderStep: 1, // Escalón 1 (₲600.000)
+  targetLadderStep: 2, // Escalón 2 (₲1.000.000)
+  targetSalary: 3500000, // Meta de escala: ₲3.500.000 - ₲5.000.000
+  distributionRules: {
+    iva: 0.10, // 10%
+    opex: 0.15, // 15%
+    reserve: 0.05, // 5%
+    reinvestment: 0.10, // 10%
+    salaryAndCushion: 0.60, // 60%
+  },
+  salaryLadder: [
+    {
+      step: 1,
+      name: 'Escalón 1',
+      withdrawableSalary: 600000,
+      avgRequiredBilling: 1100000,
+      minCushion: 2000000,
+      downgradeRule: 'Piso base (no baja más)',
+      active: true,
+    },
+    {
+      step: 2,
+      name: 'Escalón 2',
+      withdrawableSalary: 1000000,
+      avgRequiredBilling: 1700000,
+      minCushion: 2000000,
+      downgradeRule: 'Si Colchón < ₲1.000.000 tras 3 meses bajos → Vuelve a ₲600.000',
+      active: false,
+    },
+    {
+      step: 3,
+      name: 'Escalón 3',
+      withdrawableSalary: 1500000,
+      avgRequiredBilling: 2500000,
+      minCushion: 4500000,
+      downgradeRule: 'Si Colchón < ₲2.250.000 tras 3 meses bajos → Vuelve a ₲1.000.000',
+      active: false,
+    },
+    {
+      step: 4,
+      name: 'Escalón 4',
+      withdrawableSalary: 2000000,
+      avgRequiredBilling: 3350000,
+      minCushion: 6000000,
+      downgradeRule: 'Si Colchón < ₲3.000.000 tras 3 meses bajos → Vuelve a ₲1.500.000',
+      active: false,
+    }
+  ]
+};
+
 // Fallback in-memory stores (in case DB is not yet migrated or offline)
 let memoryClients = [...INITIAL_CLIENTS];
 let memorySites = [...INITIAL_SITES];
 const memoryTemplates = [...INITIAL_TEMPLATES];
 let memoryServiceGroups = [...INITIAL_SERVICE_GROUPS];
 let memoryProjects = [...INITIAL_PROJECTS];
+let memoryPayments = [...INITIAL_PAYMENTS];
+let memoryFinancialSettings = { ...DEFAULT_FINANCIAL_SETTINGS };
 
 export const dataService = {
   // --- CLIENTS ---
@@ -1670,6 +1754,155 @@ export const dataService = {
     const initialLen = memoryProjects.length;
     memoryProjects = memoryProjects.filter((p) => p.id !== id);
     return memoryProjects.length < initialLen;
+  },
+
+  // --- PAYMENTS & FINANCES ---
+  async getPayments(filters?: { clientId?: number; year?: string; month?: string; status?: string }): Promise<Payment[]> {
+    let result = memoryPayments;
+    if (db) {
+      try {
+        const rows = await db.select().from(schema.payments);
+        if (rows.length > 0) result = rows;
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    if (filters?.clientId) {
+      result = result.filter((p) => p.clientId === filters.clientId);
+    }
+    if (filters?.status) {
+      result = result.filter((p) => p.status === filters.status);
+    }
+    if (filters?.year) {
+      result = result.filter((p) => p.date.startsWith(filters.year!));
+    }
+    if (filters?.month) {
+      result = result.filter((p) => p.date.includes(`-${filters.month!.padStart(2, '0')}-`));
+    }
+    // Sort desc by date
+    return [...result].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  async getPaymentById(id: number): Promise<Payment | undefined> {
+    if (db) {
+      try {
+        const [row] = await db.select().from(schema.payments).where(eq(schema.payments.id, id));
+        if (row) return row;
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    return memoryPayments.find((p) => p.id === id);
+  },
+
+  async createPayment(data: NewPayment): Promise<Payment> {
+    let created: Payment | null = null;
+    if (db) {
+      try {
+        const [row] = await db.insert(schema.payments).values(data).returning();
+        created = row;
+      } catch (err) {
+        console.warn('DB insert failed, using memory store:', err);
+      }
+    }
+
+    if (!created) {
+      created = {
+        id: Math.max(0, ...memoryPayments.map((p) => p.id)) + 1,
+        clientId: data.clientId || null,
+        projectId: data.projectId || null,
+        amount: data.amount,
+        currency: data.currency || 'PYG',
+        date: data.date,
+        concept: data.concept,
+        description: data.description || null,
+        paymentMethod: data.paymentMethod || 'transferencia',
+        receiptNumber: data.receiptNumber || null,
+        status: data.status || 'completed',
+        notes: data.notes || null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      memoryPayments.unshift(created);
+    } else {
+      memoryPayments.unshift(created);
+    }
+
+    // Auto-update project advance if associated with a project
+    if (data.projectId) {
+      const proj = await this.getProjectById(data.projectId);
+      if (proj) {
+        const currentAdvance = proj.advancePaid || 0;
+        await this.updateProject(data.projectId, {
+          advancePaid: currentAdvance + data.amount,
+          status: proj.status === 'pending' ? 'in_progress' : proj.status
+        });
+      }
+    }
+
+    return created;
+  },
+
+  async updatePayment(id: number, data: Partial<Payment>): Promise<Payment | null> {
+    if (db) {
+      try {
+        const [updated] = await db.update(schema.payments)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(schema.payments.id, id))
+          .returning();
+        return updated || null;
+      } catch (err) {
+        console.warn('DB update failed, using memory store:', err);
+      }
+    }
+    const index = memoryPayments.findIndex((p) => p.id === id);
+    if (index === -1) return null;
+    memoryPayments[index] = { ...memoryPayments[index], ...data, updatedAt: new Date() };
+    return memoryPayments[index];
+  },
+
+  async deletePayment(id: number): Promise<boolean> {
+    if (db) {
+      try {
+        await db.delete(schema.payments).where(eq(schema.payments.id, id));
+        return true;
+      } catch (err) {
+        console.warn('DB delete failed, using memory store:', err);
+      }
+    }
+    const initialLen = memoryPayments.length;
+    memoryPayments = memoryPayments.filter((p) => p.id !== id);
+    return memoryPayments.length < initialLen;
+  },
+
+  async getFinancialSettings() {
+    if (db) {
+      try {
+        const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, 'salary_ladder_config'));
+        if (row && row.value) return row.value as typeof DEFAULT_FINANCIAL_SETTINGS;
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    return memoryFinancialSettings;
+  },
+
+  async updateFinancialSettings(settings: Partial<typeof DEFAULT_FINANCIAL_SETTINGS>) {
+    const updated = { ...memoryFinancialSettings, ...settings };
+    if (db) {
+      try {
+        await db.insert(schema.appSettings)
+          .values({ key: 'salary_ladder_config', value: updated })
+          .onConflictDoUpdate({
+            target: schema.appSettings.key,
+            set: { value: updated, updatedAt: new Date() }
+          });
+      } catch (err) {
+        console.warn('DB insert/update failed, using memory store:', err);
+      }
+    }
+    memoryFinancialSettings = updated;
+    return memoryFinancialSettings;
   }
 };
 

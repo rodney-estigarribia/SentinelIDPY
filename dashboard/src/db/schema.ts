@@ -232,6 +232,23 @@ export const projects = pgTable('projects', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+export const payments = pgTable('payments', {
+  id: serial('id').primaryKey(),
+  clientId: integer('client_id').references(() => clients.id, { onDelete: 'cascade' }),
+  projectId: integer('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  amount: integer('amount').notNull(),
+  currency: text('currency').notNull().default('PYG'),
+  date: text('date').notNull(), // YYYY-MM-DD
+  concept: text('concept').notNull(), // 'mantenimiento_mensual', 'renovacion_anual', 'anticipo_proyecto', 'saldo_proyecto', 'consultoria', 'otro'
+  description: text('description'),
+  paymentMethod: text('payment_method').default('transferencia'), // 'transferencia', 'tarjeta', 'efectivo', 'cheque'
+  receiptNumber: text('receipt_number'),
+  status: text('status').default('completed'), // 'completed', 'pending', 'cancelled'
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
 export type Site = typeof sites.$inferSelect;
@@ -242,8 +259,11 @@ export type ServiceGroup = typeof serviceGroups.$inferSelect;
 export type NewServiceGroup = typeof serviceGroups.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;
 
 // Modern aliases for Services & Assets architecture
 export const services = sites;
 export type Service = Site;
 export type NewService = NewSite;
+
