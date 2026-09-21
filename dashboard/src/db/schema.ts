@@ -1,12 +1,28 @@
 import { pgTable, serial, text, timestamp, integer, doublePrecision, boolean, jsonb, date } from 'drizzle-orm/pg-core';
 
+export interface ClientTimelineEvent {
+  id: string;
+  year: string;
+  date?: string;
+  title: string;
+  description: string;
+  category: 'milestone' | 'migration' | 'churn' | 'upgrade' | 'note';
+  actor?: 'ana' | 'martin' | 'diana' | 'carla' | 'rodney';
+}
+
 export const clients = pgTable('clients', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
+  legalName: text('legal_name'), // Razón Social oficial
+  ruc: text('ruc'), // RUC oficial con dígito verificador
   email: text('email'),
   phone: text('phone'),
   company: text('company'),
   notes: text('notes'),
+  status: text('status').notNull().default('active'), // 'active', 'migrated', 'churned', 'lead'
+  acquisitionChannel: text('acquisition_channel'), // 'referral', 'direct', 'social', 'network'
+  driveFolderUrl: text('drive_folder_url'), // Link directo a carpeta Google Drive
+  timeline: jsonb('timeline').$type<ClientTimelineEvent[]>(), // Línea de tiempo cronológica
   // Infrastructure map: domain, hosting, dns, email, systems, costs
   infrastructure: jsonb('infrastructure').$type<{
     domain?: {
@@ -198,6 +214,24 @@ export const serviceGroups = pgTable('service_groups', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+export const projects = pgTable('projects', {
+  id: serial('id').primaryKey(),
+  clientId: integer('client_id').references(() => clients.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  category: text('category').notNull().default('web_corp'), // 'web_pymes', 'web_corp', 'security', 'cloud', 'automation', 'consulting', 'mobile_app'
+  status: text('status').notNull().default('pending'), // 'pending', 'in_progress', 'completed', 'cancelled'
+  waitingOn: text('waiting_on').default('agency'), // 'client' | 'agency'
+  budget: integer('budget').default(0), // en PYG
+  currency: text('currency').default('PYG'),
+  advancePaid: integer('advance_paid').default(0),
+  targetDeliveryDate: text('target_delivery_date'),
+  notes: text('notes'),
+  driveUrl: text('drive_url'),
+  assignedRole: text('assigned_role').default('martin'), // 'ana', 'martin', 'diana', 'carla'
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
 export type Site = typeof sites.$inferSelect;
@@ -206,6 +240,8 @@ export type UptimePing = typeof uptimePings.$inferSelect;
 export type ConfigTemplate = typeof configTemplates.$inferSelect;
 export type ServiceGroup = typeof serviceGroups.$inferSelect;
 export type NewServiceGroup = typeof serviceGroups.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;
 
 // Modern aliases for Services & Assets architecture
 export const services = sites;

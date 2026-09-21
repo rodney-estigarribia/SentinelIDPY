@@ -17,19 +17,36 @@ export async function GET() {
   try {
     const sql = neon(connectionString);
 
-    // 1. Create tables
+    // 1. Create / update tables
     await sql`
       CREATE TABLE IF NOT EXISTS clients (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
+        legal_name TEXT,
+        ruc TEXT,
         email TEXT,
         phone TEXT,
         company TEXT,
         notes TEXT,
+        status TEXT DEFAULT 'active',
+        acquisition_channel TEXT,
+        drive_folder_url TEXT,
+        timeline JSONB,
         infrastructure JSONB,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
+    `;
+
+    // Ensure columns exist if clients table was already created
+    await sql`
+      ALTER TABLE clients 
+      ADD COLUMN IF NOT EXISTS legal_name TEXT,
+      ADD COLUMN IF NOT EXISTS ruc TEXT,
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS acquisition_channel TEXT,
+      ADD COLUMN IF NOT EXISTS drive_folder_url TEXT,
+      ADD COLUMN IF NOT EXISTS timeline JSONB;
     `;
 
     await sql`
@@ -77,6 +94,26 @@ export async function GET() {
     `;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'web_corp',
+        status TEXT NOT NULL DEFAULT 'pending',
+        waiting_on TEXT DEFAULT 'agency',
+        budget INTEGER DEFAULT 0,
+        currency TEXT DEFAULT 'PYG',
+        advance_paid INTEGER DEFAULT 0,
+        target_delivery_date TEXT,
+        notes TEXT,
+        drive_url TEXT,
+        assigned_role TEXT DEFAULT 'martin',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+
+    await sql`
       CREATE TABLE IF NOT EXISTS config_templates (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -116,24 +153,39 @@ export async function GET() {
       );
     `;
 
-    // 2. Check if clients exist, if not seed them from initial data
-    const existingClients = await sql`SELECT COUNT(*)::int as count FROM clients`;
+    // 2. Populate / synchronize clients
+    const memoryClients = await dataService.getClients();
+    for (const client of memoryClients) {
+      await sql`
+        INSERT INTO clients (
+          id, name, legal_name, ruc, email, phone, company, notes,
+          status, acquisition_channel, drive_folder_url, timeline, infrastructure
+        ) VALUES (
+          ${client.id}, ${client.name}, ${client.legalName}, ${client.ruc}, ${client.email}, ${client.phone}, ${client.company}, ${client.notes},
+          ${client.status}, ${client.acquisitionChannel}, ${client.driveFolderUrl}, ${JSON.stringify(client.timeline || [])}, ${JSON.stringify(client.infrastructure)}
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          legal_name = EXCLUDED.legal_name,
+          ruc = EXCLUDED.ruc,
+          email = EXCLUDED.email,
+          phone = EXCLUDED.phone,
+          company = EXCLUDED.company,
+          notes = EXCLUDED.notes,
+          status = EXCLUDED.status,
+          acquisition_channel = EXCLUDED.acquisition_channel,
+          drive_folder_url = EXCLUDED.drive_folder_url,
+          timeline = EXCLUDED.timeline,
+          infrastructure = EXCLUDED.infrastructure;
+      `;
+    }
+    await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;
+
+    // Seed sites if empty
+    const existingSites = await sql`SELECT COUNT(*)::int as count FROM sites`;
     let seeded = false;
 
-    if (existingClients[0].count === 0) {
-      const memoryClients = await dataService.getClients();
-      for (const client of memoryClients) {
-        await sql`
-          INSERT INTO clients (id, name, email, phone, company, notes, infrastructure)
-          VALUES (${client.id}, ${client.name}, ${client.email}, ${client.phone}, ${client.company}, ${client.notes}, ${JSON.stringify(client.infrastructure)})
-          ON CONFLICT (id) DO NOTHING;
-        `;
-      }
-
-      // Reset sequence
-      await sql`SELECT setval('clients_id_seq', (SELECT MAX(id) FROM clients));`;
-
-      // Seed sites
+    if (existingSites[0].count === 0) {
       const memorySites = await dataService.getSites();
       for (const site of memorySites) {
         await sql`
@@ -161,9 +213,26 @@ export async function GET() {
           ) ON CONFLICT (id) DO NOTHING;
         `;
       }
-
-      await sql`SELECT setval('sites_id_seq', (SELECT MAX(id) FROM sites));`;
+      await sql`SELECT setval('sites_id_seq', (SELECT GREATEST(MAX(id), 1) FROM sites));`;
       seeded = true;
+    }
+
+    // Seed projects if empty
+    const existingProjects = await sql`SELECT COUNT(*)::int as count FROM projects`;
+    if (existingProjects[0].count === 0) {
+      const memoryProjects = await dataService.getProjects();
+      for (const p of memoryProjects) {
+        await sql`
+          INSERT INTO projects (
+            id, client_id, name, category, status, waiting_on,
+            budget, currency, advance_paid, target_delivery_date, notes, drive_url, assigned_role
+          ) VALUES (
+            ${p.id}, ${p.clientId}, ${p.name}, ${p.category}, ${p.status}, ${p.waitingOn},
+            ${p.budget}, ${p.currency}, ${p.advancePaid}, ${p.targetDeliveryDate}, ${p.notes}, ${p.driveUrl}, ${p.assignedRole}
+          ) ON CONFLICT (id) DO NOTHING;
+        `;
+      }
+      await sql`SELECT setval('projects_id_seq', (SELECT GREATEST(MAX(id), 1) FROM projects));`;
     }
 
     // 3. Actualizar tokens reales y limpiar datos mock antiguos de actualizaciones en sitios WordPress

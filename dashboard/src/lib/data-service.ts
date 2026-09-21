@@ -1,21 +1,57 @@
 import { db, schema } from '@/db';
 import { eq } from 'drizzle-orm';
-import type { Client, Site, Service, NewClient, NewSite, NewService, ConfigTemplate, ServiceGroup, NewServiceGroup } from '@/db/schema';
+import type {
+  Client,
+  Site,
+  Service,
+  NewClient,
+  NewSite,
+  NewService,
+  ConfigTemplate,
+  ServiceGroup,
+  NewServiceGroup,
+  Project,
+  NewProject,
+  ClientTimelineEvent
+} from '@/db/schema';
 
-// Initial seed data from clientes.json and infrastructure mappings
+// Initial seed data from clientes.json, SERVICIOS Y RENOVACIONES CLIENTES and infrastructure mappings
 const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 1,
     name: 'IDPY (Impulsos Digitales)',
+    legalName: 'Impulsos Digitales',
+    ruc: '80000001-1',
     email: 'admin@impulsosdigitales.com.py',
-    phone: '+595 981 123456',
+    phone: '+595 992 438 800',
     company: 'Impulsos Digitales',
     notes: 'Agencia matriz y portal administrativo',
+    status: 'active',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/idpy-admin',
+    timeline: [
+      {
+        id: 't-1-1',
+        year: '2022',
+        title: 'Fundación de Impulsos Digitales',
+        description: 'Inicio de operaciones de consultoría cloud y desarrollo digital.',
+        category: 'milestone',
+        actor: 'rodney'
+      },
+      {
+        id: 't-1-2',
+        year: '2026',
+        title: 'Despliegue Plataforma SentinelIDPY',
+        description: 'Lanzamiento de plataforma centralizada de telemetría y operaciones.',
+        category: 'upgrade',
+        actor: 'martin'
+      }
+    ],
     infrastructure: {
       domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2027-03-15', annualCost: 150000, currency: 'PYG', notes: 'Renovación automática' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'VPS Pro', annualCost: 1200000, currency: 'PYG', notes: 'Servidor principal' },
       dns: { provider: 'Cloudflare', notes: 'DNS primario con proxy activado' },
-      email: { provider: 'Google Workspace', accountsCount: 5, annualCost: 360, currency: 'USD' },
+      email: { provider: 'Microsoft 365', accountsCount: 5, annualCost: 360, currency: 'USD' },
       systems: [{ name: 'SentinelIDPY Panel', type: 'Vercel', plan: 'Hobby/Pro' }]
     },
     createdAt: new Date(),
@@ -23,14 +59,45 @@ const INITIAL_CLIENTS: Array<Client> = [
   },
   {
     id: 2,
-    name: 'CGA',
-    email: 'contacto@cga.com.py',
+    name: 'CGA Corporativo',
+    legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
+    ruc: '80092994-2',
+    email: 'cgasociedadanonima@gmail.com',
     phone: '+595 981 234567',
-    company: 'CGA Consultores',
-    notes: 'Cliente corporativo - Web institucional y Portal',
+    company: 'CGA Consultora de Gestión Ambiental S.A.',
+    notes: 'Cliente corporativo - Web institucional, Portal de clientes y Mantenimiento Plan Elite',
+    status: 'active',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-gestion-ambiental',
+    timeline: [
+      {
+        id: 't-2-1',
+        year: '2022',
+        title: 'Desarrollo Web Institucional',
+        description: 'Sitio corporativo y estructuración de presencia digital.',
+        category: 'milestone',
+        actor: 'martin'
+      },
+      {
+        id: 't-2-2',
+        year: '2024',
+        title: 'Lanzamiento Portal CGA en Vercel',
+        description: 'Aplicación web para gestión interna de reportes ambientales.',
+        category: 'upgrade',
+        actor: 'martin'
+      },
+      {
+        id: 't-2-3',
+        year: '2026',
+        title: 'Contrato Mantenimiento Plan Elite',
+        description: 'Mantenimiento mensual recurrente activo (₲250.000 / mes).',
+        category: 'upgrade',
+        actor: 'ana'
+      }
+    ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-11-20', annualCost: 150000, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG' },
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-12-15', annualCost: 150000, currency: 'PYG', notes: 'Lo hace el cliente - Vence en diciembre' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Lo hace el cliente - Vence anual en agosto' },
       dns: { provider: 'cPanel Host', notes: 'DNS en cPanel' },
       email: { provider: 'cPanel Webmail', accountsCount: 8, annualCost: 0, currency: 'PYG' },
       systems: [{ name: 'CGA Portal', type: 'Vercel', plan: 'Impulsos Digitales Plan' }]
@@ -41,10 +108,25 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 3,
     name: 'CGA Portal',
-    email: 'admin@cga.com.py',
+    legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
+    ruc: '80092994-2',
+    email: 'cgasociedadanonima@gmail.com',
     phone: '+595 981 234567',
-    company: 'CGA Consultores',
-    notes: 'Portal web interno de clientes',
+    company: 'CGA Consultora de Gestión Ambiental S.A.',
+    notes: 'Portal web interno de clientes alojado en Vercel',
+    status: 'active',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
+    timeline: [
+      {
+        id: 't-3-1',
+        year: '2024',
+        title: 'Despliegue Portal Clientes',
+        description: 'Subdominio portal.cga.com.py conectado a Vercel.',
+        category: 'milestone',
+        actor: 'martin'
+      }
+    ],
     infrastructure: {
       domain: { provider: 'nic.py (Subdominio)', renewer: 'agency', expiryDate: '2026-11-20', annualCost: 0, currency: 'PYG' },
       hosting: { provider: 'Vercel', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' },
@@ -57,10 +139,41 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 4,
     name: 'Cope Market Deli',
+    legalName: 'Cope Market Deli S.A.',
+    ruc: '80123456-7',
     email: 'contacto@copemarketdeli.com.py',
     phone: '+595 981 345678',
-    company: 'Cope Market Deli S.A.',
-    notes: 'E-commerce y catálogo gastronómico',
+    company: 'Cope Market Deli',
+    notes: 'Cliente histórico con quienes trabajamos mucho tiempo. Dado de baja en 2026 por cese comercial.',
+    status: 'churned',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/copemarket-historico',
+    timeline: [
+      {
+        id: 't-4-1',
+        year: '2021',
+        title: 'Inicio de Servicios Web & E-Commerce',
+        description: 'Desarrollo de catálogo gastronómico en WordPress y hosting.',
+        category: 'milestone',
+        actor: 'rodney'
+      },
+      {
+        id: 't-4-2',
+        year: '2023',
+        title: 'Renovación y Optimización de Catálogo',
+        description: 'Integración de pedidos y pasarelas de mensajería.',
+        category: 'upgrade',
+        actor: 'martin'
+      },
+      {
+        id: 't-4-3',
+        year: '2026',
+        title: 'Baja del Servicio (Cese Comercial)',
+        description: 'El cliente cerró operaciones comerciales y se dio de baja el servicio.',
+        category: 'churn',
+        actor: 'diana'
+      }
+    ],
     infrastructure: {
       domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2027-01-10', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 5GB', annualCost: 380000, currency: 'PYG' },
@@ -73,20 +186,51 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 5,
     name: 'Dagda',
-    email: 'info@dagda.com.py',
+    legalName: 'Dagda Comunicación & Eventos EAS',
+    ruc: '80138071-5',
+    email: 'armando_cubilla@hotmail.com',
     phone: '+595 981 456789',
-    company: 'Dagda Brewery & Resto',
-    notes: 'Sitio de marca, webapp de pedidos, app móvil y backend en Render',
+    company: 'Dagda Comunicación & Eventos EAS',
+    notes: 'Ecosistema completo: web institucional, webapp, app móvil y backend en Render.',
+    status: 'active',
+    acquisitionChannel: 'network',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/dagda-eventos-2026',
+    timeline: [
+      {
+        id: 't-5-1',
+        year: '2023',
+        title: 'Lanzamiento Inicial Plataforma Dagda',
+        description: 'Web en cPanel, Backend Node en Render Postgres y despliegue App Móvil.',
+        category: 'milestone',
+        actor: 'martin'
+      },
+      {
+        id: 't-5-2',
+        year: '2025',
+        title: 'Publicación en Apple Store y Google Play',
+        description: 'Renovación anual de membresías de desarrollador con la agencia.',
+        category: 'upgrade',
+        actor: 'martin'
+      },
+      {
+        id: 't-5-3',
+        year: '2026',
+        title: 'Proyecto App v2 en Progreso',
+        description: 'Desarrollo de nuevas funcionalidades y optimización de arquitectura.',
+        category: 'upgrade',
+        actor: 'martin'
+      }
+    ],
     infrastructure: {
       domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-12-05', annualCost: 150000, currency: 'PYG', notes: 'Paga TC Rodney / Agencia' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Paga TC Cliente' },
       dns: { provider: 'Hosting Paraguay (cPanel)', notes: 'Apunta a web y registros M365' },
       email: { provider: 'Microsoft 365', accountsCount: 4, annualCost: 288, currency: 'USD', notes: 'Paga TC Cliente' },
       systems: [
-        { name: 'Backend API & Base de Datos (Render Postgres)', type: 'Render', cost: 15, plan: 'Postgres Managed + Web Service (Paga TC Rodney ⚠️)' },
-        { name: 'App Móvil (Android & iOS)', type: 'Mobile App', plan: 'Nativa (Consume Render)' },
+        { name: 'Backend API & Base de Datos (Render Postgres)', type: 'Render', cost: 15, plan: 'Postgres Managed + Web Service (Paga TC Cliente)' },
+        { name: 'App Móvil (Android & iOS)', type: 'Mobile App', plan: 'Nativa (Renueva mayo con agencia)' },
         { name: 'Web App & Panel Admin (Angular)', type: 'Hosting Paraguay cPanel', plan: 'Roadmap: Migrar a React en Vercel' },
-        { name: 'Licencia Office 365 Familiar', type: 'Microsoft', cost: 99, plan: '⚠️ Mal licenciada (migrar a Business)' }
+        { name: 'Licencia Office 365', type: 'Microsoft', cost: 99, plan: 'M365 Business' }
       ]
     },
     createdAt: new Date(),
@@ -95,13 +239,36 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 6,
     name: 'GeneSur',
+    legalName: 'GENE SUR SRL',
+    ruc: '80017259-0',
     email: 'info@genesur.com.py',
     phone: '+595 981 567890',
     company: 'GeneSur Genética Bovina',
-    notes: 'Catálogo de genética e inseminación',
+    notes: 'Catálogo de genética e inseminación bovina - Mantenimiento Plan Elite',
+    status: 'active',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/genesur-srl',
+    timeline: [
+      {
+        id: 't-6-1',
+        year: '2022',
+        title: 'Desarrollo Catálogo Genético',
+        description: 'Plataforma WordPress con fichas técnicas descargables.',
+        category: 'milestone',
+        actor: 'martin'
+      },
+      {
+        id: 't-6-2',
+        year: '2026',
+        title: 'Soporte y Crecimiento Plan Elite',
+        description: 'Mantenimiento mensual activo y consultoría continua.',
+        category: 'upgrade',
+        actor: 'ana'
+      }
+    ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2027-02-18', annualCost: 150000, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG' },
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2027-02-18', annualCost: 150000, currency: 'PYG', notes: 'Lo hace el cliente' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Lo hace el cliente' },
       dns: { provider: 'cPanel Host' },
       email: { provider: 'Microsoft 365', accountsCount: 6, annualCost: 432, currency: 'USD' }
     },
@@ -111,10 +278,25 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 7,
     name: 'Navíos Argentina',
+    legalName: 'Navíos Logistics Argentina S.A.',
+    ruc: '30-71234567-9',
     email: 'contacto@naviosargentina.com',
     phone: '+54 11 4321 0000',
     company: 'Navíos Logistics',
     notes: 'Portal logístico regional',
+    status: 'active',
+    acquisitionChannel: 'network',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/navios-argentina',
+    timeline: [
+      {
+        id: 't-7-1',
+        year: '2023',
+        title: 'Implementación Portal Regional',
+        description: 'Infraestructura corporativa en la nube.',
+        category: 'milestone',
+        actor: 'martin'
+      }
+    ],
     infrastructure: {
       domain: { provider: 'GoDaddy (.com)', renewer: 'client', expiryDate: '2026-10-30', annualCost: 20, currency: 'USD' },
       hosting: { provider: 'AWS / cPanel', plan: 'Corporate VPS', annualCost: 1200, currency: 'USD' },
@@ -127,10 +309,25 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 8,
     name: 'Synexa',
+    legalName: 'SYNEXA E.A.S.',
+    ruc: '80138132-0',
     email: 'contacto@synexa.com.py',
     phone: '+595 981 678901',
     company: 'Synexa Soluciones Tecnológicas',
-    notes: 'Landing tecnológica y captación B2B',
+    notes: 'Landing tecnológica y captación B2B en Next.js / Vercel',
+    status: 'active',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/synexa-eas',
+    timeline: [
+      {
+        id: 't-8-1',
+        year: '2024',
+        title: 'Despliegue Landing Next.js',
+        description: 'Implementación rápida con alta velocidad de carga y SEO.',
+        category: 'milestone',
+        actor: 'martin'
+      }
+    ],
     infrastructure: {
       domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-09-15', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Vercel Onepage', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' },
@@ -143,13 +340,36 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 9,
     name: 'Misa Guarani',
+    legalName: 'MEAURIO MANCUELLO CLAUDIA LORENA',
+    ruc: '5415611-4',
     email: 'contacto@misaguarani.com',
     phone: '+595 981 789012',
     company: 'Fundación Cultural Misa Guaraní',
-    notes: 'Sitio cultural multimedia y fonoteca',
+    notes: 'Sitio cultural multimedia y fonoteca - Mantenimiento Plan Pro',
+    status: 'active',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/misa-guarani-2026',
+    timeline: [
+      {
+        id: 't-9-1',
+        year: '2024',
+        title: 'Lanzamiento Fonoteca Cultural',
+        description: 'Digitalización y reproducción de archivos sacros y culturales.',
+        category: 'milestone',
+        actor: 'rodney'
+      },
+      {
+        id: 't-9-2',
+        year: '2026',
+        title: 'Renovación Plan Pro Mantenimiento',
+        description: 'Renovación anual completada el 29-04-2026 (Plan Pro).',
+        category: 'upgrade',
+        actor: 'diana'
+      }
+    ],
     infrastructure: {
-      domain: { provider: 'Namecheap (.com)', renewer: 'agency', expiryDate: '2027-04-12', annualCost: 16, currency: 'USD' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 10GB', annualCost: 550000, currency: 'PYG' },
+      domain: { provider: 'Namecheap (.com)', renewer: 'client', expiryDate: '2027-04-12', annualCost: 16, currency: 'USD', notes: 'Lo hace el cliente' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 10GB', annualCost: 550000, currency: 'PYG', notes: 'Lo hace el cliente' },
       dns: { provider: 'cPanel Host' },
       email: { provider: 'cPanel Webmail', accountsCount: 3, annualCost: 0, currency: 'PYG' }
     },
@@ -159,15 +379,180 @@ const INITIAL_CLIENTS: Array<Client> = [
   {
     id: 10,
     name: 'My Life',
-    email: 'contacto@mylife.com.py',
+    legalName: 'Carolina Sosky',
+    ruc: '1502805-4',
+    email: 'carososky@hotmail.com',
     phone: '+595 981 890123',
-    company: 'My Life Asunción',
-    notes: 'Sitio inmobiliario y desarrollos urbanos',
+    company: 'My Life Nutrición & Bienestar',
+    notes: 'Portal institucional de salud y consultas',
+    status: 'active',
+    acquisitionChannel: 'social',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/my-life-nutricion',
+    timeline: [
+      {
+        id: 't-10-1',
+        year: '2023',
+        title: 'Desarrollo Web en WordPress',
+        description: 'Plataforma con agenda y recursos descargables.',
+        category: 'milestone',
+        actor: 'martin'
+      },
+      {
+        id: 't-10-2',
+        year: '2026',
+        title: 'Hosting renovado con la agencia',
+        description: 'Renovación de hosting gestionada por nosotros (vencimiento abril).',
+        category: 'upgrade',
+        actor: 'ana'
+      }
+    ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-12-28', annualCost: 150000, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 15GB', annualCost: 650000, currency: 'PYG' },
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-09-28', annualCost: 150000, currency: 'PYG', notes: 'Lo hace el cliente - Vence en septiembre' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 15GB', annualCost: 650000, currency: 'PYG', notes: 'Renueva con nosotros - Vence en abril' },
       dns: { provider: 'cPanel Host' },
       email: { provider: 'Google Workspace', accountsCount: 8, annualCost: 576, currency: 'USD' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 11,
+    name: 'CNA',
+    legalName: 'MEAURIO MANCUELLO CLAUDIA LORENA',
+    ruc: '5415611-4',
+    email: 'contacto@cna.com.py',
+    phone: '+595 981 999888',
+    company: 'CNA Consultora',
+    notes: 'Sitio institucional con mantenimiento',
+    status: 'active',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cna-consultora',
+    timeline: [
+      {
+        id: 't-11-1',
+        year: '2024',
+        title: 'Lanzamiento Web Institucional',
+        description: 'Sitio web WordPress corporativo.',
+        category: 'milestone',
+        actor: 'martin'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-11-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 5GB', annualCost: 350000, currency: 'PYG' },
+      dns: { provider: 'cPanel Host' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 12,
+    name: 'Medopharm',
+    legalName: 'MEDOPHARM SA',
+    ruc: '80027325-7',
+    email: 'com@medopharm.com.py',
+    phone: '+595 21 500 100',
+    company: 'Medopharm S.A.',
+    notes: 'Tuvieron web WordPress con nosotros, luego migraron externamente a Wix.',
+    status: 'migrated',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/medopharm-historico',
+    timeline: [
+      {
+        id: 't-12-1',
+        year: '2023',
+        title: 'Desarrollo Web en WordPress',
+        description: 'Sitio web institucional farmacéutico en WordPress.',
+        category: 'milestone',
+        actor: 'rodney'
+      },
+      {
+        id: 't-12-2',
+        year: '2024',
+        title: 'Soporte y Actualizaciones',
+        description: 'Mantenimiento técnico preventivo y seguridad.',
+        category: 'note',
+        actor: 'martin'
+      },
+      {
+        id: 't-12-3',
+        year: '2025',
+        title: 'Migración Externa a Wix',
+        description: 'El cliente decidió migrar su plataforma a Wix por autogestión; se finalizó el hosting WordPress.',
+        category: 'migration',
+        actor: 'ana'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-10-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Wix (Externo)', plan: 'Wix Premium', annualCost: 0, currency: 'USD' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 13,
+    name: 'Mercopar',
+    legalName: 'MEAURIO MANCUELLO CLAUDIA LORENA',
+    ruc: '5415611-4',
+    email: 'contacto@mercopar.com.py',
+    phone: '+595 981 777666',
+    company: 'Mercopar S.A.',
+    notes: 'Portal corporativo e importaciones',
+    status: 'active',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/mercopar',
+    timeline: [
+      {
+        id: 't-13-1',
+        year: '2024',
+        title: 'Desarrollo Web y Catálogo',
+        description: 'Presencia corporativa y estructura de catálogo.',
+        category: 'milestone',
+        actor: 'martin'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-11-15', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 5GB', annualCost: 350000, currency: 'PYG' },
+      dns: { provider: 'cPanel Host' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 14,
+    name: 'Repar',
+    legalName: 'Repar Soluciones Técnicas',
+    ruc: '80145000-3',
+    email: 'contacto@repar.com.py',
+    phone: '+595 981 112233',
+    company: 'Repar Soluciones',
+    notes: 'Nuevo cliente: Proyecto web corporativo en diseño y consultoría de seguridad digital en relevamiento.',
+    status: 'lead',
+    acquisitionChannel: 'referral',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/repar-2026',
+    timeline: [
+      {
+        id: 't-14-1',
+        year: '2026',
+        title: 'Inicio de Relación Comercial',
+        description: 'Contacto inicial y propuesta de Web Corporativa + Hardening de Seguridad Digital.',
+        category: 'milestone',
+        actor: 'ana'
+      },
+      {
+        id: 't-14-2',
+        year: '2026',
+        title: 'Aprobación y Anticipo Web',
+        description: 'Web corporativa entra en fase de diseño de interfaz (En progreso).',
+        category: 'upgrade',
+        actor: 'martin'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py (En gestión)', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG' }
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -736,11 +1121,83 @@ const INITIAL_SERVICE_GROUPS: Array<ServiceGroup> = [
   }
 ];
 
+const INITIAL_PROJECTS: Array<Project> = [
+  {
+    id: 1,
+    clientId: 14, // Repar
+    name: 'Sitio Web Corporativo Repar',
+    category: 'web_corp',
+    status: 'in_progress',
+    waitingOn: 'agency',
+    budget: 2500000,
+    currency: 'PYG',
+    advancePaid: 1250000,
+    targetDeliveryDate: '2026-10-15',
+    notes: 'Desarrollo en WordPress + diseño responsive y catálogo de servicios técnicos.',
+    driveUrl: 'https://drive.google.com/drive/folders/repar-2026/web',
+    assignedRole: 'martin',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 2,
+    clientId: 14, // Repar
+    name: 'Hardening & Auditoría de Ciberseguridad',
+    category: 'security',
+    status: 'pending',
+    waitingOn: 'client',
+    budget: 1800000,
+    currency: 'PYG',
+    advancePaid: 0,
+    targetDeliveryDate: '2026-11-01',
+    notes: 'Esperando accesos a cPanel y lista de usuarios para iniciar auditoría y bastionado.',
+    driveUrl: 'https://drive.google.com/drive/folders/repar-2026/seguridad',
+    assignedRole: 'martin',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 3,
+    clientId: 5, // Dagda
+    name: 'Frontend Web v2 & App Redesign',
+    category: 'mobile_app',
+    status: 'pending',
+    waitingOn: 'agency',
+    budget: 3500000,
+    currency: 'PYG',
+    advancePaid: 1000000,
+    targetDeliveryDate: '2026-10-30',
+    notes: 'Rediseño de interfaz y migración de componentes hacia nueva API en Render.',
+    driveUrl: 'https://drive.google.com/drive/folders/dagda-app/v2',
+    assignedRole: 'martin',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 4,
+    clientId: 6, // GeneSur
+    name: 'Mantenimiento & Auditoría Anual 2026',
+    category: 'web_corp',
+    status: 'in_progress',
+    waitingOn: 'client',
+    budget: 2500000,
+    currency: 'PYG',
+    advancePaid: 1250000,
+    targetDeliveryDate: '2026-09-30',
+    notes: 'Esperando confirmación de contenidos actualizados de catálogo ganadero.',
+    driveUrl: 'https://drive.google.com/drive/folders/genesur/auditoria',
+    assignedRole: 'ana',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+];
+
 // Fallback in-memory stores (in case DB is not yet migrated or offline)
 let memoryClients = [...INITIAL_CLIENTS];
 let memorySites = [...INITIAL_SITES];
 const memoryTemplates = [...INITIAL_TEMPLATES];
 let memoryServiceGroups = [...INITIAL_SERVICE_GROUPS];
+let memoryProjects = [...INITIAL_PROJECTS];
 
 export const dataService = {
   // --- CLIENTS ---
@@ -780,10 +1237,16 @@ export const dataService = {
     const newClient: Client = {
       id: Math.max(0, ...memoryClients.map((c) => c.id)) + 1,
       name: data.name,
+      legalName: data.legalName || null,
+      ruc: data.ruc || null,
       email: data.email || null,
       phone: data.phone || null,
       company: data.company || null,
       notes: data.notes || null,
+      status: data.status || 'active',
+      acquisitionChannel: data.acquisitionChannel || null,
+      driveFolderUrl: data.driveFolderUrl || null,
+      timeline: data.timeline || [],
       infrastructure: data.infrastructure || null,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -823,6 +1286,20 @@ export const dataService = {
     memoryClients = memoryClients.filter((c) => c.id !== id);
     memorySites = memorySites.filter((s) => s.clientId !== id);
     return memoryClients.length < initialLen;
+  },
+
+  async addClientTimelineEvent(clientId: number, event: Omit<ClientTimelineEvent, 'id'>): Promise<Client | null> {
+    const client = await this.getClientById(clientId);
+    if (!client) return null;
+
+    const newEvent: ClientTimelineEvent = {
+      id: `t-${clientId}-${Date.now()}`,
+      ...event
+    };
+
+    const currentTimeline = Array.isArray(client.timeline) ? client.timeline : [];
+    const updatedTimeline = [...currentTimeline, newEvent];
+    return this.updateClient(clientId, { timeline: updatedTimeline });
   },
 
   // --- SITES ---
@@ -1099,5 +1576,100 @@ export const dataService = {
     const initialLen = memoryServiceGroups.length;
     memoryServiceGroups = memoryServiceGroups.filter((g) => g.id !== id);
     return memoryServiceGroups.length < initialLen;
+  },
+
+  // --- PROJECTS ---
+  async getProjects(filters?: { clientId?: number; status?: string }): Promise<Project[]> {
+    let result = memoryProjects;
+    if (db) {
+      try {
+        const rows = await db.select().from(schema.projects);
+        if (rows.length > 0) result = rows;
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    if (filters?.clientId) {
+      result = result.filter((p) => p.clientId === filters.clientId);
+    }
+    if (filters?.status) {
+      result = result.filter((p) => p.status === filters.status);
+    }
+    return result;
+  },
+
+  async getProjectById(id: number): Promise<Project | undefined> {
+    if (db) {
+      try {
+        const [row] = await db.select().from(schema.projects).where(eq(schema.projects.id, id));
+        if (row) return row;
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    return memoryProjects.find((p) => p.id === id);
+  },
+
+  async createProject(data: NewProject): Promise<Project> {
+    if (db) {
+      try {
+        const [created] = await db.insert(schema.projects).values(data).returning();
+        return created;
+      } catch (err) {
+        console.warn('DB insert failed, using memory store:', err);
+      }
+    }
+    const newProj: Project = {
+      id: Math.max(0, ...memoryProjects.map((p) => p.id)) + 1,
+      clientId: data.clientId || null,
+      name: data.name,
+      category: data.category || 'web_corp',
+      status: data.status || 'pending',
+      waitingOn: data.waitingOn || 'agency',
+      budget: data.budget ?? 0,
+      currency: data.currency || 'PYG',
+      advancePaid: data.advancePaid ?? 0,
+      targetDeliveryDate: data.targetDeliveryDate || null,
+      notes: data.notes || null,
+      driveUrl: data.driveUrl || null,
+      assignedRole: data.assignedRole || 'martin',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    memoryProjects.push(newProj);
+    return newProj;
+  },
+
+  async updateProject(id: number, data: Partial<Project>): Promise<Project | null> {
+    if (db) {
+      try {
+        const [updated] = await db.update(schema.projects)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(schema.projects.id, id))
+          .returning();
+        return updated || null;
+      } catch (err) {
+        console.warn('DB update failed, using memory store:', err);
+      }
+    }
+    const index = memoryProjects.findIndex((p) => p.id === id);
+    if (index === -1) return null;
+    memoryProjects[index] = { ...memoryProjects[index], ...data, updatedAt: new Date() };
+    return memoryProjects[index];
+  },
+
+  async deleteProject(id: number): Promise<boolean> {
+    if (db) {
+      try {
+        await db.delete(schema.projects).where(eq(schema.projects.id, id));
+        return true;
+      } catch (err) {
+        console.warn('DB delete failed, using memory store:', err);
+      }
+    }
+    const initialLen = memoryProjects.length;
+    memoryProjects = memoryProjects.filter((p) => p.id !== id);
+    return memoryProjects.length < initialLen;
   }
 };
+
