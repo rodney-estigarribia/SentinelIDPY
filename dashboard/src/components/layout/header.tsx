@@ -12,7 +12,7 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, onRefresh, isRefreshing }: HeaderProps) {
   return (
-    <header className="py-8 lg:py-10 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-8 lg:px-10 flex items-center justify-between sticky top-0 z-30 transition-all">
+    <header className="py-5 lg:py-6 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-8 lg:px-10 flex items-center justify-between sticky top-0 z-30 transition-all">
       <div className="space-y-1">
         {title && <h2 className="text-lg font-bold text-white tracking-tight">{title}</h2>}
         {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
