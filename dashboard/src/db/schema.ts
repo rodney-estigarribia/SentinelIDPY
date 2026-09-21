@@ -116,10 +116,12 @@ export const sites = pgTable('sites', {
     notes?: string;
   }>(),
   relationships: jsonb('relationships').$type<Array<{
+    targetId?: number;
     targetName: string;
     type: 'depends_on' | 'points_to' | 'hosts' | 'connects_to' | 'unlinked';
   }>>(),
   roadmapNotes: text('roadmap_notes'),
+  serviceGroup: text('service_group').default('General'), // e.g. 'Plataforma Dagda', 'Página Web', 'Sistemas Empresariales'
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -193,3 +195,8 @@ export type Site = typeof sites.$inferSelect;
 export type NewSite = typeof sites.$inferInsert;
 export type UptimePing = typeof uptimePings.$inferSelect;
 export type ConfigTemplate = typeof configTemplates.$inferSelect;
+
+// Modern aliases for Services & Assets architecture
+export const services = sites;
+export type Service = Site;
+export type NewService = NewSite;

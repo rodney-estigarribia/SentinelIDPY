@@ -51,7 +51,7 @@ export default async function BackupsPage() {
               {sites.map((site) => (
                 <tr key={site.id} className="hover:bg-slate-800/20">
                   <td className="py-3.5 px-4 font-bold text-white">
-                    <Link href={`/sites/${site.id}`} className="hover:text-emerald-400">
+                    <Link href={`/services/${site.id}`} className="hover:text-emerald-400">
                       {site.name}
                     </Link>
                     <div className="text-[11px] text-slate-400 font-mono font-normal">
@@ -83,7 +83,7 @@ export default async function BackupsPage() {
 
                   <td className="py-3.5 px-4 text-right">
                     <Link
-                      href={`/sites/${site.id}`}
+                      href={`/services/${site.id}`}
                       className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
                     >
                       Ver en Cockpit

@@ -342,7 +342,7 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
 
                     <td className="py-3.5 px-4 text-right">
                       <Link
-                        href={`/sites/${item.siteId}`}
+                        href={`/services/${item.siteId}`}
                         onClick={(e) => e.stopPropagation()}
                         className="text-xs text-slate-400 hover:text-emerald-400 transition-colors"
                       >

@@ -43,7 +43,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
   // Top General Items
   const topNavItems = [
     { label: 'Resumen General', href: '/', icon: LayoutDashboard },
-    { label: 'Servicios y Activos', href: '/sites', icon: Globe, badge: offlineSitesCount > 0 ? `${offlineSitesCount} caídos` : undefined, badgeVariant: 'danger' },
+    { label: 'Servicios y Activos', href: '/services', icon: Globe, badge: offlineSitesCount > 0 ? `${offlineSitesCount} caídos` : undefined, badgeVariant: 'danger' },
     { label: 'Clientes e Infraestructura', href: '/clients', icon: Users },
   ];
 

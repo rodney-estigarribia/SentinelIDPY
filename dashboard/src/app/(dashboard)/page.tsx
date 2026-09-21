@@ -78,20 +78,20 @@ export default async function OverviewPage() {
               <span>Ver Actualizaciones ({totalUpdates})</span>
             </Link>
             <Link
-              href="/sites?action=new"
+              href="/services"
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
             >
-              <span>+ Nuevo Sitio</span>
+              <span>+ Nuevo Servicio</span>
             </Link>
           </div>
         </div>
 
         {/* Global KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Card 1: Sitios */}
+          {/* Card 1: Servicios */}
           <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-400 mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider">Sitios Activos</span>
+              <span className="text-xs font-medium uppercase tracking-wider">Servicios y Activos</span>
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                 <Globe className="w-4 h-4" />
               </div>
@@ -147,16 +147,16 @@ export default async function OverviewPage() {
         <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
           <div className="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-bold text-white text-base tracking-tight">Estado de los Sitios de Clientes</h2>
+              <h2 className="font-bold text-white text-base tracking-tight">Estado de los Servicios de Clientes</h2>
               <p className="text-xs text-slate-400">Supervisión en vivo de salud HTTP, versiones y tareas de mantenimiento</p>
             </div>
 
             <div className="flex items-center gap-2">
               <Link
-                href="/sites"
+                href="/services"
                 className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
               >
-                <span>Ver todos los sitios</span>
+                <span>Ver todos los servicios</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -166,7 +166,7 @@ export default async function OverviewPage() {
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-slate-950/60 text-slate-400 border-b border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="py-3 px-4">Sitio / Cliente</th>
+                  <th className="py-3 px-4">Servicio / Cliente</th>
                   <th className="py-3 px-4">Tipo</th>
                   <th className="py-3 px-4">Estado / Latencia</th>
                   <th className="py-3 px-4">Actualizaciones</th>
@@ -184,7 +184,7 @@ export default async function OverviewPage() {
                     <tr key={site.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-white flex items-center gap-2">
-                          <Link href={`/sites/${site.id}`} className="hover:text-emerald-400 transition-colors">
+                          <Link href={`/services/${site.id}`} className="hover:text-emerald-400 transition-colors">
                             {site.name}
                           </Link>
                           <a
@@ -278,7 +278,7 @@ export default async function OverviewPage() {
 
                       <td className="py-3.5 px-4 text-right">
                         <Link
-                          href={`/sites/${site.id}`}
+                          href={`/services/${site.id}`}
                           className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700"
                         >
                           Gestionar
@@ -343,7 +343,7 @@ export default async function OverviewPage() {
               Control de onepages en Vercel y aplicaciones móviles o webapps a medida con latencia y verificaciones periódicas de disponibilidad.
             </p>
             <Link
-              href="/sites?type=vercel"
+              href="/services?type=vercel"
               className="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1"
             >
               <span>Filtrar Vercel y Sistemas</span>

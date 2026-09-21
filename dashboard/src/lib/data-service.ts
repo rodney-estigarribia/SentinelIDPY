@@ -1,6 +1,6 @@
 import { db, schema } from '@/db';
 import { eq, desc } from 'drizzle-orm';
-import type { Client, Site, NewClient, NewSite, ConfigTemplate } from '@/db/schema';
+import type { Client, Site, Service, NewClient, NewSite, NewService, ConfigTemplate } from '@/db/schema';
 
 // Initial seed data from clientes.json and infrastructure mappings
 const INITIAL_CLIENTS: Array<Client> = [
@@ -197,6 +197,7 @@ function seedSite(data: Partial<Site> & { id: number; name: string; type: string
     billing: null,
     relationships: null,
     roadmapNotes: null,
+    serviceGroup: data.serviceGroup || 'General',
     createdAt: new Date(),
     updatedAt: new Date(),
     ...data,
@@ -357,6 +358,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'dagda.com.py (Dominio)',
     category: 'dominio',
     provider: 'nic.py',
+    serviceGroup: 'Plataforma Dagda',
     type: 'sistema',
     url: 'https://nic.py',
     status: 'online',
@@ -369,7 +371,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
       notes: 'Renovación gestionada por Impulsos Digitales (TC Rodney)'
     },
     relationships: [
-      { targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'points_to' }
+      { targetId: 501, targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'points_to' }
     ],
     roadmapNotes: 'Dominio primario .com.py registrado en nic.py',
     createdAt: new Date(),
@@ -381,6 +383,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Hosting & DNS cPanel',
     category: 'hosting',
     provider: 'Hosting Paraguay',
+    serviceGroup: 'Plataforma Dagda',
     type: 'sistema',
     url: 'https://cpanel.dagda.com.py:2083',
     status: 'online',
@@ -393,8 +396,8 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
       notes: 'Plan compartido cPanel. Se debita de la TC del cliente.'
     },
     relationships: [
-      { targetName: 'Correo Corporativo (Microsoft 365)', type: 'hosts' },
-      { targetName: 'Web App & Panel Admin (Angular)', type: 'hosts' }
+      { targetId: 502, targetName: 'Correo Corporativo (Microsoft 365)', type: 'hosts' },
+      { targetId: 506, targetName: 'Web App & Panel Admin (Angular)', type: 'hosts' }
     ],
     roadmapNotes: 'DNS primario y hosting web. Aloja temporalmente frontend Angular.',
     createdAt: new Date(),
@@ -406,6 +409,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Correo Corporativo (Microsoft 365)',
     category: 'correo',
     provider: 'Microsoft 365',
+    serviceGroup: 'Sistemas Empresariales',
     type: 'sistema',
     url: 'https://outlook.office.com',
     status: 'online',
@@ -417,7 +421,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
       notes: '4 casillas M365 Business Basic (USD 6/mes c/u). Cobra con TC del cliente.'
     },
     relationships: [
-      { targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'depends_on' }
+      { targetId: 501, targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'depends_on' }
     ],
     roadmapNotes: 'Registros MX, SPF y DKIM vinculados a Hosting Paraguay.',
     createdAt: new Date(),
@@ -429,6 +433,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Office 365 Personal / Familiar',
     category: 'licencia',
     provider: 'Microsoft',
+    serviceGroup: 'Sistemas Empresariales',
     type: 'sistema',
     url: 'https://account.microsoft.com',
     status: 'warning',
@@ -452,6 +457,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Backend API & Base de Datos (Render Postgres)',
     category: 'servidor_bd',
     provider: 'Render',
+    serviceGroup: 'Plataforma Dagda',
     type: 'sistema',
     url: 'https://api.dagda.com.py',
     status: 'online',
@@ -463,8 +469,8 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
       notes: '⚠️ COBRANDO EN TC RODNEY (AGENCIA). Acción requerida: Cambiar método de pago a la TC del cliente.'
     },
     relationships: [
-      { targetName: 'App Móvil Dagda (Android & iOS)', type: 'connects_to' },
-      { targetName: 'Web App & Panel Admin (Angular)', type: 'connects_to' }
+      { targetId: 505, targetName: 'App Móvil Dagda (Android & iOS)', type: 'connects_to' },
+      { targetId: 506, targetName: 'Web App & Panel Admin (Angular)', type: 'connects_to' }
     ],
     roadmapNotes: 'Node.js Web Service + Managed Postgres en Render. Prioridad operativa: transferir facturación a tarjeta del cliente.',
     createdAt: new Date(),
@@ -476,6 +482,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'App Móvil Dagda (Android & iOS)',
     category: 'app_movil',
     provider: 'Google Play & App Store',
+    serviceGroup: 'Plataforma Dagda',
     type: 'sistema',
     url: 'https://play.google.com/store/apps',
     status: 'online',
@@ -485,7 +492,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
       notes: 'Publicada bajo cuenta de desarrollador de la agencia.'
     },
     relationships: [
-      { targetName: 'Backend API & Base de Datos (Render Postgres)', type: 'depends_on' }
+      { targetId: 504, targetName: 'Backend API & Base de Datos (Render Postgres)', type: 'depends_on' }
     ],
     roadmapNotes: 'App móvil nativa para pedidos y clientes. Consume la API de Render.',
     createdAt: new Date(),
@@ -497,6 +504,7 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
     name: 'Web App & Panel Admin (Angular)',
     category: 'web_app',
     provider: 'Hosting Paraguay / Angular',
+    serviceGroup: 'Plataforma Dagda',
     type: 'sistema',
     url: 'https://app.dagda.com.py',
     status: 'online',
@@ -506,8 +514,8 @@ const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type:
       notes: 'Alojada dentro del hosting cPanel de Hosting Paraguay.'
     },
     relationships: [
-      { targetName: 'Backend API & Base de Datos (Render Postgres)', type: 'depends_on' },
-      { targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'depends_on' }
+      { targetId: 504, targetName: 'Backend API & Base de Datos (Render Postgres)', type: 'depends_on' },
+      { targetId: 501, targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'depends_on' }
     ],
     roadmapNotes: '🚀 Roadmap de Modernización: Webapp Angular en cPanel. Planificado migrar a React (Next.js) y desplegar en Vercel para unificar arquitectura.',
     createdAt: new Date(),
@@ -869,6 +877,7 @@ export const dataService = {
       billing: data.billing || null,
       relationships: data.relationships || null,
       roadmapNotes: data.roadmapNotes || null,
+      serviceGroup: data.serviceGroup || 'General',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -934,5 +943,22 @@ export const dataService = {
         console.warn('Activity log failed:', err);
       }
     }
+  },
+
+  // --- MODERN SERVICE ALIASES ---
+  async getServices(filters?: { clientId?: number; type?: string; includeArchived?: boolean }): Promise<Service[]> {
+    return this.getSites(filters);
+  },
+  async getServiceById(id: number): Promise<Service | undefined> {
+    return this.getSiteById(id);
+  },
+  async createService(data: NewService): Promise<Service> {
+    return this.createSite(data);
+  },
+  async updateService(id: number, data: Partial<Service>): Promise<Service | null> {
+    return this.updateSite(id, data);
+  },
+  async deleteService(id: number): Promise<boolean> {
+    return this.deleteSite(id);
   }
 };

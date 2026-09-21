@@ -86,7 +86,7 @@ export default async function AnalyticsPage() {
               {sites.map((site) => (
                 <tr key={site.id} className="hover:bg-slate-800/20">
                   <td className="py-3.5 px-4 font-bold text-white">
-                    <Link href={`/sites/${site.id}`} className="hover:text-cyan-400">
+                    <Link href={`/services/${site.id}`} className="hover:text-cyan-400">
                       {site.name}
                     </Link>
                     <div className="text-[11px] text-slate-400 font-mono font-normal">
@@ -110,7 +110,7 @@ export default async function AnalyticsPage() {
 
                   <td className="py-3.5 px-4 text-right">
                     <Link
-                      href={`/sites/${site.id}`}
+                      href={`/services/${site.id}`}
                       className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
                     >
                       Ver en Cockpit →

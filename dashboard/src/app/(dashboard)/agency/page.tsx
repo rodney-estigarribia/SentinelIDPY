@@ -58,7 +58,7 @@ export default async function AgencyPage() {
               </div>
 
               <Link
-                href={`/sites/${site.id}`}
+                href={`/services/${site.id}`}
                 className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold text-center block transition-colors border border-slate-700"
               >
                 Editar Branding en Cockpit

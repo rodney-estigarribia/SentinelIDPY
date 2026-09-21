@@ -18,6 +18,7 @@ import {
   FileText,
   AlertTriangle,
   Layers,
+  FolderTree,
   X
 } from 'lucide-react';
 import type { Client, Site } from '@/db/schema';
@@ -66,6 +67,15 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
     : [];
 
   const agencyPaidServices = clientSites.filter((s) => s.billing?.responsibility === 'tc_agencia');
+
+  const groupedServices = clientSites.reduce((acc, site) => {
+    const grp = site.serviceGroup || 'General';
+    if (!acc[grp]) acc[grp] = [];
+    acc[grp].push(site);
+    return acc;
+  }, {} as Record<string, Site[]>);
+
+  const groupNames = Object.keys(groupedServices);
 
   const handleSelectClient = (c: Client) => {
     setSelectedClient(c);
@@ -421,7 +431,7 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
               </div>
             </div>
 
-            {/* Associated Services & Assets */}
+            {/* Associated Services & Assets grouped by System */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
               <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                 <div>
@@ -429,84 +439,144 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
                     Servicios y Activos de {selectedClient.name} ({clientSites.length})
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Inventario de infraestructura, relaciones, responsabilidades de pago y roadmap.
+                    Infraestructura organizada por Sistemas y Ecosistemas lógicos, dependencias y facturación.
                   </p>
                 </div>
                 <Link
-                  href="/sites"
+                  href="/services"
                   className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
                 >
                   Gestionar en Servicios →
                 </Link>
               </div>
 
-              <div className="divide-y divide-slate-800/60">
-                {clientSites.map((site) => (
-                  <div
-                    key={site.id}
-                    className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-800/20 transition-colors"
-                  >
-                    <div className="space-y-1.5 min-w-0">
-                      <div className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
-                        <Link href={`/sites/${site.id}`} className="hover:text-emerald-400 transition-colors">
-                          {site.name}
-                        </Link>
-                        <a href={site.url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                        {site.category && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                            {site.category.replace('_', ' ')}
-                          </span>
-                        )}
-                        {site.provider && (
-                          <span className="text-[11px] text-slate-400">
-                            ({site.provider})
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-slate-400 font-mono truncate">{site.url}</div>
+              {clientSites.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-xs">
+                  Este cliente aún no tiene servicios o activos registrados.
+                </div>
+              ) : (
+                <div className="p-4 space-y-4">
+                  {groupNames.map((grpName) => {
+                    const groupSites = groupedServices[grpName];
+                    const hasAgencyCardInGroup = groupSites.some(
+                      (s) => s.billing?.responsibility === 'tc_agencia'
+                    );
 
-                      {/* Dependencies & Roadmap */}
-                      <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs">
-                        {site.relationships && site.relationships.length > 0 && (
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50">
-                            <Layers className="w-3 h-3 text-cyan-400" />
-                            <span>
-                              {site.relationships.map((r) => `${r.type.replace('_', ' ')}: ${r.targetName}`).join(', ')}
+                    return (
+                      <div
+                        key={grpName}
+                        className="rounded-xl border border-slate-800 bg-slate-950/60 overflow-hidden shadow-sm"
+                      >
+                        {/* System Group Header */}
+                        <div className="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FolderTree className="w-4 h-4 text-indigo-400" />
+                            <span className="font-bold text-white text-xs uppercase tracking-wider">
+                              {grpName}
+                            </span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                              {groupSites.length} {groupSites.length === 1 ? 'activo' : 'activos'}
                             </span>
                           </div>
-                        )}
-                        {site.roadmapNotes && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-medium">
-                            📋 {site.roadmapNotes}
-                          </span>
-                        )}
+
+                          {hasAgencyCardInGroup && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-red-400" />
+                              Activo en TC Rodney
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Group Items */}
+                        <div className="divide-y divide-slate-800/60">
+                          {groupSites.map((site) => (
+                            <div
+                              key={site.id}
+                              className="p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-800/20 transition-colors"
+                            >
+                              <div className="space-y-1 min-w-0">
+                                <div className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
+                                  <Link
+                                    href={`/services/${site.id}`}
+                                    className="hover:text-emerald-400 transition-colors"
+                                  >
+                                    {site.name}
+                                  </Link>
+                                  {site.url && (
+                                    <a
+                                      href={site.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-slate-400 hover:text-white"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+                                  {site.category && (
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                                      {site.category.replace('_', ' ')}
+                                    </span>
+                                  )}
+                                  {site.provider && (
+                                    <span className="text-[11px] text-slate-400">
+                                      ({site.provider})
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-slate-400 font-mono truncate">
+                                  {site.url}
+                                </div>
+
+                                {/* Dependencies & Roadmap */}
+                                <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs">
+                                  {site.relationships && site.relationships.length > 0 && (
+                                    <div className="flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50">
+                                      <Layers className="w-3 h-3 text-cyan-400" />
+                                      <span>
+                                        {site.relationships
+                                          .map(
+                                            (r) =>
+                                              `${r.type.replace('_', ' ')}: ${r.targetName}`
+                                          )
+                                          .join(', ')}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {site.roadmapNotes && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-medium">
+                                      📋 {site.roadmapNotes}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 shrink-0">
+                                {site.billing?.responsibility === 'tc_agencia' ? (
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 text-red-400" />
+                                    TC Rodney ⚠️
+                                  </span>
+                                ) : site.billing?.responsibility === 'tc_cliente' ? (
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                    TC Cliente
+                                  </span>
+                                ) : null}
+
+                                <Link
+                                  href={`/services/${site.id}`}
+                                  className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
+                                >
+                                  Cockpit
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      {site.billing?.responsibility === 'tc_agencia' ? (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 text-red-400" />
-                          TC Rodney ⚠️
-                        </span>
-                      ) : site.billing?.responsibility === 'tc_cliente' ? (
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                          TC Cliente
-                        </span>
-                      ) : null}
-
-                      <Link
-                        href={`/sites/${site.id}`}
-                        className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
-                      >
-                        Cockpit
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         ) : (
