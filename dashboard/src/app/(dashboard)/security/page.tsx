@@ -21,48 +21,48 @@ export default async function SecurityPage() {
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60">
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
               Ataques Bloqueados (30 Días)
             </span>
-            <div className="text-3xl font-extrabold text-white tracking-tight mt-1">
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-1">
               {totalAttacks.toLocaleString()}
             </div>
-            <p className="text-xs text-slate-400 mt-1">Sumatoria de todos los sitios clientes</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sumatoria de todos los sitios clientes</p>
           </div>
 
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60">
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
               Estado de Reglas WAF
             </span>
-            <div className="text-xl font-bold text-emerald-400 flex items-center gap-2 mt-1">
+            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2 mt-1">
               <ShieldCheck className="w-5 h-5" />
               <span>100% Actualizadas</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Protección contra vulnerabilidades críticas activa</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Protección contra vulnerabilidades críticas activa</p>
           </div>
 
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60">
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
               Salud de Certificados SSL
             </span>
-            <div className="text-xl font-bold text-white flex items-center gap-2 mt-1">
-              <Lock className="w-5 h-5 text-emerald-400" />
+            <div className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mt-1">
+              <Lock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span>Todos Válidos</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Ningún certificado vence en los próximos 30 días</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ningún certificado vence en los próximos 30 días</p>
           </div>
         </div>
 
         {/* Security Table by Site */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="font-bold text-white text-sm">Estado de Seguridad por Sitio</h3>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Estado de Seguridad por Sitio</h3>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
+            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+              <thead className="bg-slate-50 dark:bg-slate-950/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-4">Sitio</th>
                   <th className="py-3 px-4">Ataques Mitigados</th>
@@ -72,37 +72,37 @@ export default async function SecurityPage() {
                   <th className="py-3 px-4 text-right">Detalle</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
                 {sites.map((site) => (
-                  <tr key={site.id} className="hover:bg-slate-800/20 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-white">
-                      <Link href={`/services/${site.id}`} className="hover:text-emerald-400">
+                  <tr key={site.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+                    <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                      <Link href={`/services/${site.id}`} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
                         {site.name}
                       </Link>
-                      <div className="text-[11px] text-slate-400 font-mono font-normal">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono font-normal">
                         {site.url.replace(/^https?:\/\//, '')}
                       </div>
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className="font-bold text-rose-400 font-mono">
+                      <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
                         {(site.wordfenceStats?.totalAttacks || 0).toLocaleString()} ataques
                       </span>
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[11px]">
+                      <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold text-[11px]">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Al día
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 font-mono text-slate-400">
+                    <td className="py-3.5 px-4 font-mono text-slate-500 dark:text-slate-400">
                       {site.wordfenceStats?.lastScan || '2026-09-19 04:12'}
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className="font-semibold text-slate-200">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">
                         {site.sslDaysLeft || 60} días restantes
                       </span>
                     </td>
@@ -110,7 +110,7 @@ export default async function SecurityPage() {
                     <td className="py-3.5 px-4 text-right">
                       <Link
                         href={`/services/${site.id}`}
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
+                        className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors shadow-sm"
                       >
                         Ver Amenazas
                       </Link>
