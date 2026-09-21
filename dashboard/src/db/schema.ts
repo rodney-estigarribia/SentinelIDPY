@@ -104,6 +104,22 @@ export const sites = pgTable('sites', {
     mobileStoreUrl?: string;
     notes?: string;
   }>(),
+  // Services & Assets extensions
+  category: text('category').default('web_wordpress'), // 'web_wordpress', 'web_app', 'vercel', 'dominio', 'hosting', 'dns', 'correo', 'servidor_bd', 'app_movil', 'licencia', 'otro'
+  provider: text('provider'), // 'nic.py', 'Hosting Paraguay', 'Render', 'Microsoft', 'Google Play', etc.
+  billing: jsonb('billing').$type<{
+    responsibility: 'tc_cliente' | 'tc_agencia' | 'transferencia' | 'incluido' | 'otro';
+    cycle?: 'monthly' | 'annual' | 'one_off' | 'free';
+    cost?: number;
+    currency?: 'PYG' | 'USD';
+    renewalDate?: string;
+    notes?: string;
+  }>(),
+  relationships: jsonb('relationships').$type<Array<{
+    targetName: string;
+    type: 'depends_on' | 'points_to' | 'hosts' | 'connects_to' | 'unlinked';
+  }>>(),
+  roadmapNotes: text('roadmap_notes'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

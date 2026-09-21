@@ -76,12 +76,18 @@ const INITIAL_CLIENTS: Array<Client> = [
     email: 'info@dagda.com.py',
     phone: '+595 981 456789',
     company: 'Dagda Brewery & Resto',
-    notes: 'Sitio de marca y reservas',
+    notes: 'Sitio de marca, webapp de pedidos, app móvil y backend en Render',
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-12-05', annualCost: 150000, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG' },
-      dns: { provider: 'cPanel Host' },
-      email: { provider: 'cPanel Webmail', accountsCount: 4, annualCost: 0, currency: 'PYG' }
+      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-12-05', annualCost: 150000, currency: 'PYG', notes: 'Paga TC Rodney / Agencia' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Paga TC Cliente' },
+      dns: { provider: 'Hosting Paraguay (cPanel)', notes: 'Apunta a web y registros M365' },
+      email: { provider: 'Microsoft 365', accountsCount: 4, annualCost: 288, currency: 'USD', notes: 'Paga TC Cliente' },
+      systems: [
+        { name: 'Backend API & Base de Datos (Render Postgres)', type: 'Render', cost: 15, plan: 'Postgres Managed + Web Service (Paga TC Rodney ⚠️)' },
+        { name: 'App Móvil (Android & iOS)', type: 'Mobile App', plan: 'Nativa (Consume Render)' },
+        { name: 'Web App & Panel Admin (Angular)', type: 'Hosting Paraguay cPanel', plan: 'Roadmap: Migrar a React en Vercel' },
+        { name: 'Licencia Office 365 Familiar', type: 'Microsoft', cost: 99, plan: '⚠️ Mal licenciada (migrar a Business)' }
+      ]
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -168,7 +174,36 @@ const INITIAL_CLIENTS: Array<Client> = [
   }
 ];
 
-const INITIAL_SITES: Array<Site> = [
+function seedSite(data: Partial<Site> & { id: number; name: string; type: string; url: string }): Site {
+  return {
+    clientId: null,
+    token: null,
+    diskAllocatedGb: null,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: null,
+    lastCheckedAt: new Date(),
+    lastBackupAt: null,
+    wpVersion: null,
+    phpVersion: null,
+    sslDaysLeft: null,
+    siteHealthScore: null,
+    pendingUpdates: null,
+    wordfenceStats: null,
+    performanceInfo: null,
+    metadata: null,
+    category: data.category || (data.type === 'wordpress' ? 'web_wordpress' : data.type === 'vercel' ? 'vercel' : 'web_app'),
+    provider: null,
+    billing: null,
+    relationships: null,
+    roadmapNotes: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...data,
+  };
+}
+
+const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string; type: string; url: string }> = [
   {
     id: 1,
     clientId: 1,
@@ -319,24 +354,162 @@ const INITIAL_SITES: Array<Site> = [
   {
     id: 5,
     clientId: 5,
-    name: 'Dagda',
-    type: 'wordpress',
-    url: 'https://dagda.com.py',
-    token: process.env.WF_REPORT_TOKEN || 'a1b2c3d4e5f67890123456789abcdef0',
-    diskAllocatedGb: 2.93,
+    name: 'dagda.com.py (Dominio)',
+    category: 'dominio',
+    provider: 'nic.py',
+    type: 'sistema',
+    url: 'https://nic.py',
     status: 'online',
-    lastStatusCode: 200,
-    lastResponseTimeMs: 380,
-    lastCheckedAt: new Date(),
-    lastBackupAt: new Date(Date.now() - 24 * 3600 * 1000),
-    wpVersion: '6.7.1',
-    phpVersion: '8.2.20',
-    sslDaysLeft: 60,
-    siteHealthScore: { status: 'good', good: 15, recommended: 1, critical: 0 },
-    pendingUpdates: { plugins: 0, themes: 0, wordpress: 0 },
-    wordfenceStats: { totalAttacks: 650, lastScan: '2026-09-19 12:00:00', rulesOk: true },
-    performanceInfo: { siteSizeGb: 1.8, diskFreeGb: 1.13 },
-    metadata: {},
+    billing: {
+      responsibility: 'tc_agencia',
+      cycle: 'annual',
+      cost: 150000,
+      currency: 'PYG',
+      renewalDate: '2026-12-05',
+      notes: 'Renovación gestionada por Impulsos Digitales (TC Rodney)'
+    },
+    relationships: [
+      { targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'points_to' }
+    ],
+    roadmapNotes: 'Dominio primario .com.py registrado en nic.py',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 501,
+    clientId: 5,
+    name: 'Hosting & DNS cPanel',
+    category: 'hosting',
+    provider: 'Hosting Paraguay',
+    type: 'sistema',
+    url: 'https://cpanel.dagda.com.py:2083',
+    status: 'online',
+    billing: {
+      responsibility: 'tc_cliente',
+      cycle: 'annual',
+      cost: 450000,
+      currency: 'PYG',
+      renewalDate: '2027-01-15',
+      notes: 'Plan compartido cPanel. Se debita de la TC del cliente.'
+    },
+    relationships: [
+      { targetName: 'Correo Corporativo (Microsoft 365)', type: 'hosts' },
+      { targetName: 'Web App & Panel Admin (Angular)', type: 'hosts' }
+    ],
+    roadmapNotes: 'DNS primario y hosting web. Aloja temporalmente frontend Angular.',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 502,
+    clientId: 5,
+    name: 'Correo Corporativo (Microsoft 365)',
+    category: 'correo',
+    provider: 'Microsoft 365',
+    type: 'sistema',
+    url: 'https://outlook.office.com',
+    status: 'online',
+    billing: {
+      responsibility: 'tc_cliente',
+      cycle: 'monthly',
+      cost: 24,
+      currency: 'USD',
+      notes: '4 casillas M365 Business Basic (USD 6/mes c/u). Cobra con TC del cliente.'
+    },
+    relationships: [
+      { targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'depends_on' }
+    ],
+    roadmapNotes: 'Registros MX, SPF y DKIM vinculados a Hosting Paraguay.',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 503,
+    clientId: 5,
+    name: 'Office 365 Personal / Familiar',
+    category: 'licencia',
+    provider: 'Microsoft',
+    type: 'sistema',
+    url: 'https://account.microsoft.com',
+    status: 'warning',
+    billing: {
+      responsibility: 'tc_cliente',
+      cycle: 'annual',
+      cost: 99,
+      currency: 'USD',
+      notes: 'Suscripción personal/familiar contratada por el cliente.'
+    },
+    relationships: [
+      { targetName: 'Infraestructura General', type: 'unlinked' }
+    ],
+    roadmapNotes: '⚠️ Mal licenciada: Plan familiar usado en empresa. Se debe proponer migración formal a M365 Business Standard.',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 504,
+    clientId: 5,
+    name: 'Backend API & Base de Datos (Render Postgres)',
+    category: 'servidor_bd',
+    provider: 'Render',
+    type: 'sistema',
+    url: 'https://api.dagda.com.py',
+    status: 'online',
+    billing: {
+      responsibility: 'tc_agencia',
+      cycle: 'monthly',
+      cost: 15,
+      currency: 'USD',
+      notes: '⚠️ COBRANDO EN TC RODNEY (AGENCIA). Acción requerida: Cambiar método de pago a la TC del cliente.'
+    },
+    relationships: [
+      { targetName: 'App Móvil Dagda (Android & iOS)', type: 'connects_to' },
+      { targetName: 'Web App & Panel Admin (Angular)', type: 'connects_to' }
+    ],
+    roadmapNotes: 'Node.js Web Service + Managed Postgres en Render. Prioridad operativa: transferir facturación a tarjeta del cliente.',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 505,
+    clientId: 5,
+    name: 'App Móvil Dagda (Android & iOS)',
+    category: 'app_movil',
+    provider: 'Google Play & App Store',
+    type: 'sistema',
+    url: 'https://play.google.com/store/apps',
+    status: 'online',
+    billing: {
+      responsibility: 'incluido',
+      cycle: 'free',
+      notes: 'Publicada bajo cuenta de desarrollador de la agencia.'
+    },
+    relationships: [
+      { targetName: 'Backend API & Base de Datos (Render Postgres)', type: 'depends_on' }
+    ],
+    roadmapNotes: 'App móvil nativa para pedidos y clientes. Consume la API de Render.',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 506,
+    clientId: 5,
+    name: 'Web App & Panel Admin (Angular)',
+    category: 'web_app',
+    provider: 'Hosting Paraguay / Angular',
+    type: 'sistema',
+    url: 'https://app.dagda.com.py',
+    status: 'online',
+    billing: {
+      responsibility: 'incluido',
+      cycle: 'free',
+      notes: 'Alojada dentro del hosting cPanel de Hosting Paraguay.'
+    },
+    relationships: [
+      { targetName: 'Backend API & Base de Datos (Render Postgres)', type: 'depends_on' },
+      { targetName: 'Hosting & DNS cPanel (Hosting Paraguay)', type: 'depends_on' }
+    ],
+    roadmapNotes: '🚀 Roadmap de Modernización: Webapp Angular en cPanel. Planificado migrar a React (Next.js) y desplegar en Vercel para unificar arquitectura.',
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -471,6 +644,8 @@ const INITIAL_SITES: Array<Site> = [
     updatedAt: new Date()
   }
 ];
+
+const INITIAL_SITES: Array<Site> = RAW_INITIAL_SITES.map(seedSite);
 
 const INITIAL_TEMPLATES: Array<ConfigTemplate> = [
   {
@@ -689,6 +864,11 @@ export const dataService = {
       wordfenceStats: data.wordfenceStats || null,
       performanceInfo: data.performanceInfo || null,
       metadata: data.metadata || null,
+      category: data.category || (data.type === 'wordpress' ? 'web_wordpress' : data.type === 'vercel' ? 'vercel' : 'web_app'),
+      provider: data.provider || null,
+      billing: data.billing || null,
+      relationships: data.relationships || null,
+      roadmapNotes: data.roadmapNotes || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };

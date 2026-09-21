@@ -16,6 +16,8 @@ import {
   Trash2,
   CheckCircle2,
   FileText,
+  AlertTriangle,
+  Layers,
   X
 } from 'lucide-react';
 import type { Client, Site } from '@/db/schema';
@@ -62,6 +64,8 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
   const clientSites = selectedClient
     ? sites.filter((s) => s.clientId === selectedClient.id)
     : [];
+
+  const agencyPaidServices = clientSites.filter((s) => s.billing?.responsibility === 'tc_agencia');
 
   const handleSelectClient = (c: Client) => {
     setSelectedClient(c);
@@ -190,9 +194,16 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
                     <h4 className="font-bold text-white text-sm">{c.name}</h4>
                     <p className="text-xs text-slate-400 mt-0.5">{c.company || 'Empresa'}</p>
                   </div>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                    {cSites.length} {cSites.length === 1 ? 'sitio' : 'sitios'}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      {cSites.length} {cSites.length === 1 ? 'servicio' : 'servicios'}
+                    </span>
+                    {cSites.some((s) => s.billing?.responsibility === 'tc_agencia') && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30">
+                        TC Rodney ⚠️
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400 font-mono">
@@ -232,6 +243,47 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
                 </button>
               </div>
             </div>
+
+            {/* Warning banner for services charged to Agency TC */}
+            {agencyPaidServices.length > 0 && (
+              <div className="p-4 rounded-xl border border-red-500/30 bg-red-950/20 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div className="text-xs space-y-2 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-red-300">
+                      ⚠️ Atención de Facturación: {agencyPaidServices.length} servicio(s) pagado(s) con la TC de la Agencia (Rodney)
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-200 border border-red-500/30 uppercase tracking-wider">
+                      Requiere Regularización
+                    </span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Estos activos se encuentran actualmente a cargo financiero de Rodney / Impulsos Digitales. Coordinar el traspaso del método de pago directo a la tarjeta del cliente:
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {agencyPaidServices.map((s) => (
+                      <div
+                        key={s.id}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-red-500/30 text-white text-[11px]"
+                      >
+                        <span className="font-bold text-red-300">{s.name}</span>
+                        <span className="text-slate-400">({s.provider || 'Proveedor'})</span>
+                        {s.billing?.cost && (
+                          <span className="font-mono text-emerald-400 font-semibold">
+                            {s.billing.currency} {s.billing.cost.toLocaleString()} / {s.billing.cycle === 'monthly' ? 'mes' : 'año'}
+                          </span>
+                        )}
+                        {s.billing?.notes && (
+                          <span className="text-[10px] text-slate-400 italic">
+                            • {s.billing.notes}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Infrastructure Breakdown Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -369,44 +421,87 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
               </div>
             </div>
 
-            {/* Associated Sites */}
+            {/* Associated Services & Assets */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
               <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="font-bold text-white text-sm">
-                  Sitios y Activos de {selectedClient.name} ({clientSites.length})
-                </h3>
+                <div>
+                  <h3 className="font-bold text-white text-sm">
+                    Servicios y Activos de {selectedClient.name} ({clientSites.length})
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Inventario de infraestructura, relaciones, responsabilidades de pago y roadmap.
+                  </p>
+                </div>
                 <Link
-                  href="/sites?action=new"
+                  href="/sites"
                   className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
                 >
-                  + Asignar Nuevo Sitio
+                  Gestionar en Servicios →
                 </Link>
               </div>
 
               <div className="divide-y divide-slate-800/60">
                 {clientSites.map((site) => (
-                  <div key={site.id} className="p-4 flex items-center justify-between hover:bg-slate-800/20">
-                    <div>
-                      <div className="font-bold text-white text-sm flex items-center gap-2">
+                  <div
+                    key={site.id}
+                    className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-800/20 transition-colors"
+                  >
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
                         <Link href={`/sites/${site.id}`} className="hover:text-emerald-400 transition-colors">
                           {site.name}
                         </Link>
                         <a href={site.url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white">
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
+                        {site.category && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                            {site.category.replace('_', ' ')}
+                          </span>
+                        )}
+                        {site.provider && (
+                          <span className="text-[11px] text-slate-400">
+                            ({site.provider})
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5 font-mono">{site.url}</div>
+                      <div className="text-xs text-slate-400 font-mono truncate">{site.url}</div>
+
+                      {/* Dependencies & Roadmap */}
+                      <div className="flex items-center gap-2 flex-wrap pt-0.5 text-xs">
+                        {site.relationships && site.relationships.length > 0 && (
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50">
+                            <Layers className="w-3 h-3 text-cyan-400" />
+                            <span>
+                              {site.relationships.map((r) => `${r.type.replace('_', ' ')}: ${r.targetName}`).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        {site.roadmapNotes && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-medium">
+                            📋 {site.roadmapNotes}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 uppercase font-bold text-[10px]">
-                        {site.type}
-                      </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {site.billing?.responsibility === 'tc_agencia' ? (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-500/15 text-red-300 border border-red-500/30 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-red-400" />
+                          TC Rodney ⚠️
+                        </span>
+                      ) : site.billing?.responsibility === 'tc_cliente' ? (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          TC Cliente
+                        </span>
+                      ) : null}
+
                       <Link
                         href={`/sites/${site.id}`}
                         className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
                       >
-                        Ver Cockpit
+                        Cockpit
                       </Link>
                     </div>
                   </div>
