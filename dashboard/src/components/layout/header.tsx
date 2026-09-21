@@ -10,11 +10,11 @@ interface HeaderProps {
   isRefreshing?: boolean;
 }
 
-export function Header({ title = 'Panel de Administración', subtitle, onRefresh, isRefreshing }: HeaderProps) {
+export function Header({ title, subtitle, onRefresh, isRefreshing }: HeaderProps) {
   return (
     <header className="h-16 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
       <div>
-        <h2 className="text-lg font-bold text-white tracking-tight">{title}</h2>
+        {title && <h2 className="text-lg font-bold text-white tracking-tight">{title}</h2>}
         {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
       </div>
 

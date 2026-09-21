@@ -51,10 +51,7 @@ export default async function OverviewPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Centro de Control SentinelIDPY"
-        subtitle="Monitoreo en tiempo real, seguridad y mantenimiento de activos digitales"
-      />
+      <Header />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top Summary Banner */}
@@ -90,7 +87,7 @@ export default async function OverviewPage() {
         </div>
 
         {/* Global KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card 1: Sitios */}
           <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
             <div className="flex items-center justify-between text-slate-400 mb-3">
@@ -142,27 +139,6 @@ export default async function OverviewPage() {
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Wordfence WAF 100% activo
               </p>
-            </div>
-          </div>
-
-          {/* Card 4: Disco */}
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-400 mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider">Espacio en Hosting</span>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                <HardDrive className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-white tracking-tight">
-                {totalUsedDisk.toFixed(1)} <span className="text-sm font-normal text-slate-400">/ {totalAllocatedDisk.toFixed(1)} GB</span>
-              </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div
-                  className="bg-purple-500 h-full rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (totalUsedDisk / (totalAllocatedDisk || 1)) * 100)}%` }}
-                />
-              </div>
             </div>
           </div>
         </div>
