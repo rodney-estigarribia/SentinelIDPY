@@ -77,10 +77,10 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
   }, [isCurrentWpRoute]);
 
   return (
-    <aside className="w-64 bg-slate-950 text-slate-200 flex flex-col h-screen border-r border-slate-800 shrink-0 sticky top-0">
+    <aside className="w-64 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 flex flex-col h-screen border-r border-slate-200 dark:border-slate-800 shrink-0 sticky top-0 transition-colors">
       {/* Brand Header */}
-      <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center p-1.5 shrink-0 shadow-md">
+      <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center p-1.5 shrink-0 shadow-sm">
           <Image
             src="/impulsos-logo.png"
             alt="Impulsos Digitales"
@@ -90,10 +90,10 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
           />
         </div>
         <div>
-          <h1 className="font-bold tracking-tight text-white flex items-center gap-1.5 text-base">
-            Sentinel<span className="text-sky-400">IDPY</span>
+          <h1 className="font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 text-base">
+            Sentinel<span className="text-sky-600 dark:text-sky-400">IDPY</span>
           </h1>
-          <p className="text-xs text-slate-400">Impulsos Digitales</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Impulsos Digitales</p>
         </div>
       </div>
 
@@ -110,20 +110,20 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
               href={item.href}
               className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                 isActive
-                  ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
-                  : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-500/30'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-400'}`} />
                 <span>{item.label}</span>
               </div>
               {item.badge && (
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                     item.badgeVariant === 'danger'
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30'
+                      : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
                   }`}
                 >
                   {item.badge}
@@ -140,12 +140,12 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
             onClick={() => setIsWpOpen(!isWpOpen)}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
               isCurrentWpRoute
-                ? 'text-white bg-slate-900/80 font-semibold'
-                : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900/80 font-semibold border border-slate-200 dark:border-slate-800'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded flex items-center justify-center text-sky-400 bg-sky-500/10 border border-sky-500/20">
+              <div className="w-5 h-5 rounded flex items-center justify-center text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/20">
                 <WPIcon className="w-3.5 h-3.5" />
               </div>
               <span>WordPress</span>
@@ -153,21 +153,24 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
 
             <div className="flex items-center gap-2">
               {!isWpOpen && pendingUpdatesCount > 0 && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
                   {pendingUpdatesCount}
                 </span>
               )}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 font-mono">
+                CORE
+              </span>
               {isWpOpen ? (
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
               ) : (
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
               )}
             </div>
           </button>
 
           {/* Submenu Items */}
           {isWpOpen && (
-            <div className="mt-1 ml-4 pl-3 border-l border-slate-800 space-y-1">
+            <div className="mt-1 ml-4 pl-3 border-l border-slate-200 dark:border-slate-800 space-y-1">
               {wpSubItems.map((subItem) => {
                 const SubIcon = subItem.icon;
                 const isSubActive = pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href));
@@ -178,12 +181,12 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
                     href={subItem.href}
                     className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                       isSubActive
-                        ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
-                        : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-200'
+                        ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-500/30'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <SubIcon className={`w-3.5 h-3.5 ${isSubActive ? 'text-sky-400' : 'text-slate-500'}`} />
+                      <SubIcon className={`w-3.5 h-3.5 ${isSubActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500'}`} />
                       <span>{subItem.label}</span>
                     </div>
 
@@ -191,8 +194,8 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                           subItem.badgeVariant === 'danger'
-                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30'
+                            : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
                         }`}
                       >
                         {subItem.badge}
@@ -205,7 +208,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
           )}
         </div>
 
-        <div className="pt-4 border-t border-slate-800/60 space-y-1">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800/60 space-y-1">
           {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -216,12 +219,12 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
                 href={item.href}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
-                    : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-500/30'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-400'}`} />
                   <span>{item.label}</span>
                 </div>
               </Link>
@@ -231,24 +234,24 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
       </nav>
 
       {/* Footer / Status */}
-      <div className="p-4 border-t border-slate-800 text-xs text-slate-400 bg-slate-900/50">
+      <div className="p-4 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-900/50">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-slate-300 font-medium">Conexión Global</span>
-          <span className="inline-flex items-center gap-1.5 text-emerald-400">
+          <span className="text-slate-700 dark:text-slate-300 font-medium">Conexión Global</span>
+          <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Operativo
           </span>
         </div>
-        <p className="text-[11px] text-slate-400">Vercel Edge • Neon Postgres</p>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">Vercel Edge • Neon Postgres</p>
 
-        <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between">
-          <span className="text-[11px] text-slate-400">Sesión Segura</span>
+        <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Sesión Segura</span>
           <button
             onClick={async () => {
               await fetch('/api/auth/logout', { method: 'POST' });
               window.location.href = '/login';
             }}
-            className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+            className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors cursor-pointer"
           >
             Cerrar Sesión
           </button>

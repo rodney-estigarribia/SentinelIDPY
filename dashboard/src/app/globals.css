@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* 
   SentinelIDPY Theme Engine:
   Supports System Auto-Detection (prefers-color-scheme), Manual Light Mode, and Manual Dark Mode.
@@ -124,6 +126,39 @@ html:not(.dark) :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, sel
 html:not(.dark) span.text-white:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-slate-8"]):not([class*="bg-slate-7"]):not(.keep-white),
 html:not(.dark) div.text-white:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-slate-8"]):not([class*="bg-slate-7"]):not(.keep-white) {
   color: #0f172a !important;
+}
+
+/* Sidebar Light Mode Typography & Surfaces: Ensure crisp contrast and no white text */
+html:not(.dark) aside,
+html.light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+html:not(.dark) aside h1,
+html.light aside h1,
+html:not(.dark) aside .text-white,
+html.light aside .text-white {
+  color: #0f172a !important;
+}
+html:not(.dark) aside a:not([class*="bg-sky"]):not([class*="bg-emerald"]),
+html.light aside a:not([class*="bg-sky"]):not([class*="bg-emerald"]) {
+  color: #334155;
+}
+html:not(.dark) aside button:not([class*="bg-sky"]):not([class*="bg-emerald"]),
+html.light aside button:not([class*="bg-sky"]):not([class*="bg-emerald"]) {
+  color: #334155;
+}
+html:not(.dark) aside a:hover,
+html.light aside a:hover,
+html:not(.dark) aside button:hover,
+html.light aside button:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) aside .border-slate-800,
+html.light aside .border-slate-800 {
+  border-color: #e2e8f0 !important;
 }
 
 /* Card shadows in light mode for crisp hierarchy */
