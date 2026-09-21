@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import type { Site, Client } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
+import { Badge, Note } from '@/components/ui';
 
 interface ServicesTableClientProps {
   initialSites: Site[];
@@ -277,58 +278,58 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
     switch (cat) {
       case 'dominio':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
-            <Globe className="w-3 h-3" /> Dominio
-          </span>
+          <Badge variant="emerald" icon={<Globe className="w-3 h-3" />}>
+            Dominio
+          </Badge>
         );
       case 'hosting':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
-            <Server className="w-3 h-3" /> Hosting / cPanel
-          </span>
+          <Badge variant="blue" icon={<Server className="w-3 h-3" />}>
+            Hosting / cPanel
+          </Badge>
         );
       case 'servidor_bd':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
-            <Database className="w-3 h-3" /> Servidor & BD (Cloud)
-          </span>
+          <Badge variant="indigo" icon={<Database className="w-3 h-3" />}>
+            Servidor & BD (Cloud)
+          </Badge>
         );
       case 'app_movil':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
-            <Smartphone className="w-3 h-3" /> App Móvil
-          </span>
+          <Badge variant="amber" icon={<Smartphone className="w-3 h-3" />}>
+            App Móvil
+          </Badge>
         );
       case 'correo':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-cyan-50 dark:bg-cyan-500/10 text-cyan-800 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
-            <Mail className="w-3 h-3" /> Correo
-          </span>
+          <Badge variant="cyan" icon={<Mail className="w-3 h-3" />}>
+            Correo
+          </Badge>
         );
       case 'licencia':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20">
-            <KeyRound className="w-3 h-3" /> Licencia Software
-          </span>
+          <Badge variant="purple" icon={<KeyRound className="w-3 h-3" />}>
+            Licencia Software
+          </Badge>
         );
       case 'web_app':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-500/10 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20">
-            <FileCode className="w-3 h-3" /> Web App Frontend
-          </span>
+          <Badge variant="sky" icon={<FileCode className="w-3 h-3" />}>
+            Web App Frontend
+          </Badge>
         );
       case 'vercel':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-neutral-500/15 text-slate-800 dark:text-white border border-slate-300 dark:border-neutral-700">
+          <Badge variant="neutral">
             ▲ Vercel OnePage
-          </span>
+          </Badge>
         );
       case 'web_wordpress':
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
+          <Badge variant="blue">
             W WordPress
-          </span>
+          </Badge>
         );
     }
   };
@@ -341,12 +342,11 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
     if (b.responsibility === 'tc_agencia') {
       return (
         <div className="space-y-0.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/40">
-            <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />
+          <Badge variant="red" icon={<AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0" />}>
             TC Agencia (Rodney) ⚠️
-          </span>
+          </Badge>
           {b.cost && (
-            <div className="text-[11px] font-mono text-slate-700 dark:text-slate-300">
+            <div className="text-[11px] font-mono font-medium text-slate-700 dark:text-slate-300">
               {b.currency} {b.cost.toLocaleString()} / {b.cycle === 'monthly' ? 'mes' : 'año'}
             </div>
           )}
@@ -357,12 +357,11 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
     if (b.responsibility === 'tc_cliente') {
       return (
         <div className="space-y-0.5">
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
-            <CreditCard className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <Badge variant="emerald" icon={<CreditCard className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}>
             TC Cliente
-          </span>
+          </Badge>
           {b.cost && (
-            <div className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
+            <div className="text-[11px] font-mono font-medium text-slate-700 dark:text-slate-300">
               {b.currency} {b.cost.toLocaleString()} / {b.cycle === 'monthly' ? 'mes' : 'año'}
             </div>
           )}
@@ -372,16 +371,16 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
     if (b.responsibility === 'incluido') {
       return (
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+        <Badge variant="neutral">
           Incluido en Fee / Host
-        </span>
+        </Badge>
       );
     }
 
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+      <Badge variant="neutral">
         {b.responsibility || 'Facturación directa'}
-      </span>
+      </Badge>
     );
   };
 
@@ -614,10 +613,12 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
                       {/* Sistema / Grupo */}
                       <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                          <FolderTree className="w-3 h-3 text-indigo-400" />
+                        <Badge
+                          variant="indigo"
+                          icon={<FolderTree className="w-3 h-3 text-indigo-700 dark:text-indigo-400" />}
+                        >
                           {site.serviceGroup || 'General'}
-                        </span>
+                        </Badge>
                       </td>
 
                       {/* Categoría */}
@@ -634,7 +635,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                                 key={idx}
                                 className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300"
                               >
-                                <span className="text-cyan-800 dark:text-cyan-400 font-bold uppercase text-[9px] px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/50">
+                                <Badge variant="cyan" size="xs">
                                   {rel.type === 'points_to'
                                     ? 'Apunta a'
                                     : rel.type === 'depends_on'
@@ -644,7 +645,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                                     : rel.type === 'connects_to'
                                     ? 'Conecta con'
                                     : 'Vinculado a'}
-                                </span>
+                                </Badge>
                                 <span className="truncate max-w-[170px]" title={rel.targetName}>
                                   {rel.targetName}
                                 </span>
@@ -664,14 +665,15 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                       {/* Roadmap / Deuda Técnica */}
                       <td className="py-3.5 px-4">
                         {site.roadmapNotes ? (
-                          <div
-                            className="max-w-[220px] text-[11px] text-amber-300/90 bg-amber-500/10 p-1.5 rounded border border-amber-500/20 leading-tight"
+                          <Note
+                            variant="warning"
+                            className="max-w-[220px]"
                             title={site.roadmapNotes}
                           >
                             {site.roadmapNotes}
-                          </div>
+                          </Note>
                         ) : (
-                          <span className="text-slate-500 text-[11px]">Al día</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">Al día</span>
                         )}
                       </td>
 

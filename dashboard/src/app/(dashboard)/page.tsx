@@ -20,74 +20,75 @@ import {
   Smartphone,
   FileCode
 } from 'lucide-react';
+import { Badge } from '@/components/ui';
 
 function renderCategoryBadge(site: { type: string; category?: string | null; wpVersion?: string | null }) {
   const cat = site.category;
   if (site.type === 'wordpress' || cat === 'web_wordpress') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
+      <Badge variant="blue">
         WordPress {site.wpVersion || ''}
-      </span>
+      </Badge>
     );
   }
   if (site.type === 'vercel' || cat === 'vercel') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-zinc-700/30 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700">
+      <Badge variant="neutral">
         ▲ Vercel Onepage
-      </span>
+      </Badge>
     );
   }
   switch (cat) {
     case 'dominio':
     case 'domains_dns':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
-          <Globe className="w-3 h-3" /> Dominio
-        </span>
+        <Badge variant="emerald" icon={<Globe className="w-3 h-3" />}>
+          Dominio
+        </Badge>
       );
     case 'hosting':
     case 'infra':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
-          <Server className="w-3 h-3" /> Hosting / cPanel
-        </span>
+        <Badge variant="blue" icon={<Server className="w-3 h-3" />}>
+          Hosting / cPanel
+        </Badge>
       );
     case 'correo':
     case 'email_license':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-cyan-50 dark:bg-cyan-500/10 text-cyan-800 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20">
-          <Mail className="w-3 h-3" /> Correo
-        </span>
+        <Badge variant="cyan" icon={<Mail className="w-3 h-3" />}>
+          Correo
+        </Badge>
       );
     case 'licencia':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20">
-          <KeyRound className="w-3 h-3" /> Licencia
-        </span>
+        <Badge variant="purple" icon={<KeyRound className="w-3 h-3" />}>
+          Licencia
+        </Badge>
       );
     case 'servidor_bd':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
-          <Database className="w-3 h-3" /> Servidor / BD
-        </span>
+        <Badge variant="indigo" icon={<Database className="w-3 h-3" />}>
+          Servidor / BD
+        </Badge>
       );
     case 'app_movil':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
-          <Smartphone className="w-3 h-3" /> App Móvil
-        </span>
+        <Badge variant="amber" icon={<Smartphone className="w-3 h-3" />}>
+          App Móvil
+        </Badge>
       );
     case 'web_app':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 dark:bg-sky-500/10 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20">
-          <FileCode className="w-3 h-3" /> Web App
-        </span>
+        <Badge variant="sky" icon={<FileCode className="w-3 h-3" />}>
+          Web App
+        </Badge>
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20">
+        <Badge variant="purple">
           Sistema Webapp
-        </span>
+        </Badge>
       );
   }
 }

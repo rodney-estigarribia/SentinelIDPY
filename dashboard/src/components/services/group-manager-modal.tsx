@@ -13,6 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import type { Client, ServiceGroup, Site } from '@/db/schema';
+import { Badge } from '@/components/ui';
 
 interface GroupManagerModalProps {
   isOpen: boolean;
@@ -386,9 +387,9 @@ export function GroupManagerModal({
                         <span className="font-bold text-slate-900 dark:text-white text-sm tracking-wide">
                           {grp.name}
                         </span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/20">
+                        <Badge variant="indigo" size="xs">
                           {assignedCount} {assignedCount === 1 ? 'activo' : 'activos'}
-                        </span>
+                        </Badge>
                       </div>
                       {grp.description && (
                         <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

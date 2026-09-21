@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import type { Client, Site } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
+import { Badge, Note } from '@/components/ui';
 
 interface ClientsClientProps {
   initialClients: Client[];
@@ -563,23 +564,22 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
                                     </div>
                                   )}
                                   {site.roadmapNotes && (
-                                    <span className="inline-flex items-center gap-1 text-[11px] text-amber-800 dark:text-amber-300/90 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-500/20 font-medium">
+                                    <Note variant="warning" className="max-w-md my-1" title={site.roadmapNotes}>
                                       📋 {site.roadmapNotes}
-                                    </span>
+                                    </Note>
                                   )}
                                 </div>
                               </div>
 
                               <div className="flex items-center gap-3 shrink-0">
                                 {site.billing?.responsibility === 'tc_agencia' ? (
-                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30 flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />
+                                  <Badge variant="red" icon={<AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />}>
                                     TC Rodney ⚠️
-                                  </span>
+                                  </Badge>
                                 ) : site.billing?.responsibility === 'tc_cliente' ? (
-                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                                  <Badge variant="emerald">
                                     TC Cliente
-                                  </span>
+                                  </Badge>
                                 ) : null}
 
                                 <Link
