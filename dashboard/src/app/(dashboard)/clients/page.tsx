@@ -15,7 +15,7 @@ export default async function ClientsPage() {
     <div className="flex-1 flex flex-col min-h-screen">
       <Header title="Clientes e Infraestructura" />
 
-      <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
+      <div className="p-8 lg:p-10 space-y-8 max-w-7xl mx-auto w-full">
         <ClientsClient initialClients={clients} sites={sites} />
       </div>
     </div>
