@@ -4,6 +4,15 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'SentinelIDPY — Panel de Administración Central',
   description: 'Plataforma de administración, monitoreo y mantenimiento para Impulsos Digitales',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png' },
+    ],
+  },
 };
 
 export default function RootLayout({
