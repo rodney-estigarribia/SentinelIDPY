@@ -50,6 +50,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/api/admin') ||
     pathname === '/login' ||
     pathname.includes('.')
   ) {
