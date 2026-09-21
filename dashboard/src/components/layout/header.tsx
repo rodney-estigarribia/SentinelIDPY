@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Search, Bell, ExternalLink, RefreshCw } from 'lucide-react';
+import { ThemeToggle } from './theme-toggle';
 
 interface HeaderProps {
   title?: string;
@@ -41,6 +42,9 @@ export function Header({ title, subtitle, onRefresh, isRefreshing }: HeaderProps
             <span className="hidden sm:inline">{isRefreshing ? 'Sincronizando...' : 'Actualizar'}</span>
           </button>
         )}
+
+        {/* Theme Mode Toggle (System Auto, Light, Dark) */}
+        <ThemeToggle />
 
         {/* Impulsos Digitales Agency Link */}
         <a

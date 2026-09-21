@@ -1,26 +1,177 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* 
+  SentinelIDPY Theme Engine:
+  Supports System Auto-Detection (prefers-color-scheme), Manual Light Mode, and Manual Dark Mode.
+*/
+
+/* 1. LIGHT MODE (Default / System Light / Explicit .light) */
+:root,
+html.light,
+html:not(.dark) {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Slate Scale Inversion for Light Mode */
+  --color-slate-950: #f8fafc; /* Canvas / Page Background (Slate 50) */
+  --color-slate-900: #ffffff; /* Card / Surface Background (Pure White) */
+  --color-slate-800: #e2e8f0; /* Borders / Dividers (Slate 200) */
+  --color-slate-700: #cbd5e1; /* Hover Borders / Subtle Lines (Slate 300) */
+  --color-slate-600: #94a3b8; /* Muted Borders / Decorative (Slate 400) */
+  --color-slate-500: #64748b; /* Medium Muted (Slate 500) */
+  --color-slate-400: #64748b; /* Secondary Text (Slate 500) */
+  --color-slate-300: #334155; /* Tertiary / Menu Text (Slate 700) */
+  --color-slate-200: #1e293b; /* Body / Subtitle Text (Slate 800) */
+  --color-slate-100: #0f172a; /* Primary Headings / Text (Slate 900) */
+
+  /* High-Contrast Accessible Colors for Badges, Tabs & Accents in Light Mode */
+  --color-sky-300: #0284c7;
+  --color-sky-400: #0369a1;
+  --color-emerald-300: #059669;
+  --color-emerald-400: #047857;
+  --color-amber-300: #d97706;
+  --color-amber-400: #b45309;
+  --color-rose-300: #e11d48;
+  --color-rose-400: #be123c;
+  --color-red-300: #dc2626;
+  --color-red-400: #b91c1c;
+  --color-indigo-300: #4f46e5;
+  --color-indigo-400: #4338ca;
+  --color-blue-300: #2563eb;
+  --color-blue-400: #1d4ed8;
+  --color-cyan-300: #0891b2;
+  --color-cyan-400: #0e7490;
+  --color-purple-300: #9333ea;
+  --color-purple-400: #7e22ce;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* 2. DARK MODE (System Dark or Explicit .dark) */
+html.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+
+  --color-slate-950: oklch(12.9% .042 264.695);
+  --color-slate-900: oklch(20.8% .042 265.755);
+  --color-slate-800: oklch(27.9% .041 260.031);
+  --color-slate-700: oklch(37.2% .044 257.287);
+  --color-slate-600: oklch(44.6% .043 257.281);
+  --color-slate-500: oklch(55.4% .046 257.417);
+  --color-slate-400: oklch(70.4% .04 256.788);
+  --color-slate-300: oklch(86.9% .022 252.894);
+  --color-slate-200: oklch(92.9% .013 255.508);
+  --color-slate-100: oklch(96.8% .007 247.896);
+
+  --color-sky-300: oklch(82.8% .111 230.318);
+  --color-sky-400: oklch(74.6% .16 232.661);
+  --color-emerald-300: oklch(84.5% .143 164.978);
+  --color-emerald-400: oklch(76.5% .177 163.223);
+  --color-amber-300: oklch(87.9% .169 91.605);
+  --color-amber-400: oklch(82.8% .189 84.429);
+  --color-rose-300: oklch(81% .117 11.638);
+  --color-rose-400: oklch(71.2% .194 13.428);
+  --color-red-300: oklch(80.8% .114 19.571);
+  --color-red-400: oklch(70.4% .191 22.216);
+  --color-indigo-300: oklch(78.5% .115 274.713);
+  --color-indigo-400: oklch(67.3% .182 276.935);
+  --color-blue-300: oklch(80.9% .105 251.813);
+  --color-blue-400: oklch(70.7% .165 254.624);
+  --color-cyan-300: oklch(86.5% .127 207.078);
+  --color-cyan-400: oklch(78.9% .154 211.53);
+  --color-purple-300: oklch(82.7% .119 306.383);
+  --color-purple-400: oklch(71.4% .203 305.504);
 }
 
+/* 3. Automatic System Preference Detection via Media Query (before JS hydration) */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light) {
+    --background: #020617;
+    --foreground: #f1f5f9;
+
+    --color-slate-950: oklch(12.9% .042 264.695);
+    --color-slate-900: oklch(20.8% .042 265.755);
+    --color-slate-800: oklch(27.9% .041 260.031);
+    --color-slate-700: oklch(37.2% .044 257.287);
+    --color-slate-600: oklch(44.6% .043 257.281);
+    --color-slate-500: oklch(55.4% .046 257.417);
+    --color-slate-400: oklch(70.4% .04 256.788);
+    --color-slate-300: oklch(86.9% .022 252.894);
+    --color-slate-200: oklch(92.9% .013 255.508);
+    --color-slate-100: oklch(96.8% .007 247.896);
+
+    --color-sky-300: oklch(82.8% .111 230.318);
+    --color-sky-400: oklch(74.6% .16 232.661);
+    --color-emerald-300: oklch(84.5% .143 164.978);
+    --color-emerald-400: oklch(76.5% .177 163.223);
+    --color-amber-300: oklch(87.9% .169 91.605);
+    --color-amber-400: oklch(82.8% .189 84.429);
+    --color-rose-300: oklch(81% .117 11.638);
+    --color-rose-400: oklch(71.2% .194 13.428);
+    --color-red-300: oklch(80.8% .114 19.571);
+    --color-red-400: oklch(70.4% .191 22.216);
+    --color-indigo-300: oklch(78.5% .115 274.713);
+    --color-indigo-400: oklch(67.3% .182 276.935);
+    --color-blue-300: oklch(80.9% .105 251.813);
+    --color-blue-400: oklch(70.7% .165 254.624);
+    --color-cyan-300: oklch(86.5% .127 207.078);
+    --color-cyan-400: oklch(78.9% .154 211.53);
+    --color-purple-300: oklch(82.7% .119 306.383);
+    --color-purple-400: oklch(71.4% .203 305.504);
   }
 }
 
+/* 4. Light Mode Typography & Surface Polish */
+html:not(.dark) :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, select, textarea).text-white,
+html:not(.dark) span.text-white:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-slate-8"]):not([class*="bg-slate-7"]):not(.keep-white),
+html:not(.dark) div.text-white:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-slate-8"]):not([class*="bg-slate-7"]):not(.keep-white) {
+  color: #0f172a !important;
+}
+
+/* Card shadows in light mode for crisp hierarchy */
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-900\/40,
+html:not(.dark) .bg-slate-900\/60,
+html:not(.dark) .bg-slate-900\/80 {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* Modal and dialog backdrops in light mode */
+html:not(.dark) .fixed.inset-0.bg-slate-950\/80,
+html:not(.dark) .fixed.inset-0.bg-slate-950\/70 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* Search input in header in light mode */
+html:not(.dark) header input {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html:not(.dark) header input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Neutral secondary action buttons in light mode */
+html:not(.dark) button.bg-slate-800.text-white,
+html:not(.dark) button.bg-slate-800 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+html:not(.dark) button.bg-slate-800:hover {
+  background-color: #1e293b !important;
+}
+
+/* Inputs on forms in light mode */
+html:not(.dark) input.bg-slate-950,
+html:not(.dark) select.bg-slate-950,
+html:not(.dark) textarea.bg-slate-950 {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-slate-950);
+  color: var(--color-slate-200);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
