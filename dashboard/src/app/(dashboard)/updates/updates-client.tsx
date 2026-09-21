@@ -416,7 +416,12 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-2.5 py-1 rounded text-xs font-bold uppercase cursor-pointer transition-colors ${
+                style={
+                  filterType === t
+                    ? { backgroundColor: '#0f172a', color: '#ffffff', borderColor: '#0f172a' }
+                    : undefined
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase cursor-pointer transition-colors ${
                   filterType === t
                     ? 'bg-slate-900 text-white dark:bg-emerald-600 dark:text-white border border-slate-900 dark:border-emerald-500 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'

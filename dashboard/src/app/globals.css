@@ -170,20 +170,27 @@ html.light .bg-slate-950 {
 }
 
 /* Automatic mapping for card containers written with bg-slate-900 */
-html:not(.dark) .bg-slate-900,
-html:not(.dark) .bg-slate-900\/40,
-html:not(.dark) .bg-slate-900\/50,
-html:not(.dark) .bg-slate-900\/60,
-html:not(.dark) .bg-slate-900\/80,
-html:not(.dark) .bg-slate-900\/90,
-html.light .bg-slate-900,
-html.light .bg-slate-900\/40,
-html.light .bg-slate-900\/50,
-html.light .bg-slate-900\/60,
-html.light .bg-slate-900\/80,
-html.light .bg-slate-900\/90 {
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/40,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/50,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/60,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/80,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/90,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/40,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/50,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/60,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/80,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/90 {
   background-color: #ffffff;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure dark buttons in light mode stay dark with white text */
+html:not(.dark) button.bg-slate-900,
+html.light button.bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
 }
 
 /* Automatic mapping for borders written with border-slate-800 */

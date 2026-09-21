@@ -33,7 +33,7 @@ function WPIcon({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: SidebarProps) {
+export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   if (pathname === '/login') {
