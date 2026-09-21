@@ -109,15 +109,15 @@ export function PluginsClient({ sites }: PluginsClientProps) {
       {/* Left Column: Explorer & Uploader (7 cols) */}
       <div className="lg:col-span-7 space-y-5">
         {/* Search Bar */}
-        <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 space-y-4">
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <DownloadCloud className="w-4 h-4 text-blue-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+              <DownloadCloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Explorar Directorio Oficial WordPress.org</span>
             </h3>
 
-            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-200 cursor-pointer hover:bg-slate-700 transition-colors">
-              <Upload className="w-3.5 h-3.5 text-slate-400" />
+            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Instalar desde ZIP</span>
               <input
                 type="file"
@@ -143,12 +143,12 @@ export function PluginsClient({ sites }: PluginsClientProps) {
               placeholder="Buscar en millones de plugins (ej. elementor, redis, mail, contact)..."
               value={wpOrgQuery}
               onChange={(e) => setWpOrgQuery(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <button
               type="submit"
               disabled={isSearching}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isSearching ? 'Buscando...' : 'Buscar'}
             </button>
@@ -165,18 +165,18 @@ export function PluginsClient({ sites }: PluginsClientProps) {
                   onClick={() => setSelectedPlugin(plugin)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
                     isSelected
-                      ? 'border-blue-500/40 bg-blue-500/10 shadow-lg shadow-blue-950/40'
-                      : 'border-slate-800 bg-slate-950/50 hover:bg-slate-900'
+                      ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-500/10 dark:border-blue-500/40 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-sm'
                   }`}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm">{plugin.name}</span>
-                      <span className="text-[10px] font-mono text-slate-400">v{plugin.version}</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{plugin.name}</span>
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">v{plugin.version}</span>
                     </div>
-                    <p className="text-xs text-slate-400 line-clamp-2">{plugin.short_description}</p>
-                    <div className="text-[10px] text-slate-400 pt-1">
-                      Por <span className="text-slate-300">{plugin.author}</span> • {plugin.active_installs || 'Oficial'}
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{plugin.short_description}</p>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 pt-1">
+                      Por <span className="text-slate-700 dark:text-slate-300 font-medium">{plugin.author}</span> • {plugin.active_installs || 'Oficial'}
                     </div>
                   </div>
 
@@ -184,8 +184,8 @@ export function PluginsClient({ sites }: PluginsClientProps) {
                     <span
                       className={`w-5 h-5 rounded-full border flex items-center justify-center ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-500 text-white'
-                          : 'border-slate-700 bg-slate-900'
+                          ? 'border-blue-600 bg-blue-600 text-white'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900'
                       }`}
                     >
                       {isSelected && <Check className="w-3 h-3" />}
@@ -200,37 +200,37 @@ export function PluginsClient({ sites }: PluginsClientProps) {
 
       {/* Right Column: Multi-Site Target Selector & Deploy Action (5 cols) */}
       <div className="lg:col-span-5 space-y-5">
-        <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 space-y-4">
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-4">
           <div>
-            <h3 className="font-bold text-white text-base">Destinos de Instalación</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">Destinos de Instalación</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Selecciona en qué sitios se desplegará el plugin seleccionado.
             </p>
           </div>
 
           {selectedPlugin && (
-            <div className="p-3.5 rounded-lg bg-blue-950/40 border border-blue-500/30 text-xs">
-              <span className="text-slate-400 block mb-0.5">Plugin Seleccionado:</span>
-              <span className="font-bold text-white text-sm">{selectedPlugin.name}</span>
-              <span className="block text-[11px] text-blue-300 font-mono mt-0.5">
+            <div className="p-3.5 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-500/30 text-xs">
+              <span className="text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">Plugin Seleccionado:</span>
+              <span className="font-bold text-slate-900 dark:text-white text-sm">{selectedPlugin.name}</span>
+              <span className="block text-[11px] text-blue-600 dark:text-blue-300 font-mono mt-0.5 font-semibold">
                 v{selectedPlugin.version}
               </span>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800">
             <span>{selectedSites.length} de {sites.length} sitios elegidos</span>
             <div className="flex gap-2">
               <button
                 onClick={() => setSelectedSites(sites.map((s) => s.id))}
-                className="hover:text-white font-semibold text-[11px]"
+                className="hover:text-blue-600 dark:hover:text-white font-semibold text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer"
               >
                 Todos
               </button>
               <span>•</span>
               <button
                 onClick={() => setSelectedSites([])}
-                className="hover:text-white font-semibold text-[11px]"
+                className="hover:text-blue-600 dark:hover:text-white font-semibold text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer"
               >
                 Ninguno
               </button>
@@ -247,13 +247,13 @@ export function PluginsClient({ sites }: PluginsClientProps) {
                   onClick={() => handleToggleSite(site.id)}
                   className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer transition-colors text-xs ${
                     isChecked
-                      ? 'border-emerald-500/30 bg-emerald-500/10'
-                      : 'border-slate-800 bg-slate-950/60 opacity-60'
+                      ? 'border-emerald-300 dark:border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-500/10'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 opacity-60 hover:opacity-100'
                   }`}
                 >
                   <div>
-                    <span className="font-bold text-white block">{site.name}</span>
-                    <span className="font-mono text-[11px] text-slate-400">
+                    <span className="font-bold text-slate-900 dark:text-white block">{site.name}</span>
+                    <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
                       {site.url.replace(/^https?:\/\//, '')}
                     </span>
                   </div>
@@ -261,7 +261,7 @@ export function PluginsClient({ sites }: PluginsClientProps) {
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => {}}
-                    className="w-4 h-4 rounded border-slate-700 text-emerald-500 bg-slate-900"
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 dark:text-emerald-500 bg-white dark:bg-slate-900 focus:ring-emerald-500"
                   />
                 </div>
               );
@@ -269,7 +269,7 @@ export function PluginsClient({ sites }: PluginsClientProps) {
           </div>
 
           {deployResult && (
-            <div className="p-3.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-300 font-semibold">
+            <div className="p-3.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 font-semibold">
               {deployResult}
             </div>
           )}
@@ -277,7 +277,7 @@ export function PluginsClient({ sites }: PluginsClientProps) {
           <button
             onClick={handleDeploy}
             disabled={selectedSites.length === 0 || !selectedPlugin || isDeploying}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-emerald-950"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-sm hover:shadow cursor-pointer"
           >
             <Play className={`w-3.5 h-3.5 ${isDeploying ? 'animate-spin' : ''}`} />
             <span>
