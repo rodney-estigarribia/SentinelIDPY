@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   Plus,
@@ -28,6 +29,7 @@ import {
   FolderTree
 } from 'lucide-react';
 import type { Site, Client } from '@/db/schema';
+import { GroupManagerModal } from '@/components/services/group-manager-modal';
 
 interface ServicesTableClientProps {
   initialSites: Site[];
@@ -55,6 +57,7 @@ const NORMALIZED_PROVIDERS = [
 ] as const;
 
 export function ServicesTableClient({ initialSites, clients }: ServicesTableClientProps) {
+  const router = useRouter();
   const [sites, setSites] = useState<Site[]>(initialSites);
   const [search, setSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('all');
@@ -62,6 +65,12 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
   const [selectedCategory, setSelectedCategory] = useState<CategoryTab>('all');
   const [selectedBilling, setSelectedBilling] = useState<BillingFilter>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [clientDbGroups, setClientDbGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSites(initialSites);
+  }, [initialSites]);
 
   // New Service Form State
   const [formName, setFormName] = useState('');
@@ -71,6 +80,19 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
   const [formUrl, setFormUrl] = useState('');
   const [formToken, setFormToken] = useState('');
   const [formClientId, setFormClientId] = useState<number>(clients[0]?.id || 1);
+
+  useEffect(() => {
+    if (formClientId) {
+      fetch(`/api/service-groups?clientId=${formClientId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setClientDbGroups(data.map((g: any) => g.name));
+          }
+        })
+        .catch((err) => console.error(err));
+    }
+  }, [formClientId, isGroupModalOpen]);
 
   // Group / System State
   const [formGroupSelect, setFormGroupSelect] = useState<string>('__new__');
@@ -93,9 +115,12 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
   // Existing services for the client selected in modal
   const clientExistingServices = sites.filter((s) => s.clientId === Number(formClientId));
   
-  // Existing groups for the client selected in modal
+  // Existing groups for the client selected in modal (from DB + services)
   const clientExistingGroups = Array.from(
-    new Set(clientExistingServices.map((s) => s.serviceGroup || 'General').filter(Boolean))
+    new Set([
+      ...clientDbGroups,
+      ...clientExistingServices.map((s) => s.serviceGroup || 'General')
+    ].filter(Boolean))
   );
 
   // All distinct groups across the current filtered client or all
@@ -489,6 +514,17 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
               </select>
             </div>
           )}
+
+          {/* Manage Groups Modal Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsGroupModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+            title="Administrar agrupaciones y sistemas lógicos por cliente"
+          >
+            <FolderTree className="w-3.5 h-3.5 text-indigo-400" />
+            <span>⚙️ Grupos</span>
+          </button>
         </div>
 
         {/* Billing Responsibility Select Filter */}
@@ -988,6 +1024,26 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
           </div>
         </div>
       )}
+
+      <GroupManagerModal
+        isOpen={isGroupModalOpen}
+        onClose={() => setIsGroupModalOpen(false)}
+        client={selectedClient !== 'all' ? clients.find((c) => c.id === Number(selectedClient)) || null : null}
+        clients={clients}
+        sites={sites}
+        onGroupUpdated={async () => {
+          router.refresh();
+          try {
+            const res = await fetch('/api/services');
+            if (res.ok) {
+              const fresh = await res.json();
+              setSites(fresh);
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+      />
     </div>
   );
 }

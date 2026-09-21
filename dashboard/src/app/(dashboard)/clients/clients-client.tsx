@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Users,
   Plus,
@@ -22,6 +23,7 @@ import {
   X
 } from 'lucide-react';
 import type { Client, Site } from '@/db/schema';
+import { GroupManagerModal } from '@/components/services/group-manager-modal';
 
 interface ClientsClientProps {
   initialClients: Client[];
@@ -29,10 +31,17 @@ interface ClientsClientProps {
 }
 
 export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
+  const router = useRouter();
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [currentSites, setCurrentSites] = useState<Site[]>(sites);
   const [selectedClient, setSelectedClient] = useState<Client | null>(clients[0] || null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isNewClientModalOpen, setIsNewClientModalOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+
+  useEffect(() => {
+    setCurrentSites(sites);
+  }, [sites]);
 
   // Form states for Infrastructure
   const [domainProvider, setDomainProvider] = useState(selectedClient?.infrastructure?.domain?.provider || 'nic.py');
@@ -63,7 +72,7 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
   const [newClientPhone, setNewClientPhone] = useState('');
 
   const clientSites = selectedClient
-    ? sites.filter((s) => s.clientId === selectedClient.id)
+    ? currentSites.filter((s) => s.clientId === selectedClient.id)
     : [];
 
   const agencyPaidServices = clientSites.filter((s) => s.billing?.responsibility === 'tc_agencia');
@@ -433,7 +442,7 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
 
             {/* Associated Services & Assets grouped by System */}
             <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
-              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="font-bold text-white text-sm">
                     Servicios y Activos de {selectedClient.name} ({clientSites.length})
@@ -442,12 +451,23 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
                     Infraestructura organizada por Sistemas y Ecosistemas lógicos, dependencias y facturación.
                   </p>
                 </div>
-                <Link
-                  href="/services"
-                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
-                >
-                  Gestionar en Servicios →
-                </Link>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsGroupModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 text-xs font-semibold transition-colors cursor-pointer"
+                    title="Administrar agrupaciones y sistemas de este cliente"
+                  >
+                    <FolderTree className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>⚙️ Administrar Sistemas / Grupos</span>
+                  </button>
+                  <Link
+                    href="/services"
+                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                  >
+                    Gestionar en Servicios →
+                  </Link>
+                </div>
               </div>
 
               {clientSites.length === 0 ? (
@@ -838,6 +858,27 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
             </form>
           </div>
         </div>
+      )}
+
+      {selectedClient && (
+        <GroupManagerModal
+          isOpen={isGroupModalOpen}
+          onClose={() => setIsGroupModalOpen(false)}
+          client={selectedClient}
+          sites={currentSites}
+          onGroupUpdated={async () => {
+            router.refresh();
+            try {
+              const res = await fetch('/api/services');
+              if (res.ok) {
+                const fresh = await res.json();
+                setCurrentSites(fresh);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }}
+        />
       )}
     </div>
   );

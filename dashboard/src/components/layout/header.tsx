@@ -12,9 +12,9 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, onRefresh, isRefreshing }: HeaderProps) {
   return (
-    <header className="h-20 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-30 transition-all">
-      <div className="space-y-0.5">
-        {title && <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>}
+    <header className="h-24 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-8 lg:px-10 flex items-center justify-between sticky top-0 z-30 transition-all">
+      <div className="space-y-1">
+        {title && <h2 className="text-xl lg:text-2xl font-bold text-white tracking-tight">{title}</h2>}
         {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
       </div>
 

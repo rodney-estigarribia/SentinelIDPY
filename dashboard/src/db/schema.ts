@@ -189,12 +189,23 @@ export const activityLogs = pgTable('activity_logs', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const serviceGroups = pgTable('service_groups', {
+  id: serial('id').primaryKey(),
+  clientId: integer('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
 export type Site = typeof sites.$inferSelect;
 export type NewSite = typeof sites.$inferInsert;
 export type UptimePing = typeof uptimePings.$inferSelect;
 export type ConfigTemplate = typeof configTemplates.$inferSelect;
+export type ServiceGroup = typeof serviceGroups.$inferSelect;
+export type NewServiceGroup = typeof serviceGroups.$inferInsert;
 
 // Modern aliases for Services & Assets architecture
 export const services = sites;

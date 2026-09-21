@@ -1,5 +1,2 @@
-import { redirect } from 'next/navigation';
-
-export default function SitesRedirect() {
-  redirect('/services');
-}
+export { default } from '@/app/(dashboard)/services/page';
+export const revalidate = 0;

@@ -1,6 +1,6 @@
 import { db, schema } from '@/db';
-import { eq, desc } from 'drizzle-orm';
-import type { Client, Site, Service, NewClient, NewSite, NewService, ConfigTemplate } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import type { Client, Site, Service, NewClient, NewSite, NewService, ConfigTemplate, ServiceGroup, NewServiceGroup } from '@/db/schema';
 
 // Initial seed data from clientes.json and infrastructure mappings
 const INITIAL_CLIENTS: Array<Client> = [
@@ -717,10 +717,46 @@ const INITIAL_TEMPLATES: Array<ConfigTemplate> = [
   }
 ];
 
+const INITIAL_SERVICE_GROUPS: Array<ServiceGroup> = [
+  {
+    id: 1,
+    clientId: 5,
+    name: 'Plataforma Dagda',
+    description: 'Ecosistema central: Web Angular, App Móvil (Android & iOS), Backend API y PostgreSQL en Render',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 2,
+    clientId: 5,
+    name: 'Sistemas Empresariales',
+    description: 'Correo corporativo Microsoft 365 y licenciamiento ofimático',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 3,
+    clientId: 1,
+    name: 'Plataforma Central & SentinelIDPY',
+    description: 'Agencia matriz y panel administrativo central',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 4,
+    clientId: 2,
+    name: 'Sitio Web Corporativo',
+    description: 'Web institucional y portal de clientes',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
 // Fallback in-memory stores (in case DB is not yet migrated or offline)
 let memoryClients = [...INITIAL_CLIENTS];
 let memorySites = [...INITIAL_SITES];
-let memoryTemplates = [...INITIAL_TEMPLATES];
+const memoryTemplates = [...INITIAL_TEMPLATES];
+let memoryServiceGroups = [...INITIAL_SERVICE_GROUPS];
 
 export const dataService = {
   // --- CLIENTS ---
@@ -935,7 +971,7 @@ export const dataService = {
   },
 
   // --- ACTIVITY LOGS ---
-  async logActivity(siteId: number | null, action: string, status: 'success' | 'failed' | 'running', details?: any) {
+  async logActivity(siteId: number | null, action: string, status: 'success' | 'failed' | 'running', details?: unknown) {
     if (db) {
       try {
         await db.insert(schema.activityLogs).values({ siteId, action, status, details });
@@ -960,5 +996,124 @@ export const dataService = {
   },
   async deleteService(id: number): Promise<boolean> {
     return this.deleteSite(id);
+  },
+
+  // --- SERVICE GROUPS (Sistemas por Cliente) ---
+  async getServiceGroups(clientId?: number): Promise<ServiceGroup[]> {
+    if (db) {
+      try {
+        if (clientId) {
+          const rows = await db.select().from(schema.serviceGroups).where(eq(schema.serviceGroups.clientId, clientId));
+          if (rows.length > 0) return rows;
+        } else {
+          const rows = await db.select().from(schema.serviceGroups);
+          if (rows.length > 0) return rows;
+        }
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    if (clientId) {
+      return memoryServiceGroups.filter((g) => g.clientId === clientId);
+    }
+    return memoryServiceGroups;
+  },
+
+  async getServiceGroupById(id: number): Promise<ServiceGroup | undefined> {
+    if (db) {
+      try {
+        const [row] = await db.select().from(schema.serviceGroups).where(eq(schema.serviceGroups.id, id));
+        if (row) return row;
+      } catch (err) {
+        console.warn('DB Query failed, falling back to memory store:', err);
+      }
+    }
+    return memoryServiceGroups.find((g) => g.id === id);
+  },
+
+  async createServiceGroup(data: NewServiceGroup): Promise<ServiceGroup> {
+    if (db) {
+      try {
+        const [created] = await db.insert(schema.serviceGroups).values(data).returning();
+        return created;
+      } catch (err) {
+        console.warn('DB insert failed, using memory store:', err);
+      }
+    }
+    const newGroup: ServiceGroup = {
+      id: Math.max(0, ...memoryServiceGroups.map((g) => g.id)) + 1,
+      clientId: data.clientId,
+      name: data.name,
+      description: data.description || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    memoryServiceGroups.push(newGroup);
+    return newGroup;
+  },
+
+  async updateServiceGroup(id: number, data: Partial<ServiceGroup>): Promise<ServiceGroup | null> {
+    const existing = await this.getServiceGroupById(id);
+    if (!existing) return null;
+    const oldName = existing.name;
+
+    if (db) {
+      try {
+        const [updated] = await db.update(schema.serviceGroups)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(schema.serviceGroups.id, id))
+          .returning();
+        if (updated && data.name && data.name !== oldName) {
+          // Cascade update services with matching group
+          await db.update(schema.sites)
+            .set({ serviceGroup: data.name })
+            .where(eq(schema.sites.clientId, existing.clientId));
+        }
+        if (updated) return updated;
+      } catch (err) {
+        console.warn('DB update failed, using memory store:', err);
+      }
+    }
+
+    const index = memoryServiceGroups.findIndex((g) => g.id === id);
+    if (index === -1) return null;
+    memoryServiceGroups[index] = { ...memoryServiceGroups[index], ...data, updatedAt: new Date() };
+
+    // Cascade update in memorySites
+    if (data.name && data.name !== oldName) {
+      memorySites = memorySites.map((s) => {
+        if (s.clientId === existing.clientId && s.serviceGroup === oldName) {
+          return { ...s, serviceGroup: data.name! };
+        }
+        return s;
+      });
+    }
+
+    return memoryServiceGroups[index];
+  },
+
+  async deleteServiceGroup(id: number): Promise<boolean> {
+    const existing = await this.getServiceGroupById(id);
+    if (!existing) return false;
+
+    if (db) {
+      try {
+        await db.delete(schema.serviceGroups).where(eq(schema.serviceGroups.id, id));
+      } catch (err) {
+        console.warn('DB delete failed, using memory store:', err);
+      }
+    }
+
+    // Reassign affected services to 'General'
+    memorySites = memorySites.map((s) => {
+      if (s.clientId === existing.clientId && s.serviceGroup === existing.name) {
+        return { ...s, serviceGroup: 'General' };
+      }
+      return s;
+    });
+
+    const initialLen = memoryServiceGroups.length;
+    memoryServiceGroups = memoryServiceGroups.filter((g) => g.id !== id);
+    return memoryServiceGroups.length < initialLen;
   }
 };
