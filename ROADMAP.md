@@ -51,13 +51,13 @@ Este documento es la **fuente única de verdad** sobre el avance, los frentes ab
 
 ## 🟡 FASE 2: Despliegue en la Nube & Conexión Real (EN CURSO)
 
-- [ ] **Despliegue en Vercel**:
-  - [ ] Subir la rama `develop` a GitHub (`git push origin develop`).
-  - [ ] Importar proyecto en Vercel con Root Directory en `dashboard`.
-  - [ ] Configurar variables de entorno (`OTP_SECRET`, `SESSION_SECRET`, `WF_REPORT_TOKEN`).
+- [x] **Despliegue en Vercel**:
+  - [x] Subir las ramas `main` y `develop` a GitHub (`git push origin main`).
+  - [x] Importar proyecto en Vercel con Root Directory en `dashboard` y Framework `nextjs`.
+  - [x] Configurar variables de entorno (`OTP_SECRET`, `SESSION_SECRET`, `WF_REPORT_TOKEN`).
 - [ ] **Base de Datos Persistente (Neon Postgres)**:
-  - [ ] Conectar base de datos Neon desde la pestaña *Storage* de Vercel (1 clic).
-  - [ ] Sincronizar esquema de base de datos con Drizzle (`drizzle-kit push` o script de inicialización).
+  - [x] Conectar base de datos Neon desde la pestaña *Storage* de Vercel (1 clic).
+  - [ ] Sincronizar e inicializar tablas en Neon (ejecutar endpoint `/api/admin/init-db`).
   - [ ] Verificar persistencia de clientes, servicios y cambios de estado.
 - [ ] **Puesta en Marcha del Conector WordPress (v4.2)**:
   - [ ] Instalar `sentinel-idpy-connector.php` en los primeros sitios de prueba (Dagda, IDPY, Misa Guaraní).
