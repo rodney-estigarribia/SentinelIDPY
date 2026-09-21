@@ -455,15 +455,15 @@ export function ClientsClient({ initialClients, sites }: ClientsClientProps) {
                   <button
                     type="button"
                     onClick={() => setIsGroupModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 text-xs font-semibold transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-xs font-semibold transition-colors cursor-pointer"
                     title="Administrar agrupaciones y sistemas de este cliente"
                   >
-                    <FolderTree className="w-3.5 h-3.5 text-indigo-400" />
+                    <FolderTree className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     <span>⚙️ Administrar Sistemas / Grupos</span>
                   </button>
                   <Link
                     href="/services"
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold"
                   >
                     Gestionar en Servicios →
                   </Link>

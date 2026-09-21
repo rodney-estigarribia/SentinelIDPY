@@ -319,7 +319,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
         );
       case 'vercel':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-neutral-500/15 text-white border border-neutral-700">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-neutral-500/15 text-slate-800 dark:text-white border border-slate-300 dark:border-neutral-700">
             ▲ Vercel OnePage
           </span>
         );
@@ -394,8 +394,8 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             onClick={() => setSelectedCategory('all')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'all'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-[#0f172a] text-white shadow-sm dark:bg-slate-800 dark:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Todos ({sites.length})
@@ -404,8 +404,8 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             onClick={() => setSelectedCategory('web')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'web'
-                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-sky-100 text-sky-800 border border-sky-300 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Webs & Apps ({webCount})
@@ -414,8 +414,8 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             onClick={() => setSelectedCategory('infra')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'infra'
-                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Hosting & Servidores ({infraCount})
@@ -424,8 +424,8 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             onClick={() => setSelectedCategory('domains_dns')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'domains_dns'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Dominios & DNS ({domainDnsCount})
@@ -434,8 +434,8 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             onClick={() => setSelectedCategory('email_license')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'email_license'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-cyan-100 text-cyan-800 border border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Correo & Licencias ({emailLicenseCount})
@@ -444,8 +444,8 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             onClick={() => setSelectedCategory('mobile')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'mobile'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
+                ? 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Apps Móviles ({mobileCount})
@@ -519,10 +519,10 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
           <button
             type="button"
             onClick={() => setIsGroupModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-xs font-semibold transition-colors cursor-pointer shrink-0"
             title="Administrar agrupaciones y sistemas lógicos por cliente"
           >
-            <FolderTree className="w-3.5 h-3.5 text-indigo-400" />
+            <FolderTree className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>⚙️ Grupos</span>
           </button>
         </div>
@@ -638,9 +638,9 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                             {site.relationships.map((rel, idx) => (
                               <div
                                 key={idx}
-                                className="flex items-center gap-1.5 text-[11px] text-slate-300"
+                                className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300"
                               >
-                                <span className="text-cyan-400 font-bold uppercase text-[9px] px-1 py-0.2 rounded bg-cyan-950/60 border border-cyan-800/50">
+                                <span className="text-cyan-800 dark:text-cyan-400 font-bold uppercase text-[9px] px-1.5 py-0.5 rounded bg-cyan-100 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/50">
                                   {rel.type === 'points_to'
                                     ? 'Apunta a'
                                     : rel.type === 'depends_on'

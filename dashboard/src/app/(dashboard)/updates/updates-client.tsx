@@ -228,8 +228,8 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
                 onClick={() => setFilterType(t)}
                 className={`px-2.5 py-1 rounded text-xs font-semibold uppercase ${
                   filterType === t
-                    ? 'bg-slate-800 text-white border border-slate-700'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-[#0f172a] text-white dark:bg-slate-800 dark:text-white border border-slate-900 dark:border-slate-700 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {t === 'all' ? 'Todos' : t}

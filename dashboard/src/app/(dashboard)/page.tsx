@@ -55,16 +55,16 @@ export default async function OverviewPage() {
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top Summary Banner */}
-        <div className="rounded-xl p-5 border border-emerald-500/20 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="rounded-xl p-5 border border-emerald-200 dark:border-emerald-500/20 bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/20 mb-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
               100% de Red Operativa
             </div>
-            <h1 className="text-xl font-bold text-white tracking-tight">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
               Todos los sistemas y sitios de clientes responden con normalidad
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
               Último escaneo general: hace 4 minutos • Próximo chequeo programado en 6 minutos.
             </p>
           </div>
@@ -72,14 +72,14 @@ export default async function OverviewPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/updates"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-lg shadow-emerald-950"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-sm hover:shadow"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Ver Actualizaciones ({totalUpdates})</span>
             </Link>
             <Link
               href="/services"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors"
             >
               <span>+ Nuevo Servicio</span>
             </Link>
@@ -209,8 +209,8 @@ export default async function OverviewPage() {
                           </span>
                         )}
                         {site.type === 'vercel' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-700/30 text-zinc-300 border border-zinc-700">
-                            Vercel Onepage
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-zinc-700/30 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700">
+                            ▲ Vercel Onepage
                           </span>
                         )}
                         {site.type === 'sistema' && (

@@ -242,33 +242,21 @@ html.light .hover\:text-slate-300:hover {
   color: #0f172a !important;
 }
 
-/* Ensure colored action buttons ALWAYS retain white text */
-html:not(.dark) button[class*="bg-emerald"],
-html:not(.dark) button[class*="bg-sky"],
-html:not(.dark) button[class*="bg-blue"],
-html:not(.dark) button[class*="bg-indigo"],
-html:not(.dark) button[class*="bg-red"],
-html:not(.dark) button[class*="bg-rose"],
-html:not(.dark) a[class*="bg-emerald"],
-html:not(.dark) a[class*="bg-sky"],
-html:not(.dark) a[class*="bg-blue"],
-html:not(.dark) a[class*="bg-indigo"],
-html:not(.dark) a[class*="bg-red"],
-html:not(.dark) a[class*="bg-rose"] {
+/* Ensure SOLID action buttons retain crisp white text in light mode */
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-sky-600,
+html:not(.dark) .bg-blue-600,
+html:not(.dark) .bg-indigo-600,
+html:not(.dark) .bg-rose-600,
+html:not(.dark) .bg-red-600 {
   color: #ffffff !important;
 }
-html:not(.dark) button[class*="bg-emerald"] *,
-html:not(.dark) button[class*="bg-sky"] *,
-html:not(.dark) button[class*="bg-blue"] *,
-html:not(.dark) button[class*="bg-indigo"] *,
-html:not(.dark) button[class*="bg-red"] *,
-html:not(.dark) button[class*="bg-rose"] *,
-html:not(.dark) a[class*="bg-emerald"] *,
-html:not(.dark) a[class*="bg-sky"] *,
-html:not(.dark) a[class*="bg-blue"] *,
-html:not(.dark) a[class*="bg-indigo"] *,
-html:not(.dark) a[class*="bg-red"] *,
-html:not(.dark) a[class*="bg-rose"] * {
+html:not(.dark) .bg-emerald-600 *,
+html:not(.dark) .bg-sky-600 *,
+html:not(.dark) .bg-blue-600 *,
+html:not(.dark) .bg-indigo-600 *,
+html:not(.dark) .bg-rose-600 *,
+html:not(.dark) .bg-red-600 * {
   color: #ffffff !important;
 }
 
