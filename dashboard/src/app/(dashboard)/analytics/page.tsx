@@ -53,7 +53,7 @@ export default async function AnalyticsPage() {
               { month: 'Septiembre', visits: '28,180', height: '96%' },
             ].map((m) => (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                <span className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-xs font-mono font-bold text-cyan-700 dark:text-cyan-400">
                   {m.visits}
                 </span>
                 <div

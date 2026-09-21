@@ -695,16 +695,16 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
       {/* Modal: Añadir Nuevo Servicio o Activo */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <Plus className="w-4 h-4 text-sky-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <Plus className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                 <span>Añadir Nuevo Servicio o Activo</span>
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-white cursor-pointer"
+                className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -714,7 +714,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
               {/* Cliente y Nombre */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Cliente Asignado</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Cliente Asignado</label>
                   <select
                     value={formClientId}
                     onChange={(e) => {
@@ -722,7 +722,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                       setFormRelationTarget('');
                       setFormGroupSelect('__new__');
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 transition-colors"
                   >
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -733,11 +733,11 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Categoría del Servicio</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Categoría del Servicio</label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 transition-colors"
                   >
                     <option value="web_wordpress">Web WordPress (Conector)</option>
                     <option value="web_app">Web App / Frontend SPA</option>
@@ -755,25 +755,25 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Nombre del Servicio / Activo</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Nombre del Servicio / Activo</label>
                 <input
                   type="text"
                   required
                   placeholder="ej. Plataforma Backend API, Dominio nic.py, Correo M365"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 transition-colors"
                 />
               </div>
 
               {/* Proveedor Normalizado */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Proveedor Tecnológico</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Proveedor Tecnológico</label>
                   <select
                     value={formProviderSelect}
                     onChange={(e) => setFormProviderSelect(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 transition-colors"
                   >
                     {NORMALIZED_PROVIDERS.map((prov) => (
                       <option key={prov} value={prov}>
@@ -787,40 +787,40 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                       placeholder="Escribir nombre del proveedor..."
                       value={formCustomProvider}
                       onChange={(e) => setFormCustomProvider(e.target.value)}
-                      className="w-full mt-2 bg-slate-950 border border-slate-800 rounded-lg p-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full mt-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">URL / Acceso / Endpoint</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">URL / Acceso / Endpoint</label>
                   <input
                     type="text"
                     placeholder="https://ejemplo.com"
                     value={formUrl}
                     onChange={(e) => setFormUrl(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 font-mono transition-colors"
                   />
                 </div>
               </div>
 
               {/* Sistema / Grupo */}
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
-                  <FolderTree className="w-3.5 h-3.5 text-indigo-400" />
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <FolderTree className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                   Agrupación de Sistema / Proyecto
                 </span>
-                <p className="text-slate-400 text-[11px]">
+                <p className="text-slate-500 dark:text-slate-400 text-[11px]">
                   Permite organizar los activos del cliente en módulos lógicos (ej. Plataforma Dagda, Página Web, Sistemas Empresariales).
                 </p>
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-slate-400 mb-1">Grupo del Cliente</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Grupo del Cliente</label>
                     <select
                       value={formGroupSelect}
                       onChange={(e) => setFormGroupSelect(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     >
                       {clientExistingGroups.map((grp) => (
                         <option key={grp} value={grp}>
@@ -833,13 +833,13 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
                   {formGroupSelect === '__new__' && (
                     <div>
-                      <label className="block text-slate-400 mb-1">Nombre del Nuevo Grupo</label>
+                      <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Nombre del Nuevo Grupo</label>
                       <input
                         type="text"
                         placeholder="ej. Plataforma Dagda, Página Web..."
                         value={formCustomGroup}
                         onChange={(e) => setFormCustomGroup(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                       />
                     </div>
                   )}
@@ -847,19 +847,19 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
               </div>
 
               {/* Relaciones Dinámicas con Servicios del Cliente */}
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                   Relación e Interdependencia con otro Servicio
                 </span>
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-slate-400 mb-1">Tipo de Relación</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Tipo de Relación</label>
                     <select
                       value={formRelationType}
                       onChange={(e: any) => setFormRelationType(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     >
                       <option value="depends_on">Depende de (ej. App depende de Backend)</option>
                       <option value="points_to">Apunta a (ej. Dominio apunta a Hosting / DNS)</option>
@@ -870,11 +870,11 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1">Servicio Destino</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Servicio Destino</label>
                     <select
                       value={formRelationTarget}
                       onChange={(e) => setFormRelationTarget(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     >
                       <option value="">-- Sin dependencia / Independiente --</option>
                       {clientExistingServices.map((s) => (
@@ -889,32 +889,32 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
                 {formRelationTarget === '__custom__' && (
                   <div className="pt-2">
-                    <label className="block text-slate-400 mb-1">Nombre del Servicio Externo</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Nombre del Servicio Externo</label>
                     <input
                       type="text"
                       placeholder="ej. Servidor Legacy o API externa..."
                       value={formCustomRelationTarget}
                       onChange={(e) => setFormCustomRelationTarget(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
                     />
                   </div>
                 )}
               </div>
 
               {/* Facturación */}
-              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
-                  <CreditCard className="w-3.5 h-3.5 text-sky-400" />
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <CreditCard className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                   Facturación & Responsabilidad de Pago
                 </span>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 mb-1">¿Quién Paga?</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">¿Quién Paga?</label>
                     <select
                       value={formResp}
                       onChange={(e: any) => setFormResp(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     >
                       <option value="tc_cliente">TC del Cliente</option>
                       <option value="tc_agencia">TC de la Agencia (Rodney) ⚠️</option>
@@ -924,11 +924,11 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1">Frecuencia</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Frecuencia</label>
                     <select
                       value={formCycle}
                       onChange={(e: any) => setFormCycle(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     >
                       <option value="annual">Anual</option>
                       <option value="monthly">Mensual</option>
@@ -939,22 +939,22 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 mb-1">Monto / Costo</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Monto / Costo</label>
                     <input
                       type="number"
                       placeholder="ej. 150000 o 25"
                       value={formCost}
                       onChange={(e) => setFormCost(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1">Moneda</label>
+                    <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">Moneda</label>
                     <select
                       value={formCurrency}
                       onChange={(e: any) => setFormCurrency(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                     >
                       <option value="PYG">Guaraníes (PYG)</option>
                       <option value="USD">Dólares (USD)</option>
@@ -965,27 +965,27 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
 
               {/* Roadmap */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Hoja de Ruta (Roadmap) o Deuda Técnica</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Hoja de Ruta (Roadmap) o Deuda Técnica</label>
                 <textarea
                   rows={2}
                   placeholder="ej. 🚀 Migrar de Angular a React en Vercel, o ⚠️ Traspasar pago a TC cliente"
                   value={formRoadmap}
                   onChange={(e) => setFormRoadmap(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 transition-colors"
                 />
               </div>
 
               {/* Token de Seguridad exclusivo para WordPress */}
               {formCategory === 'web_wordpress' && (
-                <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 space-y-2">
-                  <label className="block text-blue-300 font-semibold flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-500/30 space-y-2">
+                  <label className="block text-blue-900 dark:text-blue-300 font-semibold flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-blue-400" />
+                      <Lock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                       Token de Conector WordPress (SentinelIDPY v4.2)
                     </span>
-                    <span className="text-[10px] text-blue-400/80 uppercase">Solo WordPress</span>
+                    <span className="text-[10px] text-blue-700 dark:text-blue-400/80 uppercase font-bold">Solo WordPress</span>
                   </label>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
                     Pega el token secreto generado en Ajustes → SentinelIDPY de WordPress para habilitar el reporte automático de Wordfence y plugins.
                   </p>
                   <input
@@ -993,23 +993,23 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
                     placeholder="Pegar token X-WF-Report-Token aquí..."
                     value={formToken}
                     onChange={(e) => setFormToken(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-mono text-[11px]"
+                    className="w-full bg-white dark:bg-slate-950 border border-blue-200 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-mono text-[11px]"
                   />
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer"
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold disabled:opacity-50 cursor-pointer shadow-lg shadow-sky-950"
+                  className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold disabled:opacity-50 cursor-pointer shadow-md shadow-sky-600/20 transition-colors"
                 >
                   {isSubmitting ? 'Guardando...' : 'Guardar Servicio'}
                 </button>

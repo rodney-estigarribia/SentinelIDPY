@@ -74,7 +74,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={cycleTheme}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-medium transition-all cursor-pointer shadow-sm"
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-medium transition-all cursor-pointer shadow-sm"
       title={`Tema actual: ${
         theme === 'system' ? 'Sistema (Automático)' : theme === 'light' ? 'Modo Claro' : 'Modo Oscuro'
       }. Haz clic para cambiar.`}

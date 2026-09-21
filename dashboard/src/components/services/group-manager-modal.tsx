@@ -185,19 +185,19 @@ export function GroupManagerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+      <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <FolderTree className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base tracking-tight">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
                 Agrupaciones y Sistemas: {activeClient?.name || 'Cliente'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Organiza los activos de este cliente en proyectos y módulos lógicos.
               </p>
             </div>
@@ -205,7 +205,7 @@ export function GroupManagerModal({
 
           <button
             onClick={onClose}
-            className="p-1 rounded text-slate-400 hover:text-white cursor-pointer transition-colors"
+            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -213,12 +213,12 @@ export function GroupManagerModal({
 
         {/* Client Selector (if opened from generic view with multiple clients) */}
         {clients && clients.length > 1 && (
-          <div className="flex items-center gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-            <span className="text-xs text-slate-400 font-medium">Cliente seleccionado:</span>
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/80 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Cliente seleccionado:</span>
             <select
               value={selectedClientId}
               onChange={(e) => setSelectedClientId(Number(e.target.value))}
-              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
             >
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -232,13 +232,13 @@ export function GroupManagerModal({
         {/* Groups List */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Sistemas Registrados ({groups.length})
             </span>
             {!isCreating && (
               <button
                 onClick={() => setIsCreating(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Nueva Agrupación</span>
@@ -250,24 +250,24 @@ export function GroupManagerModal({
           {isCreating && (
             <form
               onSubmit={handleCreateGroup}
-              className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-950/20 space-y-3 animate-in fade-in duration-150"
+              className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-950/20 space-y-3 animate-in fade-in duration-150"
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold text-indigo-300 text-xs flex items-center gap-1.5">
+                <span className="font-bold text-indigo-800 dark:text-indigo-300 text-xs flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" />
                   Crear Nueva Agrupación para {activeClient?.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="text-slate-400 hover:text-white text-xs"
+                  className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               <div>
-                <label className="block text-slate-300 text-xs font-medium mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1">
                   Nombre del Sistema / Agrupación
                 </label>
                 <input
@@ -276,12 +276,12 @@ export function GroupManagerModal({
                   placeholder="ej. Plataforma Móvil & Web, Landing Pages, Sistemas Empresariales"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 text-xs font-medium mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1">
                   Descripción del Alcance (Opcional)
                 </label>
                 <input
@@ -289,7 +289,7 @@ export function GroupManagerModal({
                   placeholder="ej. Ecosistema conectado al backend en Render y frontend en cPanel"
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -297,14 +297,14 @@ export function GroupManagerModal({
                 <button
                   type="button"
                   onClick={() => setIsCreating(false)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs"
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !newName.trim()}
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {isSubmitting ? 'Guardando...' : 'Guardar Agrupación'}
                 </button>
@@ -316,7 +316,7 @@ export function GroupManagerModal({
           {isLoading ? (
             <div className="p-8 text-center text-slate-500 text-xs">Cargando agrupaciones...</div>
           ) : groups.length === 0 && !isCreating ? (
-            <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+            <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
               No hay agrupaciones específicas registradas para este cliente. Todos sus activos aparecen bajo &quot;General&quot;.
             </div>
           ) : (
@@ -332,13 +332,13 @@ export function GroupManagerModal({
                   return (
                     <div
                       key={grp.id}
-                      className="p-3.5 rounded-xl border border-sky-500/40 bg-slate-950 space-y-2.5"
+                      className="p-3.5 rounded-xl border border-sky-500/40 bg-slate-50 dark:bg-slate-950 space-y-2.5"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-sky-400">Editando agrupación</span>
+                        <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400">Editando agrupación</span>
                         <button
                           onClick={() => setEditingGroupId(null)}
-                          className="text-slate-400 hover:text-white"
+                          className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -348,26 +348,26 @@ export function GroupManagerModal({
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Nombre de la agrupación"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                       />
                       <input
                         type="text"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
                         placeholder="Descripción opcional"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                       />
                       <div className="flex items-center justify-end gap-2 pt-1">
                         <button
                           onClick={() => setEditingGroupId(null)}
-                          className="px-2.5 py-1 rounded border border-slate-700 text-slate-300 text-xs"
+                          className="px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs"
                         >
                           Cancelar
                         </button>
                         <button
                           onClick={() => handleSaveEdit(grp.id)}
                           disabled={isSubmitting}
-                          className="px-3 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold"
+                          className="px-3 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-sm"
                         >
                           Guardar Cambios
                         </button>
@@ -379,19 +379,19 @@ export function GroupManagerModal({
                 return (
                   <div
                     key={grp.id}
-                    className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 flex items-start justify-between gap-3 hover:border-slate-700 transition-colors"
+                    className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/70 flex items-start justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-white text-sm tracking-wide">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm tracking-wide">
                           {grp.name}
                         </span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/20">
                           {assignedCount} {assignedCount === 1 ? 'activo' : 'activos'}
                         </span>
                       </div>
                       {grp.description && (
-                        <p className="text-xs text-slate-400 leading-relaxed">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                           {grp.description}
                         </p>
                       )}
@@ -400,14 +400,14 @@ export function GroupManagerModal({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => handleStartEdit(grp)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                         title="Editar agrupación"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
 
                       {isDeleting ? (
-                        <div className="flex items-center gap-1 bg-red-950/40 p-1 rounded-lg border border-red-500/30">
+                        <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/40 p-1 rounded-lg border border-red-200 dark:border-red-500/30">
                           <button
                             onClick={() => handleDelete(grp.id)}
                             disabled={isSubmitting}
@@ -417,7 +417,7 @@ export function GroupManagerModal({
                           </button>
                           <button
                             onClick={() => setDeletingGroupId(null)}
-                            className="p-0.5 text-slate-400 hover:text-white text-[10px]"
+                            className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-white text-[10px]"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -425,7 +425,7 @@ export function GroupManagerModal({
                       ) : (
                         <button
                           onClick={() => setDeletingGroupId(grp.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                           title="Eliminar agrupación"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -440,11 +440,11 @@ export function GroupManagerModal({
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
+        <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <span>Los cambios se sincronizan en tiempo real con la ficha y el catálogo.</span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition-colors"
+            className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-semibold transition-colors cursor-pointer"
           >
             Listo
           </button>
