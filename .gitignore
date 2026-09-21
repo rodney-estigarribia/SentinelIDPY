@@ -1,6 +1,25 @@
-# Subproject repos (managed independently)
-plugin/
-bot/
-
 # macOS
 .DS_Store
+
+# Next.js & Dashboard local builds
+dashboard/.next/
+dashboard/node_modules/
+dashboard/.env*.local
+
+# Subproject repos / bot (managed locally)
+plugin/
+bot/
+maintenance_bot/
+reportes/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE & Misc
+.vscode/
+.idea/
+.planning/
+mock_sentinel_server.py
