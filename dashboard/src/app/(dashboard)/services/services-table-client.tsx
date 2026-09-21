@@ -491,42 +491,27 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
           )}
         </div>
 
-        {/* Quick Billing Responsibilities Filter */}
+        {/* Billing Responsibility Select Filter */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSelectedBilling('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
-              selectedBilling === 'all'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => setSelectedBilling('tc_agencia')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+          <CreditCard className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+          <select
+            value={selectedBilling}
+            onChange={(e) => setSelectedBilling(e.target.value as BillingFilter)}
+            className={`bg-slate-900/80 border rounded-lg px-2.5 py-2 text-xs focus:outline-none transition-colors ${
               selectedBilling === 'tc_agencia'
-                ? 'bg-red-500/30 text-red-200 border border-red-500/50'
-                : 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
+                ? 'border-red-500/50 text-red-300 font-bold bg-red-950/20'
+                : selectedBilling === 'tc_cliente'
+                ? 'border-emerald-500/50 text-emerald-300 font-medium bg-emerald-950/20'
+                : 'border-slate-800 text-slate-300 focus:border-slate-700'
             }`}
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-            <span>TC Agencia (Rodney)</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-full bg-red-500/30 text-[10px]">
-              {agencyTcCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setSelectedBilling('tc_cliente')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
-              selectedBilling === 'tc_cliente'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            TC Cliente
-          </button>
+            <option value="all">Facturación: Todas</option>
+            <option value="tc_agencia">
+              TC Agencia (Rodney) ⚠️ {agencyTcCount > 0 ? `(${agencyTcCount})` : ''}
+            </option>
+            <option value="tc_cliente">TC del Cliente</option>
+            <option value="incluido">Incluido en Hosting / Fee</option>
+          </select>
         </div>
       </div>
 
