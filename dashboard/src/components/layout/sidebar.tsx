@@ -111,7 +111,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
               className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
-                  : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                  : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -141,7 +141,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors cursor-pointer ${
               isCurrentWpRoute
                 ? 'text-white bg-slate-900/80 font-semibold'
-                : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -179,7 +179,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
                     className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                       isSubActive
                         ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
-                        : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                        : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -205,8 +205,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
           )}
         </div>
 
-        {/* Bottom General Items */}
-        <div className="pt-2">
+        <div className="pt-4 border-t border-slate-800/60 space-y-1">
           {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -218,7 +217,7 @@ export function Sidebar({ pendingUpdatesCount = 13, offlineSitesCount = 0 }: Sid
                 className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-sky-500/15 text-sky-300 font-semibold border border-sky-500/30'
-                    : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                    : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-3">

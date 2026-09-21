@@ -290,7 +290,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'updates'
               ? 'bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -307,7 +307,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'plugins'
               ? 'bg-blue-500/15 text-blue-300 font-bold border border-blue-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -319,7 +319,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'users'
               ? 'bg-purple-500/15 text-purple-300 font-bold border border-purple-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -331,7 +331,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'security'
               ? 'bg-rose-500/15 text-rose-300 font-bold border border-rose-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <ShieldAlert className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'backups'
               ? 'bg-emerald-500/15 text-emerald-300 font-bold border border-emerald-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <HardDrive className="w-3.5 h-3.5" />
@@ -355,7 +355,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'analytics'
               ? 'bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <BarChart3 className="w-3.5 h-3.5" />
@@ -367,7 +367,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'branding'
               ? 'bg-pink-500/15 text-pink-300 font-bold border border-pink-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -379,7 +379,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === 'widgets'
               ? 'bg-indigo-500/15 text-indigo-300 font-bold border border-indigo-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
@@ -391,7 +391,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'admin'
               ? 'bg-rose-500/15 text-rose-300 font-bold border border-rose-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
           }`}
         >
           <Settings className="w-3.5 h-3.5" />

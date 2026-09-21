@@ -395,7 +395,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'all'
                 ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Todos ({sites.length})
@@ -405,7 +405,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'web'
                 ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Webs & Apps ({webCount})
@@ -415,7 +415,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'infra'
                 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Hosting & Servidores ({infraCount})
@@ -425,7 +425,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'domains_dns'
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Dominios & DNS ({domainDnsCount})
@@ -435,7 +435,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'email_license'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Correo & Licencias ({emailLicenseCount})
@@ -445,7 +445,7 @@ export function ServicesTableClient({ initialSites, clients }: ServicesTableClie
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               selectedCategory === 'mobile'
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
             }`}
           >
             Apps Móviles ({mobileCount})

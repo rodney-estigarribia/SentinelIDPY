@@ -150,16 +150,6 @@ html:not(.dark) header input::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Neutral secondary action buttons in light mode */
-html:not(.dark) button.bg-slate-800.text-white,
-html:not(.dark) button.bg-slate-800 {
-  background-color: #0f172a !important;
-  color: #ffffff !important;
-}
-html:not(.dark) button.bg-slate-800:hover {
-  background-color: #1e293b !important;
-}
-
 /* Inputs on forms in light mode */
 html:not(.dark) input.bg-slate-950,
 html:not(.dark) select.bg-slate-950,
@@ -167,6 +157,84 @@ html:not(.dark) textarea.bg-slate-950 {
   background-color: #f8fafc !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
+}
+
+/* 5. LIGHT MODE HOVER RULES (Fixes white-on-white text & background) */
+
+/* In light mode: ANY hover:text-white MUST become dark slate (#0f172a), NOT white! */
+html:not(.dark) .hover\:text-white:hover,
+html:not(.dark) [class*="hover:text-white"]:hover,
+html:not(.dark) .hover\:text-white:hover *,
+html:not(.dark) [class*="hover:text-white"]:hover *,
+html.light .hover\:text-white:hover,
+html.light [class*="hover:text-white"]:hover,
+html.light .hover\:text-white:hover *,
+html.light [class*="hover:text-white"]:hover * {
+  color: #0f172a !important;
+}
+
+/* In light mode: ANY hover:bg-slate-900 MUST become a soft slate-100 (#f1f5f9), NOT pure white! */
+html:not(.dark) .hover\:bg-slate-900:hover,
+html:not(.dark) [class*="hover:bg-slate-900"]:hover,
+html:not(.dark) [class*="hover:bg-slate-900\/50"]:hover,
+html.light .hover\:bg-slate-900:hover,
+html.light [class*="hover:bg-slate-900"]:hover,
+html.light [class*="hover:bg-slate-900\/50"]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* In light mode: ANY hover:bg-slate-800 (except colored action buttons) becomes slate-200 (#e2e8f0) */
+html:not(.dark) .hover\:bg-slate-800:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html:not(.dark) [class*="hover:bg-slate-800"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html.light .hover\:bg-slate-800:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html.light [class*="hover:bg-slate-800"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]) {
+  background-color: #e2e8f0 !important;
+}
+
+/* In light mode: ANY hover:bg-slate-700 (except colored action buttons) becomes slate-300 (#cbd5e1) */
+html:not(.dark) .hover\:bg-slate-700:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html:not(.dark) [class*="hover:bg-slate-700"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html.light .hover\:bg-slate-700:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html.light [class*="hover:bg-slate-700"]:hover:not([class*="bg-emerald"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-amber"]) {
+  background-color: #cbd5e1 !important;
+}
+
+/* In light mode: Hover on secondary text becomes dark slate (#0f172a) */
+html:not(.dark) .hover\:text-slate-200:hover,
+html:not(.dark) .hover\:text-slate-300:hover,
+html.light .hover\:text-slate-200:hover,
+html.light .hover\:text-slate-300:hover {
+  color: #0f172a !important;
+}
+
+/* Ensure colored action buttons ALWAYS retain white text */
+html:not(.dark) button[class*="bg-emerald"],
+html:not(.dark) button[class*="bg-sky"],
+html:not(.dark) button[class*="bg-blue"],
+html:not(.dark) button[class*="bg-indigo"],
+html:not(.dark) button[class*="bg-red"],
+html:not(.dark) button[class*="bg-rose"],
+html:not(.dark) a[class*="bg-emerald"],
+html:not(.dark) a[class*="bg-sky"],
+html:not(.dark) a[class*="bg-blue"],
+html:not(.dark) a[class*="bg-indigo"],
+html:not(.dark) a[class*="bg-red"],
+html:not(.dark) a[class*="bg-rose"] {
+  color: #ffffff !important;
+}
+html:not(.dark) button[class*="bg-emerald"] *,
+html:not(.dark) button[class*="bg-sky"] *,
+html:not(.dark) button[class*="bg-blue"] *,
+html:not(.dark) button[class*="bg-indigo"] *,
+html:not(.dark) button[class*="bg-red"] *,
+html:not(.dark) button[class*="bg-rose"] *,
+html:not(.dark) a[class*="bg-emerald"] *,
+html:not(.dark) a[class*="bg-sky"] *,
+html:not(.dark) a[class*="bg-blue"] *,
+html:not(.dark) a[class*="bg-indigo"] *,
+html:not(.dark) a[class*="bg-red"] *,
+html:not(.dark) a[class*="bg-rose"] * {
+  color: #ffffff !important;
 }
 
 body {
