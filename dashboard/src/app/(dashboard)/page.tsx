@@ -130,11 +130,12 @@ export default async function OverviewPage() {
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top Summary Banner */}
-        <div className="rounded-xl p-5 border border-emerald-200 dark:border-emerald-500/20 bg-gradient-to-r from-emerald-50 via-teal-50/40 to-slate-50 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="rounded-xl p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/20 mb-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
-              100% de Red Operativa
+            <div className="mb-2">
+              <Badge variant="emerald" icon={<span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse inline-block" />}>
+                100% de Red Operativa
+              </Badge>
             </div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
               Todos los sistemas y sitios de clientes responden con normalidad

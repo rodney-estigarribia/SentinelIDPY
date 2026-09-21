@@ -15,17 +15,17 @@ export default async function AnalyticsPage() {
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top Summary Banner */}
-        <div className="p-5 rounded-xl border border-cyan-200 dark:border-cyan-500/20 bg-gradient-to-r from-cyan-50/80 via-white to-slate-50/50 dark:from-cyan-950/30 dark:to-slate-900/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white text-base">Arquitectura de Analítica Ultraligera</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
               Los hits de visitas se registran de forma aislada en la base de datos de cada cliente WordPress en la tabla{' '}
-              <code className="bg-slate-100 dark:bg-slate-950 px-1.5 py-0.5 rounded text-cyan-700 dark:text-cyan-300 font-mono border border-slate-200 dark:border-slate-800">wp_sentinel_analytics</code> con limpieza automática semestral. Tu panel central solo consulta resúmenes consolidados, protegiendo al 100% el límite gratuito de Vercel y Neon.
+              <code className="bg-slate-100 dark:bg-slate-950 px-1.5 py-0.5 rounded text-cyan-700 dark:text-cyan-400 font-mono border border-slate-200 dark:border-slate-800">wp_sentinel_analytics</code> con limpieza automática semestral. Tu panel central solo consulta resúmenes consolidados, protegiendo al 100% el límite gratuito de Vercel y Neon.
             </p>
           </div>
 
           <div className="text-right">
-            <span className="text-xs text-slate-500 dark:text-slate-400 block">Total Visitas (Semestre)</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Total Visitas (Semestre)</span>
             <span className="text-2xl font-extrabold text-cyan-600 dark:text-cyan-400 tracking-tight">124,580</span>
           </div>
         </div>

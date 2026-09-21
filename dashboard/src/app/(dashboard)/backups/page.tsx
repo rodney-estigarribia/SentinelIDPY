@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { dataService } from '@/lib/data-service';
 import { HardDrive, CheckCircle2, AlertTriangle, ExternalLink, Play, Cloud } from 'lucide-react';
+import { Badge } from '@/components/ui';
 
 export const revalidate = 0;
 
@@ -15,11 +16,12 @@ export default async function BackupsPage() {
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Architecture Notice Banner */}
-        <div className="p-5 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 mb-2">
-              <Cloud className="w-3.5 h-3.5" />
-              <span>Fase 1 Activa: UpdraftPlus → Google Drive</span>
+            <div className="mb-2">
+              <Badge variant="emerald" icon={<Cloud className="w-3.5 h-3.5" />}>
+                Fase 1 Activa: UpdraftPlus → Google Drive
+              </Badge>
             </div>
             <h3 className="font-bold text-slate-900 dark:text-white text-base">
               Todos los clientes tienen programado su respaldo completo semanal + incremental diario

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { dataService } from '@/lib/data-service';
 import { Sparkles, Sliders, ExternalLink, Shield, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui';
 
 export const revalidate = 0;
 
@@ -15,12 +16,12 @@ export default async function AgencyPage() {
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Intro Card */}
-        <div className="p-5 rounded-xl border border-pink-200 dark:border-pink-500/20 bg-gradient-to-r from-pink-50/80 via-white to-slate-50/50 dark:from-pink-950/20 dark:to-slate-900/60 shadow-sm space-y-2">
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-2">
           <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-pink-500 dark:text-pink-400" />
             <span>Gestión Remota de Identidad de Marca</span>
           </h3>
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl">
             Personaliza el logotipo y el fondo de inicio de sesión de WordPress de cada cliente para entregar una experiencia 100% profesional. Compatible tanto con filtros nativos ultraligeros de SentinelIDPY Connector como con plugins como White Label CMS y Admin Menu Editor.
           </p>
         </div>
@@ -35,9 +36,9 @@ export default async function AgencyPage() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="font-bold text-slate-900 dark:text-white text-sm">{site.name}</h4>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
+                  <Badge variant="emerald" size="xs">
                     Branded
-                  </span>
+                  </Badge>
                 </div>
                 <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">{site.url}</p>
               </div>
