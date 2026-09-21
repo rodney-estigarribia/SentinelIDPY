@@ -168,8 +168,9 @@ export async function GET() {
 
     // 3. Actualizar tokens reales y limpiar datos mock antiguos de actualizaciones en sitios WordPress
     const realToken =
-      process.env.WF_REPORT_TOKEN ||
-      '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f';
+      process.env.WF_REPORT_TOKEN && process.env.WF_REPORT_TOKEN.trim().length >= 64
+        ? process.env.WF_REPORT_TOKEN.trim()
+        : '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f';
 
     await sql`
       UPDATE sites
