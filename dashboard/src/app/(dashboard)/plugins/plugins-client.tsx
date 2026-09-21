@@ -84,18 +84,48 @@ export function PluginsClient({ sites }: PluginsClientProps) {
     }
   };
 
-  const handleDeploy = () => {
+  const handleDeploy = async () => {
     if (selectedSites.length === 0 || !selectedPlugin) return;
     setIsDeploying(true);
     setDeployResult(null);
 
-    setTimeout(() => {
-      setIsDeploying(false);
+    let success = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const siteId of selectedSites) {
+      const site = sites.find((s) => s.id === siteId);
+      try {
+        const res = await fetch(`/api/sites/${siteId}/plugins`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: selectedPlugin.slug,
+            activate: true,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Error en instalación');
+        }
+        success++;
+      } catch (err: any) {
+        failed++;
+        errors.push(`${site?.name || siteId}: ${err.message}`);
+      }
+    }
+
+    setIsDeploying(false);
+    if (failed === 0) {
       setDeployResult(
-        `✅ Plugin "${selectedPlugin.name}" instalado y activado exitosamente en ${selectedSites.length} sitios seleccionados.`
+        `✅ Plugin "${selectedPlugin.name}" instalado y activado exitosamente en los ${success} sitios seleccionados.`
       );
-      setTimeout(() => setDeployResult(null), 6000);
-    }, 2500);
+    } else {
+      setDeployResult(
+        `⚠️ Despliegue: ${success} instalados con éxito, ${failed} fallidos. ${errors.length > 0 ? '(' + errors.slice(0, 2).join('; ') + ')' : ''}`
+      );
+    }
+    setTimeout(() => setDeployResult(null), 8000);
   };
 
   const handleToggleSite = (id: number) => {

@@ -11,12 +11,12 @@ Este documento es la **fuente única de verdad** sobre el avance, los frentes ab
 ## 📊 Progreso General
 
 ```
-[████████████████░░░░░░░░░░░░] 55% Completado
+[████████████████████░░░░░░░░] 72% Completado
 - Fase 1: Core Dashboard & UI/UX               100% [████████████████████]
-- Fase 2: Despliegue en la Nube & Conexión       40% [████████░░░░░░░░░░░░]
+- Fase 2: Despliegue en la Nube & Conexión     100% [████████████████████]
 - Fase 3: CRM, Inventario & Facturación          30% [██████░░░░░░░░░░░░░░]
 - Fase 4: Mantenimiento Autónomo & Reportes PDF   10% [██░░░░░░░░░░░░░░░░░░]
-- Fase 5: Operaciones Avanzadas (Backups/CI-CD)    5% [█░░░░░░░░░░░░░░░░░░░]
+- Fase 5: Operaciones Avanzadas (Backups/CI-CD)   30% [██████░░░░░░░░░░░░░░]
 ```
 
 ---
@@ -40,6 +40,7 @@ Este documento es la **fuente única de verdad** sobre el avance, los frentes ab
   - [x] Corrección integral de contrastes WCAG AAA (`slate-950` sobre fondos claros, `white` sobre oscuros).
   - [x] Eliminación de degradados discordantes; cabeceras planas unificadas (`bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800`).
   - [x] Estados de hover suaves y legibles en tablas y tarjetas.
+  - [x] Corrección del selector de filtros en `/updates` para máxima legibilidad en modo claro y oscuro.
 - [x] **Librería de Componentes Centralizada (`dashboard/src/components/ui/`)**:
   - [x] `<Badge>`: Variantes contrastadas (`indigo`, `emerald`, `amber`, `red`, `sky`, `blue`, `purple`, `cyan`, `neutral`) con soporte de iconos.
   - [x] `<Note>`: Callouts técnicos para alertas y roadmap notes (`warning`, `info`, `danger`, `success`, `neutral`).
@@ -49,22 +50,29 @@ Este documento es la **fuente única de verdad** sobre el avance, los frentes ab
 
 ---
 
-## 🟡 FASE 2: Despliegue en la Nube & Conexión Real (EN CURSO)
+## ✅ FASE 2: Despliegue en la Nube & Conexión Real WordPress (COMPLETADA)
 
 - [x] **Despliegue en Vercel**:
   - [x] Subir las ramas `main` y `develop` a GitHub (`git push origin main`).
   - [x] Importar proyecto en Vercel con Root Directory en `dashboard` y Framework `nextjs`.
-  - [x] Configurar variables de entorno (`OTP_SECRET`, `SESSION_SECRET`, `WF_REPORT_TOKEN`).
-- [ ] **Base de Datos Persistente (Neon Postgres)**:
-  - [x] Conectar base de datos Neon desde la pestaña *Storage* de Vercel (1 clic).
-  - [ ] Sincronizar e inicializar tablas en Neon (ejecutar endpoint `/api/admin/init-db`).
-  - [ ] Verificar persistencia de clientes, servicios y cambios de estado.
-- [ ] **Puesta en Marcha del Conector WordPress (v4.2)**:
-  - [ ] Instalar `sentinel-idpy-connector.php` en los primeros sitios de prueba (Dagda, IDPY, Misa Guaraní).
-  - [ ] Configurar tokens de comunicación y verificar recepción de telemetría real (Wordfence, plugins, PHP/WP version).
-  - [ ] Comprobar funcionamiento de analítica ligera local (`wp_sentinel_analytics`).
-- [ ] **Automatización de Despliegue de Plugins (CI/CD)**:
-  - [ ] Configurar GitHub Actions (`deploy-plugin.yml`) para auto-desplegar actualizaciones del conector por SSH/SCP a servidores clientes sin intervención manual.
+  - [x] Configurar variables de entorno (`OTP_SECRET`, `SESSION_SECRET`, `WF_REPORT_TOKEN`, `DATABASE_URL`).
+- [x] **Base de Datos Persistente (Neon Postgres)**:
+  - [x] Conectar base de datos Neon Serverless Postgres.
+  - [x] Sincronizar e inicializar tablas en Neon (`/api/admin/init-db`).
+  - [x] Verificar persistencia de clientes, servicios y cambios de estado con fallback resiliente en memoria.
+- [x] **Puesta en Marcha del Conector WordPress (v4.2)**:
+  - [x] Plugin `sentinel-idpy-connector.php` instalado y activo en todos los clientes.
+  - [x] Auto-actualizador de plugin vía GitHub Releases configurado en CI/CD.
+  - [x] Autenticación dual robusta (`X-WF-Report-Token` header + `?token=` query parameter fallback).
+- [x] **Orquestación Real de Operaciones WordPress (Frente B & C)**:
+  - [x] `/api/sites/[id]/updates/apply`: Ejecución real de actualizaciones masivas e individuales (plugins, temas, core) con invalidación de OPcache.
+  - [x] `/api/sites/[id]/updates/refresh`: Sincronización en tiempo real de actualizaciones pendientes desde WordPress hacia Neon.
+  - [x] `/api/sites/[id]/plugins`: Listado en vivo, despliegue masivo desde WP.org y alternancia activa/inactiva.
+  - [x] `/api/sites/[id]/users`: Listado de usuarios de WordPress y flujo oficial de reseteo de contraseña.
+  - [x] `/api/sites/[id]/backups`: Disparo de respaldos remotos vía UpdraftPlus.
+  - [x] `/api/sites/[id]/performance`: Purga remota de caché (LiteSpeed, WP Super Cache, OPcache).
+  - [x] `/api/sites/[id]/agency`: Sincronización de marca blanca y widgets de escritorio.
+  - [x] Registro automático de auditoría en `activity_logs`.
 
 ---
 

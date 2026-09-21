@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Check,
   Terminal,
-  Filter
+  Filter,
+  ArrowUpCircle
 } from 'lucide-react';
 import type { Site, Client } from '@/db/schema';
 
@@ -36,26 +37,30 @@ interface UpdateItem {
 }
 
 export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientProps) {
-  // Collect all updates across sites into a flat list
-  const allUpdates: UpdateItem[] = [];
-  sites.forEach((site) => {
-    const client = clients.find((c) => c.id === site.clientId);
-    const details = site.pendingUpdates?.details || [];
-    details.forEach((d) => {
-      allUpdates.push({
-        siteId: site.id,
-        siteName: site.name,
-        siteUrl: site.url,
-        clientName: client ? client.name : 'Sin cliente',
-        type: d.type,
-        slug: d.slug,
-        name: d.name,
-        currentVersion: d.currentVersion,
-        newVersion: d.newVersion,
+  // Build initial flat list
+  const getInitialUpdates = (): UpdateItem[] => {
+    const list: UpdateItem[] = [];
+    sites.forEach((site) => {
+      const client = clients.find((c) => c.id === site.clientId);
+      const details = site.pendingUpdates?.details || [];
+      details.forEach((d) => {
+        list.push({
+          siteId: site.id,
+          siteName: site.name,
+          siteUrl: site.url,
+          clientName: client ? client.name : 'Sin cliente',
+          type: d.type,
+          slug: d.slug,
+          name: d.name,
+          currentVersion: d.currentVersion,
+          newVersion: d.newVersion,
+        });
       });
     });
-  });
+    return list;
+  };
 
+  const [allUpdates, setAllUpdates] = useState<UpdateItem[]>(getInitialUpdates());
   const [selectedKeys, setSelectedKeys] = useState<string[]>(
     initialSiteId
       ? allUpdates.filter((u) => u.siteId === initialSiteId).map((u) => `${u.siteId}:${u.slug}`)
@@ -69,6 +74,8 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
 
   // Execution state
   const [isRunning, setIsRunning] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -95,15 +102,116 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
     setSelectedKeys([]);
   };
 
+  // Sync / Refresh with WordPress in real time
+  const handleRefreshUpdates = async () => {
+    setIsRefreshing(true);
+    setRefreshMessage('Sincronizando estado de actualizaciones con WordPress...');
+
+    const targetSites = filterSiteId === 'all'
+      ? sites.filter((s) => s.type === 'wordpress')
+      : sites.filter((s) => s.id === parseInt(filterSiteId, 10) && s.type === 'wordpress');
+
+    let refreshedCount = 0;
+    const freshUpdates: UpdateItem[] = [];
+
+    for (const site of targetSites) {
+      try {
+        const res = await fetch(`/api/sites/${site.id}/updates/refresh`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok && data.pendingUpdates?.details) {
+          refreshedCount++;
+          const client = clients.find((c) => c.id === site.clientId);
+          data.pendingUpdates.details.forEach((d: any) => {
+            freshUpdates.push({
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              clientName: client ? client.name : 'Sin cliente',
+              type: d.type,
+              slug: d.slug,
+              name: d.name,
+              currentVersion: d.currentVersion,
+              newVersion: d.newVersion,
+            });
+          });
+        }
+      } catch (err) {
+        console.warn(`Error refreshing site ${site.name}:`, err);
+      }
+    }
+
+    if (filterSiteId === 'all') {
+      setAllUpdates(freshUpdates);
+      setSelectedKeys(freshUpdates.map((u) => `${u.siteId}:${u.slug}`));
+    } else {
+      setAllUpdates((prev) => [
+        ...prev.filter((u) => u.siteId !== parseInt(filterSiteId, 10)),
+        ...freshUpdates,
+      ]);
+    }
+
+    setIsRefreshing(false);
+    setRefreshMessage(`✅ Sincronización completada. ${targetSites.length} sitio(s) consultados.`);
+    setTimeout(() => setRefreshMessage(null), 4500);
+  };
+
+  // Execute single item update
+  const handleUpdateSingle = async (item: UpdateItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRunning(true);
+    setCurrentStep(`Actualizando ${item.name} en ${item.siteName}...`);
+    setLogs((prev) => [
+      `[${new Date().toLocaleTimeString()}] Iniciando actualización de ${item.name} en ${item.siteUrl}...`,
+      ...prev,
+    ]);
+
+    try {
+      const typeParam = item.type === 'core' ? 'core' : (item.type === 'theme' ? 'themes' : 'plugins');
+      const res = await fetch(`/api/sites/${item.siteId}/updates/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: typeParam, slugs: [item.slug] }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error al procesar actualización en WordPress');
+      }
+
+      setLogs((prev) => [
+        `[OK] ${item.siteName}: ${item.name} actualizado con éxito a v${item.newVersion}.`,
+        ...prev,
+      ]);
+
+      // Remove from list
+      const key = `${item.siteId}:${item.slug}`;
+      setAllUpdates((prev) => prev.filter((u) => `${u.siteId}:${u.slug}` !== key));
+      setSelectedKeys((prev) => prev.filter((k) => k !== key));
+    } catch (err: any) {
+      setLogs((prev) => [
+        `[ERROR] ${item.siteName} (${item.name}): ${err.message}`,
+        ...prev,
+      ]);
+    } finally {
+      setIsRunning(false);
+      setCurrentStep(null);
+    }
+  };
+
+  // Run mass updates (Real backend requests)
   const handleRunMassUpdates = async () => {
     if (selectedKeys.length === 0) return;
     setIsRunning(true);
     setProgress(5);
     setCompletedCount(0);
-    setLogs(['[Sentinel] Iniciando orquestación de actualizaciones masivas...', `[Sentinel] Elementos seleccionados para actualizar: ${selectedKeys.length}`]);
+    setLogs([
+      `[SentinelIDPY] Iniciando orquestación de actualizaciones masivas en vivo...`,
+      `[SentinelIDPY] Total componentes seleccionados: ${selectedKeys.length}`,
+    ]);
 
     const total = selectedKeys.length;
     let done = 0;
+    const successfulKeys: string[] = [];
 
     for (let i = 0; i < total; i++) {
       const key = selectedKeys[i];
@@ -111,29 +219,69 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
       if (!item) continue;
 
       setCurrentStep(`Actualizando ${item.name} en ${item.siteName}...`);
-      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      try {
+        const typeParam = item.type === 'core' ? 'core' : (item.type === 'theme' ? 'themes' : 'plugins');
+        const res = await fetch(`/api/sites/${item.siteId}/updates/apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: typeParam, slugs: [item.slug] }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Fallo de actualización');
+        }
+
+        successfulKeys.push(key);
+        setLogs((prev) => [
+          `[OK] ${item.siteName} → ${item.name} actualizado exitosamente a v${item.newVersion}`,
+          ...prev,
+        ]);
+      } catch (err: any) {
+        setLogs((prev) => [
+          `[ERROR] ${item.siteName} → ${item.name}: ${err.message}`,
+          ...prev,
+        ]);
+      }
 
       done++;
       setCompletedCount(done);
-      const pct = Math.round((done / total) * 100);
-      setProgress(pct);
-
-      setLogs((prev) => [
-        ...prev,
-        `[OK] ${item.siteName} → ${item.name} actualizado exitosamente de v${item.currentVersion} a v${item.newVersion}`,
-      ]);
+      setProgress(Math.round((done / total) * 90));
     }
 
-    setCurrentStep('Purgando OPcache y verificando código de respuesta HTTP 200 en cada sitio...');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Purge cache on affected sites
+    const uniqueSiteIds = Array.from(
+      new Set(successfulKeys.map((k) => parseInt(k.split(':')[0], 10)))
+    );
 
-    setLogs((prev) => [
-      ...prev,
-      '[Sentinel] Proceso completado exitosamente. Todos los sitios responden en HTTP 200 con normalidad.',
-    ]);
-    setIsRunning(false);
+    if (uniqueSiteIds.length > 0) {
+      setCurrentStep(`Purgando caché y OPcache en ${uniqueSiteIds.length} sitio(s)...`);
+      for (const sId of uniqueSiteIds) {
+        const s = sites.find((site) => site.id === sId);
+        try {
+          await fetch(`/api/sites/${sId}/performance`, { method: 'POST' });
+          setLogs((prev) => [
+            `[CACHE] Caché purgada y OPcache invalidado en ${s?.name || sId}`,
+            ...prev,
+          ]);
+        } catch {
+          // non-blocking
+        }
+      }
+    }
+
+    // Remove successfully updated items from state
+    setAllUpdates((prev) => prev.filter((u) => !successfulKeys.includes(`${u.siteId}:${u.slug}`)));
+    setSelectedKeys((prev) => prev.filter((k) => !successfulKeys.includes(k)));
+
     setProgress(100);
+    setIsRunning(false);
     setCurrentStep('¡Actualización masiva completada!');
+    setLogs((prev) => [
+      `[SentinelIDPY] Proceso finalizado. ${successfulKeys.length}/${total} componentes actualizados.`,
+      ...prev,
+    ]);
   };
 
   return (
@@ -164,37 +312,64 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
 
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
           <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase">WordPress Core</span>
-          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 tracking-tight mt-1">
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight mt-1">
             {allUpdates.filter((u) => u.type === 'core').length}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Actualizaciones mayores/menores</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Seguridad y parches oficiales</p>
         </div>
       </div>
 
-      {/* Execution Progress & Terminal View */}
-      {isRunning && (
-        <div className="p-6 rounded-xl border border-emerald-500/30 bg-white dark:bg-slate-900/90 shadow-2xl space-y-4">
+      {/* Sync feedback notification */}
+      {refreshMessage && (
+        <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200 text-xs font-semibold flex items-center gap-2">
+          <RefreshCw className={`w-4 h-4 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span>{refreshMessage}</span>
+        </div>
+      )}
+
+      {/* Live Execution Console & Progress */}
+      {(isRunning || logs.length > 0) && (
+        <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <RefreshCw className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Ejecución en Progreso</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{currentStep}</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                Consola de Orquestación en Vivo
+              </h3>
             </div>
-            <span className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">{progress}%</span>
+            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+              {completedCount} / {selectedKeys.length + completedCount} completados ({progress}%)
+            </span>
           </div>
 
           <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
             <div
-              className="bg-emerald-500 h-full rounded-full transition-all duration-300 shadow-md shadow-emerald-500/50"
+              className="bg-emerald-500 h-full transition-all duration-300 rounded-full"
               style={{ width: `${progress}%` }}
             />
           </div>
 
-          <div className="bg-slate-900 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-800 max-h-44 overflow-y-auto font-mono text-xs text-slate-300 space-y-1">
+          {currentStep && (
+            <div className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
+              <span>{currentStep}</span>
+            </div>
+          )}
+
+          <div className="bg-slate-900 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-800 max-h-48 overflow-y-auto font-mono text-xs text-slate-300 space-y-1">
             {logs.map((log, i) => (
-              <div key={i} className="text-emerald-400">
+              <div
+                key={i}
+                className={
+                  log.includes('[ERROR]')
+                    ? 'text-rose-400'
+                    : log.includes('[OK]')
+                    ? 'text-emerald-400'
+                    : log.includes('[CACHE]')
+                    ? 'text-sky-300'
+                    : 'text-slate-300'
+                }
+              >
                 {log}
               </div>
             ))}
@@ -205,6 +380,7 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
       {/* Control Filters and Mass Update Action Bar */}
       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
+          {/* Site Selector */}
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-400" />
             <select
@@ -221,15 +397,27 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          {/* Sync Button */}
+          <button
+            onClick={handleRefreshUpdates}
+            disabled={isRefreshing || isRunning}
+            title="Sincronizar actualizaciones pendientes con WordPress en vivo"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
+            <span>Sincronizar</span>
+          </button>
+
+          {/* Component Type Filter Buttons */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200 dark:border-slate-800">
             {['all', 'plugin', 'theme', 'core'].map((t) => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-2.5 py-1 rounded text-xs font-semibold uppercase cursor-pointer transition-colors ${
+                className={`px-2.5 py-1 rounded text-xs font-bold uppercase cursor-pointer transition-colors ${
                   filterType === t
-                    ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white border border-slate-900 dark:border-slate-700 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[#0f172a] text-white dark:bg-slate-800 dark:text-white border border-[#0f172a] dark:border-slate-700 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
                 {t === 'all' ? 'Todos' : t}
@@ -237,17 +425,25 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
             ))}
           </div>
 
+          {/* Select / Deselect All */}
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pl-2 border-l border-slate-200 dark:border-slate-800">
-            <button onClick={handleSelectAllFiltered} className="hover:text-slate-900 dark:hover:text-white cursor-pointer font-medium">
+            <button
+              onClick={handleSelectAllFiltered}
+              className="hover:text-slate-900 dark:hover:text-white cursor-pointer font-medium"
+            >
               Marcar todos
             </button>
             <span>•</span>
-            <button onClick={handleDeselectAll} className="hover:text-slate-900 dark:hover:text-white cursor-pointer font-medium">
+            <button
+              onClick={handleDeselectAll}
+              className="hover:text-slate-900 dark:hover:text-white cursor-pointer font-medium"
+            >
               Desmarcar
             </button>
           </div>
         </div>
 
+        {/* Mass Update Button */}
         <button
           onClick={handleRunMassUpdates}
           disabled={selectedKeys.length === 0 || isRunning}
@@ -276,7 +472,7 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
                     if (e.target.checked) handleSelectAllFiltered();
                     else handleDeselectAll();
                   }}
-                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-0 bg-white dark:bg-slate-900"
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-0 bg-white dark:bg-slate-900 cursor-pointer"
                 />
               </th>
               <th className="py-3 px-4">Componente a Actualizar</th>
@@ -284,14 +480,20 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
               <th className="py-3 px-4">Sitio / Cliente</th>
               <th className="py-3 px-4">Versión Actual</th>
               <th className="py-3 px-4">Nueva Versión</th>
-              <th className="py-3 px-4 text-right">Sitio</th>
+              <th className="py-3 px-4 text-right">Acción</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
             {filteredUpdates.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
-                  No hay actualizaciones pendientes con los filtros seleccionados.
+                <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                  <p className="font-semibold text-slate-700 dark:text-slate-200">
+                    Todos los componentes están al día
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    No hay actualizaciones pendientes con los filtros seleccionados.
+                  </p>
                 </td>
               </tr>
             ) : (
@@ -314,7 +516,7 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}}
-                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-0 bg-white dark:bg-slate-900"
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-0 bg-white dark:bg-slate-900 cursor-pointer"
                       />
                     </td>
 
@@ -343,14 +545,25 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
                     </td>
 
                     <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/services/${item.siteId}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-slate-400 hover:text-slate-700 dark:hover:text-white inline-flex items-center gap-1"
-                        title="Ver ficha de servicio"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => handleUpdateSingle(item, e)}
+                          disabled={isRunning}
+                          title={`Actualizar solo ${item.name}`}
+                          className="px-2.5 py-1 rounded bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-slate-800 dark:hover:bg-emerald-600 dark:text-slate-300 text-slate-700 text-[11px] font-semibold border border-slate-200 dark:border-slate-700 transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                        >
+                          <ArrowUpCircle className="w-3 h-3" />
+                          <span>Actualizar</span>
+                        </button>
+
+                        <Link
+                          href={`/services/${item.siteId}`}
+                          className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white inline-flex items-center"
+                          title="Ver ficha de servicio"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

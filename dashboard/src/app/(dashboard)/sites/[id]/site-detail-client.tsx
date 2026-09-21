@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Globe,
@@ -112,6 +112,46 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
     { id: 2, login: 'editor_cliente', email: client?.email || 'contacto@cliente.com', name: client?.name || 'Cliente Editor', role: 'Editor', registered: '2024-01-15' },
   ]);
 
+  // Sincronización en vivo de plugins y usuarios si es WordPress
+  useEffect(() => {
+    if (site.type === 'wordpress') {
+      fetch(`/api/sites/${site.id}/plugins`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.plugins?.length) {
+            setInstalledPlugins(
+              data.plugins.map((p: any) => ({
+                name: p.name,
+                slug: p.slug,
+                version: p.version,
+                active: p.is_active,
+                update: p.new_version || null,
+              }))
+            );
+          }
+        })
+        .catch(() => {});
+
+      fetch(`/api/sites/${site.id}/users`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.users?.length) {
+            setUsers(
+              data.users.map((u: any) => ({
+                id: u.id,
+                login: u.login,
+                email: u.email,
+                name: u.display_name,
+                role: Array.isArray(u.roles) ? u.roles.join(', ') : 'Usuario',
+                registered: u.registered ? u.registered.split(' ')[0] : 'N/A',
+              }))
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, [site.id, site.type]);
+
   // Handle Updates
   const handleToggleUpdateSelect = (slug: string) => {
     setSelectedUpdates((prev) =>
@@ -120,26 +160,32 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
   };
 
   const handleApplyUpdates = async () => {
+    if (selectedUpdates.length === 0) return;
     setIsUpdating(true);
-    setUpdateLog('Iniciando proceso de actualización por lotes en WordPress...');
+    setUpdateLog('Iniciando proceso de actualización en WordPress...');
 
-    setTimeout(() => {
-      setUpdateLog('Descargando paquetes de actualización oficiales...');
-    }, 1000);
+    try {
+      const res = await fetch(`/api/sites/${site.id}/updates/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'plugins', slugs: selectedUpdates }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error al aplicar actualizaciones');
+      }
 
-    setTimeout(() => {
-      setUpdateLog('Verificando compatibilidad de PHP y limpiando OPcache...');
-    }, 2000);
-
-    setTimeout(() => {
-      setIsUpdating(false);
       setUpdateLog('✅ ¡Actualizaciones completadas con éxito! Sitio en óptimo estado.');
-      // Remove updated items from pending list
       setInstalledPlugins((prev) =>
         prev.map((p) => (selectedUpdates.includes(p.slug) ? { ...p, version: p.update || p.version, update: null } : p))
       );
       setSelectedUpdates([]);
-    }, 3500);
+    } catch (err: any) {
+      setUpdateLog(`❌ Error: ${err.message}`);
+    } finally {
+      setIsUpdating(false);
+      setTimeout(() => setUpdateLog(null), 7000);
+    }
   };
 
   // Search WordPress.org
@@ -157,7 +203,6 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
       const data = await res.json();
       setWpOrgResults(data.plugins || []);
     } catch (err) {
-      // Fallback sample results if external query is restricted
       setWpOrgResults([
         { name: 'WooCommerce', slug: 'woocommerce', version: '9.4.1', short_description: 'Plataforma e-commerce líder para WordPress.', rating: 90 },
         { name: 'Rank Math SEO', slug: 'seo-by-rank-math', version: '1.0.231', short_description: 'Plugin integral de SEO y optimización para buscadores.', rating: 98 },
@@ -168,63 +213,155 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
     }
   };
 
-  const handleInstallFromWpOrg = (plugin: any) => {
+  const handleInstallFromWpOrg = async (plugin: any) => {
     setInstallingSlug(plugin.slug);
-    setTimeout(() => {
-      setInstallingSlug(null);
+    try {
+      const res = await fetch(`/api/sites/${site.id}/plugins`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: plugin.slug, activate: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error en instalación');
+      }
+
       setInstalledPlugins((prev) => [
-        ...prev,
+        ...prev.filter((p) => p.slug !== plugin.slug),
         { name: plugin.name, slug: plugin.slug, version: plugin.version, active: true, update: null },
       ]);
       alert(`✅ Plugin "${plugin.name}" instalado y activado exitosamente en ${site.name}`);
-    }, 2000);
+    } catch (err: any) {
+      alert(`❌ Error al instalar plugin: ${err.message}`);
+    } finally {
+      setInstallingSlug(null);
+    }
   };
 
-  const handleTogglePlugin = (slug: string) => {
-    setInstalledPlugins((prev) =>
-      prev.map((p) => (p.slug === slug ? { ...p, active: !p.active } : p))
-    );
+  const handleTogglePlugin = async (slug: string) => {
+    const target = installedPlugins.find((p) => p.slug === slug);
+    if (!target) return;
+    const nextAction = target.active ? 'deactivate' : 'activate';
+
+    try {
+      const res = await fetch(`/api/sites/${site.id}/plugins`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, action: nextAction }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error al alternar plugin');
+      }
+
+      setInstalledPlugins((prev) =>
+        prev.map((p) => (p.slug === slug ? { ...p, active: !p.active } : p))
+      );
+    } catch (err: any) {
+      alert(`❌ Error al alternar plugin: ${err.message}`);
+    }
   };
 
-  const handleResetPassword = (userId: number, email: string) => {
+  const handleResetPassword = async (userId: number, email: string) => {
     setResettingUserId(userId);
-    setTimeout(() => {
+    setResetMessage(null);
+    try {
+      const res = await fetch(`/api/sites/${site.id}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error al restablecer contraseña');
+      }
+      setResetMessage(`✅ Correo de restablecimiento enviado exitosamente a ${email}`);
+    } catch (err: any) {
+      setResetMessage(`❌ Error: ${err.message}`);
+    } finally {
       setResettingUserId(null);
-      setResetMessage(`✅ Correo de restablecimiento de contraseña enviado a ${email}`);
-      setTimeout(() => setResetMessage(null), 5000);
-    }, 1200);
+      setTimeout(() => setResetMessage(null), 6000);
+    }
   };
 
-  const handleRunBackup = () => {
+  const handleRunBackup = async () => {
     setIsBackingUp(true);
-    setBackupMessage('Iniciando UpdraftPlus backup: Creando volcado de MySQL y comprimiendo wp-content...');
-    setTimeout(() => {
+    setBackupMessage('Iniciando UpdraftPlus backup en el servidor remoto...');
+    try {
+      const res = await fetch(`/api/sites/${site.id}/backups`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error al ejecutar respaldo');
+      }
+      setBackupMessage(`✅ ${data.message || 'Copia de seguridad iniciada con éxito en WordPress.'}`);
+    } catch (err: any) {
+      setBackupMessage(`❌ Error: ${err.message}`);
+    } finally {
       setIsBackingUp(false);
-      setBackupMessage('✅ Backup completado y subido a tu cuenta de Google Drive con éxito.');
-      setTimeout(() => setBackupMessage(null), 6000);
-    }, 3000);
+      setTimeout(() => setBackupMessage(null), 8000);
+    }
   };
 
-  const handlePurgeCache = () => {
+  const handlePurgeCache = async () => {
     setIsPurgingCache(true);
-    setCacheMessage('Purgando caché...');
-    setTimeout(() => {
+    setCacheMessage('Purgando caché y OPcache...');
+    try {
+      const res = await fetch(`/api/sites/${site.id}/performance`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Error al purgar caché');
+      }
+      setCacheMessage(`✅ ${data.message || 'Caché de páginas y OPcache purgada exitosamente.'}`);
+    } catch (err: any) {
+      setCacheMessage(`❌ Error: ${err.message}`);
+    } finally {
       setIsPurgingCache(false);
-      setCacheMessage('✅ Caché de páginas, CSS y minificación purgada exitosamente.');
-      setTimeout(() => setCacheMessage(null), 4000);
-    }, 1200);
+      setTimeout(() => setCacheMessage(null), 6000);
+    }
   };
 
-  const handleSaveBranding = (e: React.FormEvent) => {
+  const handleSaveBranding = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBrandingSaved(true);
-    setTimeout(() => setBrandingSaved(false), 4000);
+    try {
+      const res = await fetch(`/api/sites/${site.id}/agency`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'branding',
+          logoUrl,
+          bgColor,
+          footerText,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Error');
+      setBrandingSaved(true);
+      setTimeout(() => setBrandingSaved(false), 4000);
+    } catch (err: any) {
+      alert(`❌ Error al guardar branding: ${err.message}`);
+    }
   };
 
-  const handleToggleWidget = (widgetId: string) => {
-    setHiddenWidgets((prev) =>
-      prev.includes(widgetId) ? prev.filter((w) => w !== widgetId) : [...prev, widgetId]
-    );
+  const handleToggleWidget = async (widgetId: string) => {
+    const updated = hiddenWidgets.includes(widgetId)
+      ? hiddenWidgets.filter((w) => w !== widgetId)
+      : [...hiddenWidgets, widgetId];
+    setHiddenWidgets(updated);
+
+    try {
+      await fetch(`/api/sites/${site.id}/agency`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'widgets',
+          hiddenWidgets: updated,
+        }),
+      });
+      setWidgetsSaved(true);
+      setTimeout(() => setWidgetsSaved(false), 3000);
+    } catch (err) {
+      console.warn('Error syncing widgets:', err);
+    }
   };
 
   return (
