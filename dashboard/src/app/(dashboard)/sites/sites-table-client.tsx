@@ -29,6 +29,7 @@ export function SitesTableClient({ initialSites, clients }: SitesTableClientProp
   const [sites, setSites] = useState<Site[]>(initialSites);
   const [search, setSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'wordpress' | 'vercel' | 'sistema'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // New Site Form State
@@ -40,13 +41,19 @@ export function SitesTableClient({ initialSites, clients }: SitesTableClientProp
   const [formDisk, setFormDisk] = useState('2.0');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const wpCount = sites.filter((s) => s.type === 'wordpress').length;
+  const vercelCount = sites.filter((s) => s.type === 'vercel').length;
+  const sistemaCount = sites.filter((s) => s.type === 'sistema').length;
+
   const filteredSites = sites.filter((site) => {
     const matchesSearch =
       site.name.toLowerCase().includes(search.toLowerCase()) ||
       site.url.toLowerCase().includes(search.toLowerCase());
     const matchesClient =
       selectedClient === 'all' || site.clientId === parseInt(selectedClient, 10);
-    return matchesSearch && matchesClient;
+    const matchesType =
+      selectedType === 'all' || site.type === selectedType;
+    return matchesSearch && matchesClient && matchesType;
   });
 
   const handleAddSite = async (e: React.FormEvent) => {
@@ -86,24 +93,53 @@ export function SitesTableClient({ initialSites, clients }: SitesTableClientProp
     }
   };
 
-  const handleDeleteSite = async (id: number, name: string) => {
-    if (!confirm(`¿Estás seguro de eliminar el sitio "${name}"?`)) return;
-
-    try {
-      const res = await fetch(`/api/sites/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setSites(sites.filter((s) => s.id !== id));
-      } else {
-        alert('Error al eliminar');
-      }
-    } catch (err) {
-      alert('Error de red');
-    }
-  };
-
   return (
     <div className="space-y-4">
-      {/* Search and Client Filter Bar */}
+      {/* Type Tabs Bar */}
+      <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-medium w-fit">
+        <button
+          onClick={() => setSelectedType('all')}
+          className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+            selectedType === 'all'
+              ? 'bg-slate-800 text-white font-bold shadow'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Todos ({sites.length})
+        </button>
+        <button
+          onClick={() => setSelectedType('wordpress')}
+          className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+            selectedType === 'wordpress'
+              ? 'bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          WordPress ({wpCount})
+        </button>
+        <button
+          onClick={() => setSelectedType('vercel')}
+          className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+            selectedType === 'vercel'
+              ? 'bg-zinc-700/50 text-white font-bold border border-zinc-600'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Vercel Onepages ({vercelCount})
+        </button>
+        <button
+          onClick={() => setSelectedType('sistema')}
+          className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+            selectedType === 'sistema'
+              ? 'bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Sistemas / Apps ({sistemaCount})
+        </button>
+      </div>
+
+      {/* Search, Client Filter, and Add Site Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-72">
@@ -136,7 +172,7 @@ export function SitesTableClient({ initialSites, clients }: SitesTableClientProp
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-md shadow-emerald-950/50"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-md shadow-emerald-950/50 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Añadir Nuevo Sitio</span>
@@ -263,21 +299,12 @@ export function SitesTableClient({ initialSites, clients }: SitesTableClientProp
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/sites/${site.id}`}
-                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700"
-                          >
-                            Administrar
-                          </Link>
-                          <button
-                            onClick={() => handleDeleteSite(site.id, site.name)}
-                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                            title="Eliminar sitio"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <Link
+                          href={`/sites/${site.id}`}
+                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700 inline-block"
+                        >
+                          Administrar
+                        </Link>
                       </td>
                     </tr>
                   );

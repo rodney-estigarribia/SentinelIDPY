@@ -13,10 +13,7 @@ export default async function ClientsPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Clientes y Mapa de Infraestructura"
-        subtitle="Inventario de activos, dominios en nic.py, hosting, DNS, correos corporativos y valorización anual"
-      />
+      <Header title="Clientes e Infraestructura" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         <ClientsClient initialClients={clients} sites={sites} />

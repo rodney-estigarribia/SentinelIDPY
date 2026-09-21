@@ -11,10 +11,7 @@ export default async function AgencyPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Agencia y Personalización White-Label"
-        subtitle="Control remoto de pantallas de login, marcas de cliente, pies de página y depuración de menús"
-      />
+      <Header title="Agencia y White-Label" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Intro Card */}

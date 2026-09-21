@@ -13,10 +13,7 @@ export default async function TemplatesPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Plantillas Doradas y Detección de Diferencias (Drift)"
-        subtitle="Estandarización de configuraciones de plugins, comparativa en tiempo real y sincronización remota"
-      />
+      <Header title="Plantillas de Configuración" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         <TemplatesClient initialTemplates={templates} sites={sites} />

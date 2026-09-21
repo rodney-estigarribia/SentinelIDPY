@@ -11,10 +11,7 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Analítica de Tráfico Consolidada (Últimos 6 Meses)"
-        subtitle="Métricas locales de cada sitio sin sobrecargar tu base de datos central"
-      />
+      <Header title="Analítica (6 Meses)" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top Summary Banner */}

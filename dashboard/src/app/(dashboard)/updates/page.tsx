@@ -20,10 +20,7 @@ export default async function UpdatesPage({
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Centro de Mando: Actualizaciones Masivas"
-        subtitle="Supervisión global de WordPress Core, plugins y temas con ejecución en lote y progreso en tiempo real"
-      />
+      <Header title="Actualizaciones Masivas" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         <UpdatesClient sites={sites} clients={clients} initialSiteId={targetSiteId} />

@@ -16,10 +16,7 @@ export default async function SecurityPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Seguridad y Auditoría Wordfence"
-        subtitle="Monitoreo centralizado de ataques de fuerza bruta, escaneos de malware y vigencia de certificados SSL"
-      />
+      <Header title="Seguridad y Wordfence" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Top KPI Cards */}

@@ -623,7 +623,7 @@ export const dataService = {
   },
 
   // --- SITES ---
-  async getSites(filters?: { clientId?: number; type?: string }): Promise<Site[]> {
+  async getSites(filters?: { clientId?: number; type?: string; includeArchived?: boolean }): Promise<Site[]> {
     let result = memorySites;
     if (db) {
       try {
@@ -632,6 +632,10 @@ export const dataService = {
       } catch (err) {
         console.warn('DB Query failed, falling back to memory store:', err);
       }
+    }
+
+    if (!filters?.includeArchived) {
+      result = result.filter((s) => s.status !== 'archived');
     }
 
     if (filters?.clientId) {
@@ -711,17 +715,9 @@ export const dataService = {
   },
 
   async deleteSite(id: number): Promise<boolean> {
-    if (db) {
-      try {
-        await db.delete(schema.sites).where(eq(schema.sites.id, id));
-        return true;
-      } catch (err) {
-        console.warn('DB delete failed, using memory store:', err);
-      }
-    }
-    const initialLen = memorySites.length;
-    memorySites = memorySites.filter((s) => s.id !== id);
-    return memorySites.length < initialLen;
+    // Soft delete: Mark site as 'archived' so it is excluded from active queries
+    const updated = await this.updateSite(id, { status: 'archived' });
+    return !!updated;
   },
 
   // --- TEMPLATES ---

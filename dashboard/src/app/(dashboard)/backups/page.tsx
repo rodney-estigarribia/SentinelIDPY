@@ -11,10 +11,7 @@ export default async function BackupsPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <Header
-        title="Copias de Seguridad (UpdraftPlus & Futuro Backup Nativo)"
-        subtitle="Monitoreo de respaldos en Google Drive, estado de copias completas/incrementales y arquitectura multi-storage"
-      />
+      <Header title="Copias de Seguridad" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Architecture Notice Banner */}

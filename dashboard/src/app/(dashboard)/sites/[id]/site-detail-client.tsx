@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Globe,
   RefreshCw,
@@ -24,7 +25,11 @@ import {
   RotateCcw,
   Palette,
   EyeOff,
-  Server
+  Server,
+  Settings,
+  Trash2,
+  AlertOctagon,
+  X
 } from 'lucide-react';
 import type { Site, Client, ConfigTemplate } from '@/db/schema';
 
@@ -35,9 +40,19 @@ interface SiteDetailClientProps {
 }
 
 export function SiteDetailClient({ site, client, templates }: SiteDetailClientProps) {
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState<
-    'updates' | 'plugins' | 'users' | 'security' | 'backups' | 'branding' | 'widgets' | 'cache' | 'analytics'
+    'updates' | 'plugins' | 'users' | 'security' | 'backups' | 'branding' | 'widgets' | 'cache' | 'analytics' | 'admin'
   >('updates');
+
+  // Delete Site Confirmation Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const requiredClientName = (client?.name || site.name).trim();
+  const isDeleteConfirmed = deleteConfirmText.trim().toLowerCase() === requiredClientName.toLowerCase();
 
   // Updates state
   const [selectedUpdates, setSelectedUpdates] = useState<string[]>(
@@ -369,6 +384,18 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
         >
           <Sliders className="w-3.5 h-3.5" />
           <span>Widgets de Escritorio</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('admin')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+            activeTab === 'admin'
+              ? 'bg-rose-500/15 text-rose-300 font-bold border border-rose-500/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <Settings className="w-3.5 h-3.5" />
+          <span>Administración</span>
         </button>
       </div>
 
@@ -1014,6 +1041,167 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: ADMINISTRACIÓN Y DANGER ZONE */}
+      {activeTab === 'admin' && (
+        <div className="space-y-6">
+          {/* Site Parameters Card */}
+          <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 space-y-5">
+            <div>
+              <h3 className="font-bold text-white text-base">Parámetros del Sitio</h3>
+              <p className="text-xs text-slate-400">
+                Información técnica y configuración de vinculación en SentinelIDPY.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Nombre del Sitio</span>
+                <p className="text-sm font-bold text-white">{site.name}</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">URL Principal</span>
+                <p className="text-sm font-mono text-slate-200 truncate">{site.url}</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Cliente Asignado</span>
+                <p className="text-sm font-semibold text-emerald-400">{client ? client.name : 'Sin asignar'}</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tipo de Plataforma</span>
+                <p className="text-sm font-semibold text-slate-200 capitalize">{site.type}</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Cuota de Disco Asignada</span>
+                <p className="text-sm font-semibold text-slate-200">{site.diskAllocatedGb ? `${site.diskAllocatedGb} GB` : 'Ilimitado / N/A'}</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Token del Conector</span>
+                <p className="text-sm font-mono text-slate-400 truncate">{site.token ? `${site.token.slice(0, 10)}••••••••` : 'No configurado'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Danger Zone Card */}
+          <div className="p-6 rounded-xl border border-rose-500/30 bg-rose-950/20 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <AlertOctagon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Zona de Peligro</h3>
+                <p className="text-xs text-rose-300">
+                  Acciones irreversibles o críticas sobre el registro del sitio en la plataforma.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-rose-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1 max-w-xl">
+                <h4 className="text-sm font-bold text-white">Eliminar este sitio</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Realiza un borrado lógico (<strong>Soft Delete</strong>). El sitio dejará de figurar en el panel de control y en los monitoreos automáticos de uptime y seguridad. Toda la data histórica permanece archivada y los archivos o bases de datos en el servidor del cliente no se modificarán.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setDeleteConfirmText('');
+                  setIsDeleteModalOpen(true);
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-lg shadow-rose-950"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Eliminar Sitio</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (SOFT DELETE) */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-rose-500/30 rounded-2xl p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5 text-rose-400">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-bold text-white text-base">Confirmar Eliminación</h3>
+              </div>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="p-1 rounded text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <p className="leading-relaxed">
+                Estás a punto de eliminar el sitio <strong className="text-white">{site.name}</strong> ({site.url}).
+              </p>
+              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                <p className="text-[11px] text-slate-400">
+                  Para proceder, por favor escribe el nombre del cliente asignado:
+                </p>
+                <p className="font-mono text-sm font-bold text-rose-300 bg-rose-950/40 px-2 py-1 rounded border border-rose-500/30">
+                  {requiredClientName}
+                </p>
+              </div>
+
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={`Escribe "${requiredClientName}"`}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 font-medium"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={!isDeleteConfirmed || isDeleting}
+                onClick={async () => {
+                  if (!isDeleteConfirmed || isDeleting) return;
+                  setIsDeleting(true);
+                  try {
+                    const res = await fetch(`/api/sites/${site.id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                      router.push('/sites');
+                      router.refresh();
+                    } else {
+                      alert('Error al eliminar el sitio');
+                      setIsDeleting(false);
+                    }
+                  } catch (err) {
+                    alert('Error de conexión');
+                    setIsDeleting(false);
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-950 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Eliminando...' : 'Confirmar Eliminación'}</span>
+              </button>
             </div>
           </div>
         </div>
