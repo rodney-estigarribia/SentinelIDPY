@@ -243,6 +243,31 @@ html:not(.dark) header input::placeholder {
   color: #94a3b8;
 }
 
+/* Table headers & rows in light mode */
+html:not(.dark) thead,
+html.light thead {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) thead th,
+html.light thead th {
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) tbody tr:hover,
+html.light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Fallback for any container with bg-slate-950 opacities in light mode (excluding modal backdrops) */
+html:not(.dark) [class*="bg-slate-950/"]:not(.fixed),
+html.light [class*="bg-slate-950/"]:not(.fixed) {
+  background-color: #f8fafc !important;
+}
+
 html:not(.dark) .fixed.inset-0.bg-slate-950\/80,
 html:not(.dark) .fixed.inset-0.bg-slate-950\/70,
 html.light .fixed.inset-0.bg-slate-950\/80,

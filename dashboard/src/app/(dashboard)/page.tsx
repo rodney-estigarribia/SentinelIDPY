@@ -181,16 +181,16 @@ export default async function OverviewPage() {
           </div>
 
           {/* Card 2: Actualizaciones */}
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-400 mb-3">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-3">
               <span className="text-xs font-medium uppercase tracking-wider">Actualizaciones</span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400">
                 <RefreshCw className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">{totalUpdates} Pendientes</div>
-              <p className="text-xs text-amber-400/90 mt-1.5 font-medium flex items-center gap-1">
+              <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{totalUpdates} Pendientes</div>
+              <p className="text-xs text-amber-600 dark:text-amber-400/90 mt-1.5 font-medium flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 Requieren revisión técnica
               </p>
@@ -198,37 +198,37 @@ export default async function OverviewPage() {
           </div>
 
           {/* Card 3: Wordfence */}
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-400 mb-3">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-3">
               <span className="text-xs font-medium uppercase tracking-wider">Ataques Mitigados</span>
-              <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 dark:text-rose-400">
                 <ShieldCheck className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight">
+              <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                 {totalAttacks.toLocaleString()}
               </div>
-              <p className="text-xs text-emerald-400 mt-1.5 font-medium flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Wordfence WAF 100% activo
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                Wordfence WAF Activo
               </p>
             </div>
           </div>
         </div>
 
         {/* Sites Main Table */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
-          <div className="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-bold text-white text-base tracking-tight">Estado de los Servicios de Clientes</h2>
-              <p className="text-xs text-slate-400">Supervisión en vivo de salud HTTP, versiones y tareas de mantenimiento</p>
+              <h2 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">Estado de los Servicios de Clientes</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Supervisión en vivo de salud HTTP, versiones y tareas de mantenimiento</p>
             </div>
 
             <div className="flex items-center gap-2">
               <Link
                 href="/services"
-                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 transition-colors"
               >
                 <span>Ver todos los servicios</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -237,8 +237,8 @@ export default async function OverviewPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950/60 text-slate-400 border-b border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
+            <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+              <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-4">Servicio / Cliente</th>
                   <th className="py-3 px-4">Tipo</th>
@@ -249,29 +249,29 @@ export default async function OverviewPage() {
                   <th className="py-3 px-4 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 font-medium">
                 {sites.map((site) => {
                   const client = clients.find((c) => c.id === site.clientId);
                   const updatesCount = (site.pendingUpdates?.plugins || 0) + (site.pendingUpdates?.themes || 0) + (site.pendingUpdates?.wordpress || 0);
 
                   return (
-                    <tr key={site.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={site.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-white flex items-center gap-2">
-                          <Link href={`/services/${site.id}`} className="hover:text-emerald-400 transition-colors">
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Link href={`/services/${site.id}`} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
                             {site.name}
                           </Link>
                           <a
                             href={site.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-slate-400 hover:text-slate-300"
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                             title="Abrir web"
                           >
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           {client ? client.name : 'Sin cliente asignado'} • {site.url.replace(/^https?:\/\//, '')}
                         </div>
                       </td>
@@ -354,57 +354,57 @@ export default async function OverviewPage() {
 
         {/* Bottom Section: Client Infrastructure Quick Links */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <Users className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-white text-sm">Mapa de Clientes</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Mapa de Clientes</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
               Fichas técnicas con el inventario de dominios en nic.py, servidores en Hosting Paraguay, cuentas de correo y costos anualizados.
             </p>
             <Link
               href="/clients"
-              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+              className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1"
             >
               <span>Explorar Fichas Técnicas</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Zap className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-white text-sm">Plantillas Doradas</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Plantillas Doradas</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
               Estandariza configuraciones de Wordfence, LiteSpeed y Widgets de WordPress. Detecta diferencias (drift) y sincroniza con 1 clic.
             </p>
             <Link
               href="/templates"
-              className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
             >
               <span>Ver Plantillas y Drift</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40">
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
                 <Server className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-white text-sm">Vercel & Sistemas</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Vercel & Sistemas</h3>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
               Control de onepages en Vercel y aplicaciones móviles o webapps a medida con latencia y verificaciones periódicas de disponibilidad.
             </p>
             <Link
               href="/services?type=vercel"
-              className="text-xs font-semibold text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
             >
               <span>Filtrar Vercel y Sistemas</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
