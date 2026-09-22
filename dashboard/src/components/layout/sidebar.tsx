@@ -25,6 +25,7 @@ import {
 interface SidebarProps {
   pendingUpdatesCount?: number;
   offlineSitesCount?: number;
+  isDbConnected?: boolean;
 }
 
 function WPIcon({ className = 'w-4 h-4' }: { className?: string }) {
@@ -35,7 +36,7 @@ function WPIcon({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: SidebarProps) {
+export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbConnected = false }: SidebarProps) {
   const pathname = usePathname();
 
   if (pathname === '/login') {
@@ -241,13 +242,22 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0 }: Side
       {/* Footer / Status */}
       <div className="p-4 pb-6 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-900/50">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-slate-700 dark:text-slate-300 font-medium">Conexión Global</span>
-          <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Operativo
-          </span>
+          <span className="text-slate-700 dark:text-slate-300 font-medium">Almacenamiento</span>
+          {isDbConnected ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]" title="Base de Datos Neon Postgres conectada y persistente">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Postgres Activo
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium text-[11px]" title="Ejecutando en memoria volátil. Conecta Neon en Vercel para guardar cambios de forma permanente.">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              Modo Memoria
+            </span>
+          )}
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">Vercel Edge • Neon Postgres</p>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          {isDbConnected ? 'Persistencia Permanente • Neon' : '⚠️ Volátil (Conectar Neon en Vercel)'}
+        </p>
 
         <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Sesión Segura</span>

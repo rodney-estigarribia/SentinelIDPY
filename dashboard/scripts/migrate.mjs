@@ -579,6 +579,40 @@ async function runMigration() {
     );
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      id SERIAL PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+  `;
+
+  const DEFAULT_FINANCIAL_SETTINGS = {
+    currentLadderStep: 1,
+    targetLadderStep: 2,
+    targetSalary: 3500000,
+    distributionRules: {
+      iva: 0.10,
+      opex: 0.15,
+      reserve: 0.05,
+      reinvestment: 0.10,
+      salaryAndCushion: 0.60,
+    },
+    salaryLadder: [
+      { step: 1, name: 'Escalón 1', withdrawableSalary: 600000, avgRequiredBilling: 1100000, minCushion: 2000000, downgradeRule: 'Piso base (no baja más)', active: true },
+      { step: 2, name: 'Escalón 2', withdrawableSalary: 1000000, avgRequiredBilling: 1700000, minCushion: 2000000, downgradeRule: 'Si Colchón < ₲1.000.000 tras 3 meses bajos → Vuelve a ₲600.000', active: false },
+      { step: 3, name: 'Escalón 3', withdrawableSalary: 1500000, avgRequiredBilling: 2500000, minCushion: 4500000, downgradeRule: 'Si Colchón < ₲2.250.000 tras 3 meses bajos → Vuelve a ₲1.000.000', active: false },
+      { step: 4, name: 'Escalón 4', withdrawableSalary: 2000000, avgRequiredBilling: 3350000, minCushion: 6000000, downgradeRule: 'Si Colchón < ₲3.000.000 tras 3 meses bajos → Vuelve a ₲1.500.000', active: false }
+    ]
+  };
+
+  await sql`
+    INSERT INTO app_settings (key, value)
+    VALUES ('salary_ladder_config', ${JSON.stringify(DEFAULT_FINANCIAL_SETTINGS)})
+    ON CONFLICT (key) DO NOTHING;
+  `;
+
   // 2. Synchronize / update client data
   for (const client of INITIAL_CLIENTS) {
     await sql`

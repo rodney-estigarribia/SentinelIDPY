@@ -10,6 +10,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const allSites = await dataService.getSites();
+  const isDbConnected = dataService.isDatabaseConnected();
   const pendingUpdatesCount = allSites
     .filter((s) => s.type === 'wordpress')
     .reduce(
@@ -24,7 +25,11 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex font-sans">
-      <Sidebar pendingUpdatesCount={pendingUpdatesCount} offlineSitesCount={offlineSitesCount} />
+      <Sidebar
+        pendingUpdatesCount={pendingUpdatesCount}
+        offlineSitesCount={offlineSitesCount}
+        isDbConnected={isDbConnected}
+      />
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto h-screen bg-slate-50 dark:bg-slate-950">
         {children}
       </main>

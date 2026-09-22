@@ -1903,6 +1903,10 @@ export const dataService = {
     }
     memoryFinancialSettings = updated;
     return memoryFinancialSettings;
+  },
+
+  isDatabaseConnected(): boolean {
+    return Boolean(db);
   }
 };
 
