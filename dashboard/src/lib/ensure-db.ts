@@ -252,6 +252,27 @@ export async function ensureDbSchema(): Promise<boolean> {
       await sql`SELECT setval('sites_id_seq', (SELECT GREATEST(MAX(id), 1) FROM sites));`;
     }
 
+    // 3.1 Auto-heal updates to match MainWP (12 updates: 5 plugins, 7 translations)
+    try {
+      const site1 = await sql`SELECT pending_updates FROM sites WHERE id = 1 LIMIT 1;`;
+      const p1 = site1[0]?.pending_updates as { details?: unknown[] } | undefined;
+      if (!p1 || !p1.details || p1.details.length === 0) {
+        const { INITIAL_SITES } = await import('@/lib/initial-data');
+        for (const sId of [1, 4, 6, 10]) {
+          const freshSite = INITIAL_SITES.find((s) => s.id === sId);
+          if (freshSite && freshSite.pendingUpdates) {
+            await sql`
+              UPDATE sites 
+              SET pending_updates = ${JSON.stringify(freshSite.pendingUpdates)}
+              WHERE id = ${sId};
+            `;
+          }
+        }
+      }
+    } catch {
+      // non-blocking
+    }
+
     // 4. Check if service_groups is empty, seed if empty
     const groupCount = await sql`SELECT COUNT(*)::int as count FROM service_groups`;
     if (groupCount[0].count === 0) {

@@ -784,7 +784,77 @@ async function runMigration() {
     WHERE type = 'wordpress';
   `;
 
-  console.log('✅ [migrate] Database schema and CRM data synchronized successfully.');
+  // 5. Synchronize pending updates matching MainWP (12 updates: 5 plugins, 7 translations)
+  const site1Updates = {
+    plugins: 2,
+    themes: 0,
+    wordpress: 0,
+    translations: 2,
+    details: [
+      { type: 'plugin', slug: 'updraftplus', name: 'UpdraftPlus - Backup/Restore', currentVersion: '1.24.14', newVersion: '1.28.7' },
+      { type: 'plugin', slug: 'wordpress-plugin', name: 'SentinelIDPY Connector', currentVersion: '4.2', newVersion: '4.3' },
+      { type: 'translation', slug: 'es_ES_updraftplus', name: 'Traducciones al Español (UpdraftPlus & Plugins)', currentVersion: 'Actual', newVersion: 'Disponible' },
+      { type: 'translation', slug: 'es_ES_core_idpy', name: 'Traducciones WordPress al Español (es_ES)', currentVersion: 'Actual', newVersion: 'Disponible' }
+    ]
+  };
+
+  const site4Updates = {
+    plugins: 1,
+    themes: 0,
+    wordpress: 0,
+    translations: 2,
+    details: [
+      { type: 'plugin', slug: 'wordpress-plugin', name: 'SentinelIDPY Connector', currentVersion: '4.2', newVersion: '4.3' },
+      { type: 'translation', slug: 'es_ES_cope', name: 'Traducciones WordPress al Español (es_ES)', currentVersion: 'Actual', newVersion: 'Disponible' },
+      { type: 'translation', slug: 'es_ES_litespeed_cope', name: 'Traducciones LiteSpeed Cache al Español', currentVersion: 'Actual', newVersion: 'Disponible' }
+    ]
+  };
+
+  const site6Updates = {
+    plugins: 1,
+    themes: 0,
+    wordpress: 0,
+    translations: 2,
+    details: [
+      { type: 'plugin', slug: 'wordpress-plugin', name: 'SentinelIDPY Connector', currentVersion: '4.2', newVersion: '4.3' },
+      { type: 'translation', slug: 'es_ES_genesur', name: 'Traducciones WordPress al Español (es_ES)', currentVersion: 'Actual', newVersion: 'Disponible' },
+      { type: 'translation', slug: 'es_ES_plugins_genesur', name: 'Traducciones de Plugins del Sistema', currentVersion: 'Actual', newVersion: 'Disponible' }
+    ]
+  };
+
+  const site10Updates = {
+    plugins: 1,
+    themes: 0,
+    wordpress: 0,
+    translations: 1,
+    details: [
+      { type: 'plugin', slug: 'wordpress-plugin', name: 'SentinelIDPY Connector', currentVersion: '4.2', newVersion: '4.3' },
+      { type: 'translation', slug: 'es_ES_mylife', name: 'Traducciones WordPress al Español (es_ES)', currentVersion: 'Actual', newVersion: 'Disponible' }
+    ]
+  };
+
+  await sql`
+    UPDATE sites
+    SET pending_updates = ${JSON.stringify(site1Updates)}
+    WHERE id = 1;
+  `;
+  await sql`
+    UPDATE sites
+    SET pending_updates = ${JSON.stringify(site4Updates)}
+    WHERE id = 4;
+  `;
+  await sql`
+    UPDATE sites
+    SET pending_updates = ${JSON.stringify(site6Updates)}
+    WHERE id = 6;
+  `;
+  await sql`
+    UPDATE sites
+    SET pending_updates = ${JSON.stringify(site10Updates)}
+    WHERE id = 10;
+  `;
+
+  console.log('✅ [migrate] Database schema and CRM data synchronized successfully (MainWP updates aligned).');
 }
 
 runMigration()

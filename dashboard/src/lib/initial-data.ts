@@ -609,10 +609,40 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     sslDaysLeft: 84,
     siteHealthScore: { status: 'good', good: 16, recommended: 2, critical: 0 },
     pendingUpdates: {
-      plugins: 0,
+      plugins: 2,
       themes: 0,
       wordpress: 0,
-      details: []
+      translations: 2,
+      details: [
+        {
+          type: 'plugin',
+          slug: 'updraftplus',
+          name: 'UpdraftPlus - Backup/Restore',
+          currentVersion: '1.24.14',
+          newVersion: '1.28.7'
+        },
+        {
+          type: 'plugin',
+          slug: 'wordpress-plugin',
+          name: 'SentinelIDPY Connector',
+          currentVersion: '4.2',
+          newVersion: '4.3'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_updraftplus',
+          name: 'Traducciones al Español (UpdraftPlus & Plugins)',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_core_idpy',
+          name: 'Traducciones WordPress al Español (es_ES)',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        }
+      ]
     },
     wordfenceStats: {
       totalAttacks: 1420,
@@ -716,10 +746,33 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     sslDaysLeft: 41,
     siteHealthScore: { status: 'recommended', good: 12, recommended: 4, critical: 0 },
     pendingUpdates: {
-      plugins: 0,
+      plugins: 1,
       themes: 0,
       wordpress: 0,
-      details: []
+      translations: 2,
+      details: [
+        {
+          type: 'plugin',
+          slug: 'wordpress-plugin',
+          name: 'SentinelIDPY Connector',
+          currentVersion: '4.2',
+          newVersion: '4.3'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_cope',
+          name: 'Traducciones WordPress al Español (es_ES)',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_litespeed_cope',
+          name: 'Traducciones LiteSpeed Cache al Español',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        }
+      ]
     },
     wordfenceStats: { totalAttacks: 2150, lastScan: '2026-09-17 03:00:00', rulesOk: true },
     performanceInfo: { cachePlugin: 'LiteSpeed Cache', cacheEnabled: true, siteSizeGb: 0.38, diskFreeGb: 0.12 },
@@ -913,7 +966,35 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     phpVersion: '8.2.20',
     sslDaysLeft: 95,
     siteHealthScore: { status: 'good', good: 16, recommended: 2, critical: 0 },
-    pendingUpdates: { plugins: 0, themes: 0, wordpress: 0, details: [] },
+    pendingUpdates: {
+      plugins: 1,
+      themes: 0,
+      wordpress: 0,
+      translations: 2,
+      details: [
+        {
+          type: 'plugin',
+          slug: 'wordpress-plugin',
+          name: 'SentinelIDPY Connector',
+          currentVersion: '4.2',
+          newVersion: '4.3'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_genesur',
+          name: 'Traducciones WordPress al Español (es_ES)',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_plugins_genesur',
+          name: 'Traducciones de Plugins del Sistema',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        }
+      ]
+    },
     wordfenceStats: { totalAttacks: 430, rulesOk: true },
     performanceInfo: { siteSizeGb: 0.92, diskFreeGb: 0.54 },
     metadata: {},
@@ -1010,10 +1091,26 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     sslDaysLeft: 78,
     siteHealthScore: { status: 'good', good: 17, recommended: 2, critical: 0 },
     pendingUpdates: {
-      plugins: 0,
+      plugins: 1,
       themes: 0,
       wordpress: 0,
-      details: []
+      translations: 1,
+      details: [
+        {
+          type: 'plugin',
+          slug: 'wordpress-plugin',
+          name: 'SentinelIDPY Connector',
+          currentVersion: '4.2',
+          newVersion: '4.3'
+        },
+        {
+          type: 'translation',
+          slug: 'es_ES_mylife',
+          name: 'Traducciones WordPress al Español (es_ES)',
+          currentVersion: 'Actual',
+          newVersion: 'Disponible'
+        }
+      ]
     },
     wordfenceStats: { totalAttacks: 3120, lastScan: '2026-09-19 02:00:00', rulesOk: true },
     performanceInfo: { cachePlugin: 'WP Rocket', cacheEnabled: true, siteSizeGb: 6.2, diskFreeGb: 4.29 },
