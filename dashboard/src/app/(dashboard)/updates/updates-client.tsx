@@ -14,7 +14,9 @@ import {
   Check,
   Terminal,
   Filter,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Copy,
+  ClipboardCheck
 } from 'lucide-react';
 import type { Site, Client } from '@/db/schema';
 
@@ -112,6 +114,14 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLogs = () => {
+    navigator.clipboard.writeText(logs.join('\n')).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const filteredUpdates = allUpdates.filter((u) => {
     const matchesSite = filterSiteId === 'all' || u.siteId === parseInt(filterSiteId, 10);
@@ -409,9 +419,24 @@ export function UpdatesClient({ sites, clients, initialSiteId }: UpdatesClientPr
                 Consola de Orquestación en Vivo
               </h3>
             </div>
-            <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-              {completedCount} / {selectedKeys.length + completedCount} completados ({progress}%)
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                {completedCount} / {selectedKeys.length + completedCount} completados ({progress}%)
+              </span>
+              {logs.length > 0 && (
+                <button
+                  onClick={handleCopyLogs}
+                  title="Copiar logs al portapapeles"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+                >
+                  {copied ? (
+                    <><ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copiado</span></>
+                  ) : (
+                    <><Copy className="w-3.5 h-3.5" /><span>Copiar</span></>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
