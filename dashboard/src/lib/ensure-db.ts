@@ -1,19 +1,33 @@
 import { neon } from '@neondatabase/serverless';
 
 let isInitialized = false;
+let initPromise: Promise<boolean> | null = null;
 
 export async function ensureDbSchema(): Promise<boolean> {
   if (isInitialized) return true;
+  if (initPromise) return initPromise;
 
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) {
     return false;
   }
 
-  try {
-    const sql = neon(connectionString);
+  initPromise = (async () => {
+    try {
+      const sql = neon(connectionString);
 
-    // 1. Create and update all tables if not exists
+      // Fast-path: Check if database is already fully initialized in a single quick query
+      try {
+        const check = await sql`SELECT 1 FROM app_settings WHERE key = 'salary_ladder_config' LIMIT 1;`;
+        if (check && check.length > 0) {
+          isInitialized = true;
+          return true;
+        }
+      } catch {
+        // Table doesn't exist yet, continue to full auto-migration below
+      }
+
+      // 1. Create and update all tables if not exists
     await sql`
       CREATE TABLE IF NOT EXISTS clients (
         id SERIAL PRIMARY KEY,
@@ -316,6 +330,10 @@ export async function ensureDbSchema(): Promise<boolean> {
     return true;
   } catch (err) {
     console.error('❌ [ensureDbSchema] Error during auto-initialization:', err);
+    initPromise = null;
     return false;
   }
+  })();
+
+  return initPromise;
 }

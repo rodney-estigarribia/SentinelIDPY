@@ -19,7 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   FolderKanban,
-  DollarSign
+  DollarSign,
+  Loader2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -74,6 +75,12 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
   );
 
   const [isWpOpen, setIsWpOpen] = useState(true);
+  const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
+
+  // Reset navigating state when pathname changes
+  useEffect(() => {
+    setNavigatingHref(null);
+  }, [pathname]);
 
   // Keep open when navigating to any WordPress sub-route
   useEffect(() => {
@@ -109,11 +116,14 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
         {topNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+          const isNavigating = navigatingHref === item.href && pathname !== item.href;
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
+              onClick={() => setNavigatingHref(item.href)}
               className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-500/30'
@@ -121,7 +131,11 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
               }`}
             >
               <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-400'}`} />
+                {isNavigating ? (
+                  <Loader2 className="w-4 h-4 text-sky-600 dark:text-sky-400 animate-spin" />
+                ) : (
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-400'}`} />
+                )}
                 <span>{item.label}</span>
               </div>
               {item.badge && (
@@ -180,11 +194,14 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
               {wpSubItems.map((subItem) => {
                 const SubIcon = subItem.icon;
                 const isSubActive = pathname === subItem.href || (subItem.href !== '/' && pathname.startsWith(subItem.href));
+                const isSubNavigating = navigatingHref === subItem.href && pathname !== subItem.href;
 
                 return (
                   <Link
                     key={subItem.href}
                     href={subItem.href}
+                    prefetch={true}
+                    onClick={() => setNavigatingHref(subItem.href)}
                     className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                       isSubActive
                         ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-500/30'
@@ -192,7 +209,11 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <SubIcon className={`w-3.5 h-3.5 ${isSubActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                      {isSubNavigating ? (
+                        <Loader2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 animate-spin" />
+                      ) : (
+                        <SubIcon className={`w-3.5 h-3.5 ${isSubActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                      )}
                       <span>{subItem.label}</span>
                     </div>
 
@@ -218,11 +239,14 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
           {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            const isBottomNavigating = navigatingHref === item.href && pathname !== item.href;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
+                onClick={() => setNavigatingHref(item.href)}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-500/30'
@@ -230,7 +254,11 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-400'}`} />
+                  {isBottomNavigating ? (
+                    <Loader2 className="w-4 h-4 text-sky-600 dark:text-sky-400 animate-spin" />
+                  ) : (
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-400'}`} />
+                  )}
                   <span>{item.label}</span>
                 </div>
               </Link>

@@ -36,13 +36,60 @@ let memoryProjects = [...INITIAL_PROJECTS];
 let memoryPayments = [...INITIAL_PAYMENTS];
 let memoryFinancialSettings = { ...DEFAULT_FINANCIAL_SETTINGS };
 
+// Ultra-fast in-memory cache for snappy navigation between pages
+// Cache TTL is 30 seconds; invalidated immediately upon any write/mutation
+const CACHE_TTL = 30_000;
+
+interface CacheEntry<T> {
+  data: T;
+  time: number;
+}
+
+interface CacheStore {
+  clients: CacheEntry<Client[]> | null;
+  sites: CacheEntry<Site[]> | null;
+  projects: CacheEntry<Project[]> | null;
+  payments: CacheEntry<Payment[]> | null;
+  serviceGroups: CacheEntry<ServiceGroup[]> | null;
+  templates: CacheEntry<ConfigTemplate[]> | null;
+  financialSettings: CacheEntry<typeof DEFAULT_FINANCIAL_SETTINGS> | null;
+}
+
+const entityCache: CacheStore & { invalidate: (key?: keyof CacheStore) => void } = {
+  clients: null,
+  sites: null,
+  projects: null,
+  payments: null,
+  serviceGroups: null,
+  templates: null,
+  financialSettings: null,
+
+  invalidate(key?: keyof CacheStore) {
+    if (key) {
+      entityCache[key] = null;
+    } else {
+      entityCache.clients = null;
+      entityCache.sites = null;
+      entityCache.projects = null;
+      entityCache.payments = null;
+      entityCache.serviceGroups = null;
+      entityCache.templates = null;
+      entityCache.financialSettings = null;
+    }
+  }
+};
+
 export const dataService = {
   // --- CLIENTS ---
   async getClients(): Promise<Client[]> {
+    if (entityCache.clients && Date.now() - entityCache.clients.time < CACHE_TTL) {
+      return entityCache.clients.data;
+    }
     await ensureDbSchema();
     if (db) {
       try {
         const rows = await db.select().from(schema.clients);
+        entityCache.clients = { data: rows, time: Date.now() };
         return rows;
       } catch (err) {
         console.warn('DB Query failed, falling back to memory store:', err);
@@ -52,19 +99,12 @@ export const dataService = {
   },
 
   async getClientById(id: number): Promise<Client | undefined> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        const [row] = await db.select().from(schema.clients).where(eq(schema.clients.id, id));
-        if (row) return row;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
-      }
-    }
-    return memoryClients.find((c) => c.id === id);
+    const clients = await this.getClients();
+    return clients.find((c) => c.id === id);
   },
 
   async createClient(data: NewClient): Promise<Client> {
+    entityCache.invalidate('clients');
     await ensureDbSchema();
     if (db) {
       try {
@@ -99,6 +139,7 @@ export const dataService = {
   },
 
   async updateClient(id: number, data: Partial<Client>): Promise<Client | null> {
+    entityCache.invalidate('clients');
     await ensureDbSchema();
     if (db) {
       try {
@@ -122,6 +163,8 @@ export const dataService = {
   },
 
   async deleteClient(id: number): Promise<boolean> {
+    entityCache.invalidate('clients');
+    entityCache.invalidate('sites');
     await ensureDbSchema();
     if (db) {
       try {
@@ -155,17 +198,23 @@ export const dataService = {
 
   // --- SITES ---
   async getSites(filters?: { clientId?: number; type?: string; includeArchived?: boolean }): Promise<Site[]> {
-    await ensureDbSchema();
-    let result = memorySites;
-    if (db) {
-      try {
-        const rows = await db.select().from(schema.sites);
-        result = rows;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
+    let allSites: Site[] = entityCache.sites?.data || [];
+    if (!entityCache.sites || Date.now() - entityCache.sites.time >= CACHE_TTL) {
+      await ensureDbSchema();
+      if (db) {
+        try {
+          allSites = await db.select().from(schema.sites);
+          entityCache.sites = { data: allSites, time: Date.now() };
+        } catch (err) {
+          console.warn('DB Query failed, falling back to memory store:', err);
+          allSites = memorySites;
+        }
+      } else {
+        allSites = memorySites;
       }
     }
 
+    let result: Site[] = allSites.length > 0 ? allSites : memorySites;
     if (!filters?.includeArchived) {
       result = result.filter((s) => s.status !== 'archived');
     }
@@ -180,19 +229,12 @@ export const dataService = {
   },
 
   async getSiteById(id: number): Promise<Site | undefined> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        const [row] = await db.select().from(schema.sites).where(eq(schema.sites.id, id));
-        if (row) return row;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
-      }
-    }
-    return memorySites.find((s) => s.id === id);
+    const sites = await this.getSites({ includeArchived: true });
+    return sites.find((s) => s.id === id);
   },
 
   async createSite(data: NewSite): Promise<Site> {
+    entityCache.invalidate('sites');
     await ensureDbSchema();
     if (db) {
       try {
@@ -240,6 +282,7 @@ export const dataService = {
   },
 
   async updateSite(id: number, data: Partial<Site>): Promise<Site | null> {
+    entityCache.invalidate('sites');
     await ensureDbSchema();
     if (db) {
       try {
@@ -263,6 +306,7 @@ export const dataService = {
   },
 
   async deleteSite(id: number): Promise<boolean> {
+    entityCache.invalidate('sites');
     // Soft delete: Mark site as 'archived' so it is excluded from active queries
     const updated = await this.updateSite(id, { status: 'archived' });
     return !!updated;
@@ -270,10 +314,14 @@ export const dataService = {
 
   // --- TEMPLATES ---
   async getTemplates(): Promise<ConfigTemplate[]> {
+    if (entityCache.templates && Date.now() - entityCache.templates.time < CACHE_TTL) {
+      return entityCache.templates.data;
+    }
     await ensureDbSchema();
     if (db) {
       try {
         const rows = await db.select().from(schema.configTemplates);
+        entityCache.templates = { data: rows, time: Date.now() };
         return rows;
       } catch (err) {
         console.warn('DB Query failed, falling back to memory store:', err);
@@ -283,16 +331,8 @@ export const dataService = {
   },
 
   async getTemplateById(id: number): Promise<ConfigTemplate | undefined> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        const [row] = await db.select().from(schema.configTemplates).where(eq(schema.configTemplates.id, id));
-        if (row) return row;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
-      }
-    }
-    return memoryTemplates.find((t) => t.id === id);
+    const templates = await this.getTemplates();
+    return templates.find((t) => t.id === id);
   },
 
   // --- ACTIVITY LOGS ---
@@ -325,40 +365,36 @@ export const dataService = {
 
   // --- SERVICE GROUPS (Sistemas por Cliente) ---
   async getServiceGroups(clientId?: number): Promise<ServiceGroup[]> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        if (clientId) {
-          const rows = await db.select().from(schema.serviceGroups).where(eq(schema.serviceGroups.clientId, clientId));
-          return rows;
-        } else {
-          const rows = await db.select().from(schema.serviceGroups);
-          return rows;
+    let allGroups: ServiceGroup[] = entityCache.serviceGroups?.data || [];
+    if (!entityCache.serviceGroups || Date.now() - entityCache.serviceGroups.time >= CACHE_TTL) {
+      await ensureDbSchema();
+      if (db) {
+        try {
+          allGroups = await db.select().from(schema.serviceGroups);
+          entityCache.serviceGroups = { data: allGroups, time: Date.now() };
+        } catch (err) {
+          console.warn('DB Query failed, falling back to memory store:', err);
+          allGroups = memoryServiceGroups;
         }
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
+      } else {
+        allGroups = memoryServiceGroups;
       }
     }
+
+    const result: ServiceGroup[] = allGroups.length > 0 ? allGroups : memoryServiceGroups;
     if (clientId) {
-      return memoryServiceGroups.filter((g) => g.clientId === clientId);
+      return result.filter((g) => g.clientId === clientId);
     }
-    return memoryServiceGroups;
+    return result;
   },
 
   async getServiceGroupById(id: number): Promise<ServiceGroup | undefined> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        const [row] = await db.select().from(schema.serviceGroups).where(eq(schema.serviceGroups.id, id));
-        if (row) return row;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
-      }
-    }
-    return memoryServiceGroups.find((g) => g.id === id);
+    const groups = await this.getServiceGroups();
+    return groups.find((g) => g.id === id);
   },
 
   async createServiceGroup(data: NewServiceGroup): Promise<ServiceGroup> {
+    entityCache.invalidate('serviceGroups');
     await ensureDbSchema();
     if (db) {
       try {
@@ -384,6 +420,8 @@ export const dataService = {
   },
 
   async updateServiceGroup(id: number, data: Partial<ServiceGroup>): Promise<ServiceGroup | null> {
+    entityCache.invalidate('serviceGroups');
+    entityCache.invalidate('sites');
     await ensureDbSchema();
     const existing = await this.getServiceGroupById(id);
     if (!existing) return null;
@@ -429,6 +467,8 @@ export const dataService = {
   },
 
   async deleteServiceGroup(id: number): Promise<boolean> {
+    entityCache.invalidate('serviceGroups');
+    entityCache.invalidate('sites');
     await ensureDbSchema();
     const existing = await this.getServiceGroupById(id);
     if (!existing) return false;
@@ -458,16 +498,23 @@ export const dataService = {
 
   // --- PROJECTS ---
   async getProjects(filters?: { clientId?: number; status?: string }): Promise<Project[]> {
-    await ensureDbSchema();
-    let result = memoryProjects;
-    if (db) {
-      try {
-        const rows = await db.select().from(schema.projects);
-        result = rows;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
+    let allProjects: Project[] = entityCache.projects?.data || [];
+    if (!entityCache.projects || Date.now() - entityCache.projects!.time >= CACHE_TTL) {
+      await ensureDbSchema();
+      if (db) {
+        try {
+          allProjects = await db.select().from(schema.projects);
+          entityCache.projects = { data: allProjects, time: Date.now() };
+        } catch (err) {
+          console.warn('DB Query failed, falling back to memory store:', err);
+          allProjects = memoryProjects;
+        }
+      } else {
+        allProjects = memoryProjects;
       }
     }
+
+    let result: Project[] = allProjects.length > 0 ? allProjects : memoryProjects;
     if (filters?.clientId) {
       result = result.filter((p) => p.clientId === filters.clientId);
     }
@@ -478,19 +525,12 @@ export const dataService = {
   },
 
   async getProjectById(id: number): Promise<Project | undefined> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        const [row] = await db.select().from(schema.projects).where(eq(schema.projects.id, id));
-        if (row) return row;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
-      }
-    }
-    return memoryProjects.find((p) => p.id === id);
+    const projects = await this.getProjects();
+    return projects.find((p) => p.id === id);
   },
 
   async createProject(data: NewProject): Promise<Project> {
+    entityCache.invalidate('projects');
     await ensureDbSchema();
     if (db) {
       try {
@@ -525,6 +565,7 @@ export const dataService = {
   },
 
   async updateProject(id: number, data: Partial<Project>): Promise<Project | null> {
+    entityCache.invalidate('projects');
     await ensureDbSchema();
     if (db) {
       try {
@@ -548,6 +589,7 @@ export const dataService = {
   },
 
   async deleteProject(id: number): Promise<boolean> {
+    entityCache.invalidate('projects');
     await ensureDbSchema();
     if (db) {
       try {
@@ -565,16 +607,23 @@ export const dataService = {
 
   // --- PAYMENTS & FINANCES ---
   async getPayments(filters?: { clientId?: number; year?: string; month?: string; status?: string }): Promise<Payment[]> {
-    await ensureDbSchema();
-    let result = memoryPayments;
-    if (db) {
-      try {
-        const rows = await db.select().from(schema.payments);
-        result = rows;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
+    let allPayments: Payment[] = entityCache.payments?.data || [];
+    if (!entityCache.payments || Date.now() - entityCache.payments!.time >= CACHE_TTL) {
+      await ensureDbSchema();
+      if (db) {
+        try {
+          allPayments = await db.select().from(schema.payments);
+          entityCache.payments = { data: allPayments, time: Date.now() };
+        } catch (err) {
+          console.warn('DB Query failed, falling back to memory store:', err);
+          allPayments = memoryPayments;
+        }
+      } else {
+        allPayments = memoryPayments;
       }
     }
+
+    let result: Payment[] = allPayments.length > 0 ? allPayments : memoryPayments;
     if (filters?.clientId) {
       result = result.filter((p) => p.clientId === filters.clientId);
     }
@@ -592,19 +641,13 @@ export const dataService = {
   },
 
   async getPaymentById(id: number): Promise<Payment | undefined> {
-    await ensureDbSchema();
-    if (db) {
-      try {
-        const [row] = await db.select().from(schema.payments).where(eq(schema.payments.id, id));
-        if (row) return row;
-      } catch (err) {
-        console.warn('DB Query failed, falling back to memory store:', err);
-      }
-    }
-    return memoryPayments.find((p) => p.id === id);
+    const payments = await this.getPayments();
+    return payments.find((p) => p.id === id);
   },
 
   async createPayment(data: NewPayment): Promise<Payment> {
+    entityCache.invalidate('payments');
+    entityCache.invalidate('projects');
     await ensureDbSchema();
     let created: Payment | null = null;
     if (db) {
@@ -652,6 +695,8 @@ export const dataService = {
   },
 
   async updatePayment(id: number, data: Partial<Payment>): Promise<Payment | null> {
+    entityCache.invalidate('payments');
+    entityCache.invalidate('projects');
     await ensureDbSchema();
     if (db) {
       try {
@@ -675,6 +720,8 @@ export const dataService = {
   },
 
   async deletePayment(id: number): Promise<boolean> {
+    entityCache.invalidate('payments');
+    entityCache.invalidate('projects');
     await ensureDbSchema();
     if (db) {
       try {
@@ -691,11 +738,18 @@ export const dataService = {
   },
 
   async getFinancialSettings() {
+    if (entityCache.financialSettings && Date.now() - entityCache.financialSettings.time < CACHE_TTL) {
+      return entityCache.financialSettings.data;
+    }
     await ensureDbSchema();
     if (db) {
       try {
         const [row] = await db.select().from(schema.appSettings).where(eq(schema.appSettings.key, 'salary_ladder_config'));
-        if (row && row.value) return row.value as typeof DEFAULT_FINANCIAL_SETTINGS;
+        if (row && row.value) {
+          const val = row.value as typeof DEFAULT_FINANCIAL_SETTINGS;
+          entityCache.financialSettings = { data: val, time: Date.now() };
+          return val;
+        }
       } catch (err) {
         console.warn('DB Query failed, falling back to memory store:', err);
       }
@@ -704,6 +758,7 @@ export const dataService = {
   },
 
   async updateFinancialSettings(settings: Partial<typeof DEFAULT_FINANCIAL_SETTINGS>) {
+    entityCache.invalidate('financialSettings');
     await ensureDbSchema();
     const updated = { ...memoryFinancialSettings, ...settings };
     if (db) {
