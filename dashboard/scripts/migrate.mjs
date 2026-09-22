@@ -453,7 +453,8 @@ async function runMigration() {
     ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active',
     ADD COLUMN IF NOT EXISTS acquisition_channel TEXT,
     ADD COLUMN IF NOT EXISTS drive_folder_url TEXT,
-    ADD COLUMN IF NOT EXISTS timeline JSONB;
+    ADD COLUMN IF NOT EXISTS timeline JSONB,
+    ADD COLUMN IF NOT EXISTS infrastructure JSONB;
   `;
 
   await sql`
@@ -487,6 +488,16 @@ async function runMigration() {
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );
+  `;
+
+  await sql`
+    ALTER TABLE sites 
+    ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'web_wordpress',
+    ADD COLUMN IF NOT EXISTS provider TEXT,
+    ADD COLUMN IF NOT EXISTS billing JSONB,
+    ADD COLUMN IF NOT EXISTS relationships JSONB,
+    ADD COLUMN IF NOT EXISTS roadmap_notes TEXT,
+    ADD COLUMN IF NOT EXISTS service_group TEXT DEFAULT 'General';
   `;
 
   await sql`
@@ -550,6 +561,13 @@ async function runMigration() {
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );
+  `;
+
+  await sql`
+    ALTER TABLE config_templates
+    ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'security',
+    ADD COLUMN IF NOT EXISTS config_type TEXT DEFAULT 'wp_options',
+    ADD COLUMN IF NOT EXISTS payload JSONB DEFAULT '{}'::jsonb;
   `;
 
   await sql`
@@ -623,19 +641,7 @@ async function runMigration() {
         ${client.id}, ${client.name}, ${client.legalName}, ${client.ruc}, ${client.email}, ${client.phone}, ${client.company}, ${client.notes},
         ${client.status}, ${client.acquisitionChannel}, ${client.driveFolderUrl}, ${JSON.stringify(client.timeline || [])}, ${JSON.stringify(client.infrastructure)}
       )
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        legal_name = EXCLUDED.legal_name,
-        ruc = EXCLUDED.ruc,
-        email = EXCLUDED.email,
-        phone = EXCLUDED.phone,
-        company = EXCLUDED.company,
-        notes = EXCLUDED.notes,
-        status = EXCLUDED.status,
-        acquisition_channel = EXCLUDED.acquisition_channel,
-        drive_folder_url = EXCLUDED.drive_folder_url,
-        timeline = EXCLUDED.timeline,
-        infrastructure = EXCLUDED.infrastructure;
+      ON CONFLICT (id) DO NOTHING;
     `;
   }
   await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;
