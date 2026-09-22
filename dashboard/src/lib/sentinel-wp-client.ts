@@ -67,6 +67,13 @@ export interface WPPendingUpdatesResponse {
     new_version: string;
     package?: string;
   }>;
+  translations?: Array<{
+    type?: string;
+    slug: string;
+    name: string;
+    language?: string;
+    version?: string;
+  }>;
 }
 
 export interface WPPluginItem {
@@ -211,17 +218,27 @@ export const sentinelWpClient = {
     }, 15000);
   },
 
-  async fetchUpdates(siteUrl: string, token: string): Promise<{ ok: boolean; data?: WPPendingUpdatesResponse; error?: string; status: number }> {
-    const endpoint = this.buildUrl(siteUrl, '/updates', token);
+  async fetchUpdates(siteUrl: string, token: string, forceCheck = false): Promise<{ ok: boolean; data?: WPPendingUpdatesResponse; error?: string; status: number }> {
+    let endpoint = this.buildUrl(siteUrl, '/updates', token);
+    if (forceCheck) {
+      endpoint += '&force_check=1';
+    }
     return safeJsonFetch<WPPendingUpdatesResponse>(endpoint, {
       headers: this.getHeaders(token),
-    }, 15000);
+    }, 25000);
+  },
+
+  async fetchMainWPUpdates(siteUrl: string, token: string): Promise<{ ok: boolean; data?: any; error?: string; status: number }> {
+    const endpoint = this.buildUrl(siteUrl, '/mainwp/updates', token);
+    return safeJsonFetch<any>(endpoint, {
+      headers: this.getHeaders(token),
+    }, 25000);
   },
 
   async applyUpdates(
     siteUrl: string,
     token: string,
-    params: { type: 'all' | 'core' | 'plugins' | 'themes'; slugs?: string[] }
+    params: { type: 'all' | 'core' | 'plugins' | 'themes' | 'translations'; slugs?: string[] }
   ): Promise<{ status: string; results?: any; error?: string }> {
     const endpoint = this.buildUrl(siteUrl, '/updates/apply', token);
     const res = await safeJsonFetch(endpoint, {

@@ -91,8 +91,9 @@ export const sites = pgTable('sites', {
     plugins: number;
     themes: number;
     wordpress: number;
+    translations?: number;
     details?: Array<{
-      type: 'plugin' | 'theme' | 'core';
+      type: 'plugin' | 'theme' | 'core' | 'translation';
       slug: string;
       name: string;
       currentVersion: string;

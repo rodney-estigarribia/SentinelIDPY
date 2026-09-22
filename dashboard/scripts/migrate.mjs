@@ -43,44 +43,44 @@ const INITIAL_CLIENTS = [
   {
     id: 2,
     name: 'CGA Corporativo',
-    legalName: 'CGA GROUP SA',
+    legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
     ruc: '80092994-2',
-    email: 'contacto@cgagroup.com.py',
+    email: 'cgasociedadanonima@gmail.com',
     phone: '+595 981 123456',
-    company: 'CGA Group S.A.',
-    notes: 'Cliente corporativo principal - Plan Elite Mantenimiento',
+    company: 'CGA Consultora de Gestión Ambiental S.A.',
+    notes: 'Cliente corporativo principal - Web institucional, Portal de clientes y Mantenimiento Plan Elite',
     status: 'active',
     acquisitionChannel: 'referral',
-    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-corporativo',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-gestion-ambiental',
     timeline: [
       { id: 't-2-1', year: '2023', title: 'Desarrollo Web Corporativa', description: 'Lanzamiento del portal web principal en WordPress.', category: 'milestone', actor: 'rodney' },
       { id: 't-2-2', year: '2024', title: 'Plan Elite de Mantenimiento', description: 'Contratación de soporte técnico preventivo mensual.', category: 'upgrade', actor: 'ana' }
     ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-11-20', annualCost: 150000, currency: 'PYG', notes: 'Lo renueva Impulsos Digitales' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business 10GB', annualCost: 450000, currency: 'PYG' },
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-12-15', annualCost: 150000, currency: 'PYG', notes: 'Lo hace el cliente - Vence en diciembre' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business 10GB', annualCost: 450000, currency: 'PYG', notes: 'Lo hace el cliente - Vence anual en agosto' },
       dns: { provider: 'cPanel Host' },
-      email: { provider: 'Microsoft 365', accountsCount: 15, annualCost: 1080, currency: 'USD' }
+      email: { provider: 'Microsoft 365', accountsCount: 8, annualCost: 0, currency: 'PYG', notes: 'Microsoft 365 corporativo' }
     }
   },
   {
     id: 3,
     name: 'CGA Portal',
-    legalName: 'CGA GROUP SA',
+    legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
     ruc: '80092994-2',
-    email: 'portal@cgagroup.com.py',
+    email: 'cgasociedadanonima@gmail.com',
     phone: '+595 981 123456',
-    company: 'CGA Group S.A.',
-    notes: 'Portal secundario y recursos para colaboradores',
+    company: 'CGA Consultora de Gestión Ambiental S.A.',
+    notes: 'Portal secundario y recursos para colaboradores en Vercel',
     status: 'active',
     acquisitionChannel: 'referral',
-    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-portal',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
     timeline: [
-      { id: 't-3-1', year: '2024', title: 'Lanzamiento Portal Interno', description: 'Despliegue del portal de colaboradores conectado al hosting corporativo.', category: 'milestone', actor: 'martin' }
+      { id: 't-3-1', year: '2024', title: 'Lanzamiento Portal Interno', description: 'Despliegue del portal de colaboradores en Vercel.', category: 'milestone', actor: 'martin' }
     ],
     infrastructure: {
       domain: { provider: 'nic.py (subdominio portal.cga...)', renewer: 'agency', expiryDate: '2026-11-20', annualCost: 0, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Compartido con CGA Corp', annualCost: 0, currency: 'PYG' },
+      hosting: { provider: 'Vercel', plan: 'Impulsos Digitales Plan', annualCost: 0, currency: 'USD' },
       dns: { provider: 'cPanel Host' },
       email: { provider: 'Microsoft 365 (incluido en Corp)', accountsCount: 0, annualCost: 0, currency: 'USD' }
     }
@@ -88,12 +88,12 @@ const INITIAL_CLIENTS = [
   {
     id: 4,
     name: 'Cope Market Deli',
-    legalName: 'Cope Market Deli',
-    ruc: '80054321-9',
-    email: 'contacto@copemarket.com.py',
+    legalName: 'Cope Market Deli S.A.',
+    ruc: '80123456-7',
+    email: 'contacto@copemarketdeli.com.py',
     phone: '+595 981 654321',
     company: 'Cope Market Deli',
-    notes: 'Cliente histórico con tienda online. Servicio dado de baja en 2026 por reestructuración del cliente.',
+    notes: 'Cliente histórico. Servicio dado de baja en 2026.',
     status: 'churned',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cope-market-historico',
@@ -110,12 +110,12 @@ const INITIAL_CLIENTS = [
   {
     id: 5,
     name: 'Dagda',
-    legalName: 'DAGDA S.A.',
+    legalName: 'Dagda Comunicación & Eventos EAS',
     ruc: '80138071-5',
-    email: 'soporte@dagda.com.py',
+    email: 'armando_cubilla@hotmail.com',
     phone: '+595 981 333444',
-    company: 'Dagda S.A.',
-    notes: 'Ecosistema tecnológico híbrido: Web WordPress institucional, backend FastAPI en Render y base PostgreSQL.',
+    company: 'Dagda Comunicación & Eventos EAS',
+    notes: 'Ecosistema tecnológico híbrido: Web WordPress institucional, plataforma móvil/web y backend en Render con licencias Microsoft 365.',
     status: 'active',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/dagda-ecosistema',
@@ -128,17 +128,17 @@ const INITIAL_CLIENTS = [
       domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-10-15', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Hosting Paraguay (cPanel Web) + Render.com (Backend)', plan: 'Cloud Hybrid', annualCost: 650000, currency: 'PYG' },
       dns: { provider: 'Cloudflare' },
-      email: { provider: 'Google Workspace', accountsCount: 10, annualCost: 720, currency: 'USD' }
+      email: { provider: 'Microsoft 365', accountsCount: 4, annualCost: 288, currency: 'USD' }
     }
   },
   {
     id: 6,
     name: 'GeneSur',
-    legalName: 'GENESUR S.A.',
+    legalName: 'GENE SUR SRL',
     ruc: '80017259-0',
     email: 'info@genesur.com.py',
     phone: '+595 981 555666',
-    company: 'GeneSur S.A.',
+    company: 'GeneSur Genética Bovina',
     notes: 'Cliente agroganadero clave - Plan Elite de Mantenimiento',
     status: 'active',
     acquisitionChannel: 'referral',
@@ -151,15 +151,15 @@ const INITIAL_CLIENTS = [
       domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-09-30', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business 10GB', annualCost: 450000, currency: 'PYG' },
       dns: { provider: 'cPanel Host' },
-      email: { provider: 'cPanel Host', accountsCount: 12, annualCost: 0, currency: 'PYG' }
+      email: { provider: 'Microsoft 365', accountsCount: 6, annualCost: 432, currency: 'USD' }
     }
   },
   {
     id: 7,
     name: 'Navíos Argentina',
-    legalName: 'Navíos Argentina S.A.',
-    ruc: '30-71000000-1',
-    email: 'contacto@navios.com.py',
+    legalName: 'Navíos Logistics Argentina S.A.',
+    ruc: '30-71234567-9',
+    email: 'contacto@naviosargentina.com',
     phone: '+54 11 4000 1234',
     company: 'Navíos Logistics',
     notes: 'Operaciones fluviales y logística',
@@ -178,11 +178,11 @@ const INITIAL_CLIENTS = [
   {
     id: 8,
     name: 'Synexa',
-    legalName: 'SYNEXA S.A.',
+    legalName: 'SYNEXA E.A.S.',
     ruc: '80138132-0',
-    email: 'info@synexa.com.py',
+    email: 'contacto@synexa.com.py',
     phone: '+595 21 600 700',
-    company: 'Synexa S.A.',
+    company: 'Synexa E.A.S.',
     notes: 'Servicios financieros y consultoría',
     status: 'active',
     acquisitionChannel: 'referral',
@@ -194,7 +194,7 @@ const INITIAL_CLIENTS = [
       domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2026-11-10', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 5GB', annualCost: 350000, currency: 'PYG' },
       dns: { provider: 'cPanel Host' },
-      email: { provider: 'Microsoft 365', accountsCount: 8, annualCost: 576, currency: 'USD' }
+      email: { provider: 'Google Workspace', accountsCount: 2, annualCost: 144, currency: 'USD' }
     }
   },
   {
@@ -202,9 +202,9 @@ const INITIAL_CLIENTS = [
     name: 'Misa Guaraní',
     legalName: 'MEAURIO MANCUELLO CLAUDIA LORENA',
     ruc: '5415611-4',
-    email: 'contacto@misaguarani.com.py',
+    email: 'contacto@misaguarani.com',
     phone: '+595 981 789456',
-    company: 'Misa Guaraní',
+    company: 'Fundación Cultural Misa Guaraní',
     notes: 'Portal cultural y pastoral con Plan Pro',
     status: 'active',
     acquisitionChannel: 'referral',
@@ -250,12 +250,13 @@ const INITIAL_CLIENTS = [
     email: 'contacto@cna.com.py',
     phone: '+595 981 999888',
     company: 'CNA Consultora',
-    notes: 'Sitio institucional con mantenimiento',
+    notes: 'En proceso de levantar su web: sitio web entregado al cliente, pendiente de instalación en su propio servidor.',
     status: 'active',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cna-consultora',
     timeline: [
-      { id: 't-11-1', year: '2024', title: 'Lanzamiento Web Institucional', description: 'Sitio web WordPress corporativo.', category: 'milestone', actor: 'martin' }
+      { id: 't-11-1', year: '2024', title: 'Lanzamiento Web Institucional', description: 'Sitio web WordPress corporativo.', category: 'milestone', actor: 'martin' },
+      { id: 't-11-2', year: '2026', title: 'Entrega de Web en Proceso de Despliegue', description: 'Web entregada para instalación en servidor propio del cliente.', category: 'note', actor: 'rodney' }
     ],
     infrastructure: {
       domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-11-01', annualCost: 150000, currency: 'PYG' },
@@ -271,7 +272,7 @@ const INITIAL_CLIENTS = [
     email: 'com@medopharm.com.py',
     phone: '+595 21 500 100',
     company: 'Medopharm S.A.',
-    notes: 'Tuvieron web WordPress con nosotros, luego migraron externamente a Wix.',
+    notes: 'Tuvieron web WordPress con nosotros, luego migraron externamente a Wix (fuera de nuestro control por ahora).',
     status: 'migrated',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/medopharm-historico',
@@ -388,6 +389,96 @@ const INITIAL_PROJECTS = [
     targetDeliveryDate: '2026-09-30',
     notes: 'Esperando confirmación de contenidos actualizados de catálogo ganadero.',
     driveUrl: 'https://drive.google.com/drive/folders/genesur/auditoria',
+    assignedRole: 'ana'
+  },
+  {
+    id: 5,
+    clientId: 2,
+    name: 'Sitio Web Institucional CGA',
+    category: 'web_corp',
+    status: 'completed',
+    waitingOn: 'agency',
+    budget: 1800000,
+    currency: 'PYG',
+    advancePaid: 1800000,
+    targetDeliveryDate: '2026-01-31',
+    notes: 'Sitio web WordPress corporativo institucional bajo Mantenimiento Plan Elite.',
+    driveUrl: 'https://drive.google.com/drive/folders/cga-gestion-ambiental/web',
+    assignedRole: 'martin'
+  },
+  {
+    id: 6,
+    clientId: 2,
+    name: 'Portal Clientes CGA (Vercel)',
+    category: 'cloud',
+    status: 'completed',
+    waitingOn: 'agency',
+    budget: 2500000,
+    currency: 'PYG',
+    advancePaid: 2500000,
+    targetDeliveryDate: '2026-02-15',
+    notes: 'Aplicación web portal.cga.com.py desplegada en Vercel para reportes ambientales.',
+    driveUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
+    assignedRole: 'martin'
+  },
+  {
+    id: 7,
+    clientId: 2,
+    name: 'Gestión & Soporte Microsoft 365 CGA',
+    category: 'consulting',
+    status: 'completed',
+    waitingOn: 'client',
+    budget: 850000,
+    currency: 'PYG',
+    advancePaid: 850000,
+    targetDeliveryDate: '2026-03-01',
+    notes: 'Administración de cuentas de correo y configuración de registros MX/SPF/DKIM Microsoft 365.',
+    driveUrl: 'https://drive.google.com/drive/folders/cga-gestion-ambiental/m365',
+    assignedRole: 'ana'
+  },
+  {
+    id: 8,
+    clientId: 5,
+    name: 'Sitio Web Institucional Dagda',
+    category: 'web_corp',
+    status: 'completed',
+    waitingOn: 'agency',
+    budget: 2200000,
+    currency: 'PYG',
+    advancePaid: 2200000,
+    targetDeliveryDate: '2026-01-15',
+    notes: 'Sitio web institucional en cPanel con catálogo de eventos y enlaces corporativos.',
+    driveUrl: 'https://drive.google.com/drive/folders/dagda-eventos-2026/web',
+    assignedRole: 'martin'
+  },
+  {
+    id: 9,
+    clientId: 5,
+    name: 'Plataforma Integral Dagda (App Móvil, WebApp & Backend Render)',
+    category: 'mobile_app',
+    status: 'in_progress',
+    waitingOn: 'agency',
+    budget: 4500000,
+    currency: 'PYG',
+    advancePaid: 2000000,
+    targetDeliveryDate: '2026-11-30',
+    notes: 'Ecosistema móvil iOS/Android + Backend Render Postgres + WebApp Angular/React.',
+    driveUrl: 'https://drive.google.com/drive/folders/dagda-app',
+    assignedRole: 'martin'
+  },
+  {
+    id: 10,
+    clientId: 5,
+    name: 'Microsoft 365 & Licencias Ofimática Dagda',
+    category: 'consulting',
+    status: 'completed',
+    waitingOn: 'client',
+    budget: 1200000,
+    currency: 'PYG',
+    advancePaid: 1200000,
+    targetDeliveryDate: '2026-02-10',
+    notes: 'Gestión y administración de cuentas corporativas Microsoft 365 y licencias Office.',
+    driveUrl: 'https://drive.google.com/drive/folders/dagda-eventos-2026/ofimatica',
     assignedRole: 'ana'
   }
 ];
