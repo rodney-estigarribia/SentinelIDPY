@@ -34,7 +34,12 @@ import {
   Tag,
   Receipt,
   Smartphone,
-  Check
+  Check,
+  UserCheck,
+  Key,
+  Shield,
+  CreditCard,
+  Filter
 } from 'lucide-react';
 import type { Client, Site, Project, ClientTimelineEvent, Payment } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
@@ -612,11 +617,13 @@ export function ClientsClient({
     setNewClientRuc('');
     setNewClientCompany('');
     setNewClientEmail('');
+    setNewClientBillingEmail('');
+    setNewClientPortalEmail('');
     setNewClientPhone('');
     setNewClientDrive('');
 
     try {
-      const res = await fetch('/api/services', { // or clients route
+      const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newClientData),
@@ -686,27 +693,54 @@ export function ClientsClient({
     }
   };
 
-  // Filter clients by search query
+  const totalCount = clients.length;
+  const realCount = clients.filter(c => ((c as any).clientType === 'real' || !(c as any).clientType) && c.status !== 'lead' && c.status !== 'churned').length;
+  const potentialCount = clients.filter(c => (c as any).clientType === 'potential' || c.status === 'lead').length;
+  const churnedCount = clients.filter(c => c.status === 'churned').length;
+
+  // Filter clients by search query, client type, and service package
   const filteredClients = clients.filter((c) => {
+    // 1. Client Type filter
+    if (clientTypeFilter === 'real') {
+      const isPot = (c as any).clientType === 'potential' || c.status === 'lead';
+      const isChurn = c.status === 'churned';
+      if (isPot || isChurn) return false;
+    } else if (clientTypeFilter === 'potential') {
+      const isPot = (c as any).clientType === 'potential' || c.status === 'lead';
+      if (!isPot) return false;
+    } else if (clientTypeFilter === 'churned') {
+      if (c.status !== 'churned') return false;
+    }
+
+    // 2. Service Package filter
+    if (serviceFilter !== 'all') {
+      const pkg = (c as any).servicePackage || 'custom';
+      if (pkg !== serviceFilter) return false;
+    }
+
+    // 3. Search query filter
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       c.name.toLowerCase().includes(q) ||
       (c.legalName && c.legalName.toLowerCase().includes(q)) ||
       (c.ruc && c.ruc.toLowerCase().includes(q)) ||
-      (c.company && c.company.toLowerCase().includes(q))
+      (c.company && c.company.toLowerCase().includes(q)) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (Boolean((c as any).billingEmail) && (c as any).billingEmail.toLowerCase().includes(q)) ||
+      (Boolean((c as any).portalEmail) && (c as any).portalEmail.toLowerCase().includes(q))
     );
   });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left Column: Client List (4 cols) */}
-      <div className="lg:col-span-4 space-y-4">
+      <div className="lg:col-span-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-slate-900 dark:text-white text-base">Clientes CRM</h3>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {clients.length}
+              {filteredClients.length} de {totalCount}
             </span>
           </div>
           <button
@@ -718,12 +752,74 @@ export function ClientsClient({
           </button>
         </div>
 
+        {/* Filter Pills: Reales vs Potenciales vs Bajas */}
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-[11px] font-semibold">
+          <button
+            onClick={() => setClientTypeFilter('all')}
+            className={`py-1.5 px-1 rounded-lg transition-all text-center cursor-pointer ${
+              clientTypeFilter === 'all'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Todos ({totalCount})
+          </button>
+          <button
+            onClick={() => setClientTypeFilter('real')}
+            className={`py-1.5 px-1 rounded-lg transition-all text-center flex items-center justify-center gap-1 cursor-pointer ${
+              clientTypeFilter === 'real'
+                ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="Clientes reales activos en servicio o retenidos"
+          >
+            <span>🟢</span> Reales ({realCount})
+          </button>
+          <button
+            onClick={() => setClientTypeFilter('potential')}
+            className={`py-1.5 px-1 rounded-lg transition-all text-center flex items-center justify-center gap-1 cursor-pointer ${
+              clientTypeFilter === 'potential'
+                ? 'bg-amber-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="Clientes potenciales, leads en negociación y demos 7 días"
+          >
+            <span>⚡</span> Leads ({potentialCount})
+          </button>
+          <button
+            onClick={() => setClientTypeFilter('churned')}
+            className={`py-1.5 px-1 rounded-lg transition-all text-center cursor-pointer ${
+              clientTypeFilter === 'churned'
+                ? 'bg-rose-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Bajas ({churnedCount})
+          </button>
+        </div>
+
+        {/* Service Package Filter Dropdown */}
+        <div className="relative">
+          <select
+            value={serviceFilter}
+            onChange={(e) => setServiceFilter(e.target.value)}
+            className="w-full px-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500 shadow-sm"
+          >
+            <option value="all">📦 Filtrar por servicio contratado (Todos)</option>
+            {SERVICE_PACKAGES.map((pkg) => (
+              <option key={pkg.id} value={pkg.id}>
+                {pkg.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Search filter */}
         <div className="relative">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
           <input
             type="text"
-            placeholder="Buscar por nombre, RUC o empresa..."
+            placeholder="Buscar por nombre, RUC, empresa o correo..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
@@ -731,70 +827,91 @@ export function ClientsClient({
         </div>
 
         {/* Client Items */}
-        <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
-          {filteredClients.map((c) => {
-            const isSelected = selectedClient?.id === c.id;
-            const cSites = sites.filter((s) => s.clientId === c.id);
-            const cProjects = projects.filter((p) => p.clientId === c.id);
-            const statusInfo = getStatusBadge(c.status);
+        <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+          {filteredClients.length === 0 ? (
+            <div className="text-center py-8 text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              No se encontraron clientes con los filtros seleccionados.
+            </div>
+          ) : (
+            filteredClients.map((c) => {
+              const isSelected = selectedClient?.id === c.id;
+              const cSites = sites.filter((s) => s.clientId === c.id);
+              const cProjects = projects.filter((p) => p.clientId === c.id);
+              const typeBadge = getClientTypeBadge(c);
+              const pkgInfo = getServicePackageInfo((c as any).servicePackage);
 
-            return (
-              <div
-                key={c.id}
-                id={`client-${c.id}`}
-                onClick={() => handleSelectClient(c)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                  isSelected
-                    ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/10 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                        {c.name}
-                      </h4>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${statusInfo.classes}`}>
-                        {statusInfo.label}
-                      </span>
+              return (
+                <div
+                  key={c.id}
+                  id={`client-${c.id}`}
+                  onClick={() => handleSelectClient(c)}
+                  className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/10 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                          {c.name}
+                        </h4>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${typeBadge.classes}`}>
+                          {typeBadge.icon} {typeBadge.label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border truncate max-w-[210px] ${pkgInfo.badge}`}>
+                          {pkgInfo.name}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                        {c.legalName || c.company || 'Empresa'}
+                      </p>
+
+                      {c.ruc && (
+                        <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                          RUC: {c.ruc}
+                        </p>
+                      )}
                     </div>
 
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                      {c.legalName || c.company || 'Empresa'}
-                    </p>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        {cSites.length} serv • {cProjects.length} proy
+                      </span>
 
-                    {c.ruc && (
-                      <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
-                        RUC: {c.ruc}
-                      </p>
-                    )}
+                      {cSites.some((s) => s.billing?.responsibility === 'tc_agencia') && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30">
+                          TC Rodney ⚠️
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {cSites.length} serv • {cProjects.length} proy
-                    </span>
-
-                    {cSites.some((s) => s.billing?.responsibility === 'tc_agencia') && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30">
-                        TC Rodney ⚠️
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-1.5 truncate">
+                      {(c as any).portalEmail ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-cyan-600 dark:text-cyan-400" title={`Acceso Magic Link Portal: ${(c as any).portalEmail}`}>
+                          🔑 {(c as any).portalEmail}
+                        </span>
+                      ) : (
+                        <span className="truncate font-mono">{c.email || 'Sin correo'}</span>
+                      )}
+                    </div>
+                    {c.acquisitionChannel && (
+                      <span className="text-[10px] text-slate-400 capitalize shrink-0">
+                        {c.acquisitionChannel}
                       </span>
                     )}
                   </div>
                 </div>
-
-                <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                  <span className="truncate">{c.email || 'Sin correo'}</span>
-                  {c.acquisitionChannel && (
-                    <span className="text-[10px] text-slate-400 capitalize">
-                      {c.acquisitionChannel}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -887,10 +1004,22 @@ export function ClientsClient({
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-6 text-xs font-semibold">
+            <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-6 text-xs font-semibold overflow-x-auto pb-px">
+              <button
+                onClick={() => setActiveTab('ficha_crm')}
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer shrink-0 ${
+                  activeTab === 'ficha_crm'
+                    ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>Ficha CRM (360°)</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('infrastructure')}
-                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer shrink-0 ${
                   activeTab === 'infrastructure'
                     ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -902,7 +1031,7 @@ export function ClientsClient({
 
               <button
                 onClick={() => setActiveTab('timeline')}
-                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer shrink-0 ${
                   activeTab === 'timeline'
                     ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -914,7 +1043,7 @@ export function ClientsClient({
 
               <button
                 onClick={() => setActiveTab('projects')}
-                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer shrink-0 ${
                   activeTab === 'projects'
                     ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -926,7 +1055,7 @@ export function ClientsClient({
 
               <button
                 onClick={() => setActiveTab('payments')}
-                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer shrink-0 ${
                   activeTab === 'payments'
                     ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -938,7 +1067,7 @@ export function ClientsClient({
 
               <button
                 onClick={() => setActiveTab('web_config')}
-                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer shrink-0 ${
                   activeTab === 'web_config'
                     ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -948,6 +1077,377 @@ export function ClientsClient({
                 <span>Configuración Web & CTAs (Etapa 2)</span>
               </button>
             </div>
+
+            {/* TAB 0: FICHA CRM (360°) */}
+            {activeTab === 'ficha_crm' && (
+              <div className="space-y-6 animate-in fade-in">
+                {/* 1. Banner de Oferta & Paquete Asociado */}
+                {(() => {
+                  const pkg = getServicePackageInfo((selectedClient as any).servicePackage);
+                  const isPotential = (selectedClient as any).clientType === 'potential' || selectedClient.status === 'lead';
+                  const typeBadge = getClientTypeBadge(selectedClient);
+
+                  return (
+                    <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-linear-to-r from-slate-50 via-white to-slate-50 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-900/60 shadow-sm">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Paquete / Oferta Asignada
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${typeBadge.classes}`}>
+                              {typeBadge.icon} {typeBadge.label}
+                            </span>
+                            {isPotential && (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
+                                ⏳ Periodo de Prueba / Negociación Activo
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>{pkg.name}</span>
+                          </h3>
+
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+                              Tarifa / Arancel: {pkg.price}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                            {pkg.id === 'mipyme_express' ? (
+                              <span>
+                                🚀 <strong>Propuesta Express:</strong> Creación de web + Google Maps + presencia digital con IA en 24h. 7 días de prueba sin costo de desarrollo (Mano de obra ₲0). Si el cliente aprueba, abona <strong>₲610.000/año</strong> por dominio, hosting y seguridad continua.
+                              </span>
+                            ) : pkg.id === 'hardening' ? (
+                              <span>
+                                🛡️ <strong>Hardening & Ciberseguridad:</strong> Auditoría de seguridad perimetral, cierre de vectores expuestos, gestión de accesos y protección de activos empresariales (Desde ₲1.800.000).
+                              </span>
+                            ) : pkg.id === 'cloud_infra' ? (
+                              <span>
+                                ☁️ <strong>Cloud & Infraestructura:</strong> Arquitectura en nube, servidores dedicados/VPS, migración y estabilidad de misión crítica (Desde ₲2.500.000).
+                              </span>
+                            ) : (
+                              <span>
+                                💼 <strong>Servicio Especializado:</strong> Configuración y mantenimiento gestionado por Rodney / Impulsos Digitales.
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0">
+                          <button
+                            onClick={openClientDetailsModal}
+                            className="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Modificar Oferta / Tipo</span>
+                          </button>
+
+                          {clientSites.length > 0 && (
+                            <button
+                              onClick={() => {
+                                setSelectedConfigSiteId(clientSites[0].id);
+                                setActiveTab('web_config');
+                              }}
+                              className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/25 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Configurar Web & CTAs</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Grid 2 Columnas: Tarjetas Separadas de Facturación Legal vs Acceso a Portal & Analítica */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* TARJETA 1: INFORMACIÓN DE FACTURACIÓN LEGAL & FISCAL */}
+                  <div className="p-5 rounded-2xl border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/10 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-amber-200/60 dark:border-amber-500/20 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center">
+                            <Receipt className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                              Facturación Legal & Fiscal
+                            </h4>
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                              SET / Impuestos / Liquidaciones
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
+                          Contabilidad
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200/80 dark:border-amber-700/40 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                        <Shield className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <p className="leading-snug">
+                          <strong>Aislamiento Contable:</strong> Este correo recibe facturas oficiales y estados de cobro. <u>NO</u> tiene acceso ni permisos para ver métricas de analítica web.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 pt-1">
+                        <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                          <span className="text-slate-500 dark:text-slate-400">Razón Social:</span>
+                          <span className="font-bold text-slate-900 dark:text-white truncate max-w-[200px]">
+                            {selectedClient.legalName || 'No especificada'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                          <span className="text-slate-500 dark:text-slate-400">RUC Legal:</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">
+                            {selectedClient.ruc || 'Sin RUC'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-1 py-1 border-b border-slate-100 dark:border-slate-800/60">
+                          <span className="text-slate-500 dark:text-slate-400">Correo de Facturación (Receptor Legal):</span>
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span className="font-mono font-semibold text-slate-900 dark:text-white truncate">
+                              {(selectedClient as any).billingEmail || selectedClient.email || 'Sin correo de facturación'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1">
+                          <span className="text-slate-500 dark:text-slate-400">Condición de Cobro:</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {(selectedClient as any).billingDetails?.paymentTerms || 'Contado / Anticipado'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={openClientDetailsModal}
+                      className="w-full py-2 px-3 rounded-xl border border-amber-200 dark:border-amber-800 hover:bg-amber-100/50 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Actualizar Info Contable & RUC</span>
+                    </button>
+                  </div>
+
+                  {/* TARJETA 2: ACCESO A PORTAL & ANALÍTICA WEB */}
+                  <div className="p-5 rounded-2xl border border-cyan-200/80 dark:border-cyan-500/30 bg-cyan-50/20 dark:bg-cyan-950/10 shadow-sm space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-cyan-200/60 dark:border-cyan-500/20 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 flex items-center justify-center">
+                            <Key className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                              Acceso a Portal & Analítica Web
+                            </h4>
+                            <p className="text-[10px] text-cyan-700 dark:text-cyan-400 font-medium">
+                              Magic Link 7 Días (/portal)
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30">
+                          Cliente Web
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-cyan-100/60 dark:bg-cyan-900/30 border border-cyan-200/80 dark:border-cyan-700/40 text-[11px] text-cyan-900 dark:text-cyan-200 flex items-start gap-2">
+                        <Key className="w-3.5 h-3.5 text-cyan-700 dark:text-cyan-400 shrink-0 mt-0.5" />
+                        <p className="leading-snug">
+                          <strong>Acceso Exclusivo de Métricas:</strong> Este correo permite ingresar a <code>/portal</code> sin contraseña para ver visitas y clics de WhatsApp. <u>NO</u> accede a facturas ni otros clientes.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 pt-1">
+                        <div className="flex flex-col gap-1 py-1 border-b border-slate-100 dark:border-slate-800/60">
+                          <span className="text-slate-500 dark:text-slate-400">Correo Habilitado para Magic Link:</span>
+                          <div className="flex items-center gap-1.5">
+                            <Key className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                            <span className="font-mono font-bold text-slate-900 dark:text-white truncate">
+                              {(selectedClient as any).portalEmail || '⚠️ Sin correo de portal (Configurar)'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 py-1 border-b border-slate-100 dark:border-slate-800/60">
+                          <span className="text-slate-500 dark:text-slate-400">Sitio(s) Vinculado(s):</span>
+                          {clientSites.length === 0 ? (
+                            <p className="text-slate-400 italic">No tiene sitios asignados todavía.</p>
+                          ) : (
+                            clientSites.map((site) => (
+                              <div key={site.id} className="flex items-center justify-between text-xs py-0.5">
+                                <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[160px]">
+                                  {site.name}
+                                </span>
+                                {site.url && (
+                                  <a
+                                    href={`${site.url.replace(/\/$/, '')}/portal`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-mono text-cyan-600 dark:text-cyan-400 hover:underline"
+                                  >
+                                    <span>Abrir /portal</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between py-1">
+                          <span className="text-slate-500 dark:text-slate-400">Duración de Sesión:</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            7 Días (Sesión Local Persistente)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        onClick={openClientDetailsModal}
+                        className="flex-1 py-2 px-3 rounded-xl border border-cyan-200 dark:border-cyan-800 hover:bg-cyan-100/50 dark:hover:bg-cyan-900/40 text-cyan-800 dark:text-cyan-200 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Cambiar Correo Portal</span>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab('web_config')}
+                        className="py-2 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Ajustar CTAs</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TARJETA 3 & 4: Contacto Comercial y Resumen Operativo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contacto Comercial & Operativo */}
+                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-2.5">
+                      <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                        Contacto Comercial & Operativo
+                      </h4>
+                    </div>
+
+                    <div className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                      <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                        <span className="text-slate-500 dark:text-slate-400">Responsable / Dueño:</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          {selectedClient.name}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                        <span className="text-slate-500 dark:text-slate-400">Teléfono / WhatsApp:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-medium text-slate-900 dark:text-white">
+                            {selectedClient.phone || 'Sin teléfono'}
+                          </span>
+                          {selectedClient.phone && (
+                            <a
+                              href={`https://wa.me/${selectedClient.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-100"
+                            >
+                              WhatsApp
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                        <span className="text-slate-500 dark:text-slate-400">Correo Principal / Contacto:</span>
+                        <span className="font-mono text-slate-900 dark:text-white truncate max-w-[200px]">
+                          {selectedClient.email || 'Sin correo'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between py-1">
+                        <span className="text-slate-500 dark:text-slate-400">Canal de Captación:</span>
+                        <span className="capitalize font-semibold text-slate-900 dark:text-white">
+                          {selectedClient.acquisitionChannel || 'direct'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Resumen Operativo & Pipeline */}
+                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-2.5">
+                      <Briefcase className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                        Resumen de Pipeline & Cobranzas
+                      </h4>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div
+                        onClick={() => setActiveTab('infrastructure')}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 cursor-pointer hover:border-emerald-500 transition-colors"
+                      >
+                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
+                          Servicios / Activos
+                        </span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-white">
+                          {clientSites.length}
+                        </span>
+                      </div>
+
+                      <div
+                        onClick={() => setActiveTab('projects')}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 cursor-pointer hover:border-emerald-500 transition-colors"
+                      >
+                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
+                          Proyectos Pipeline
+                        </span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-white">
+                          {clientProjects.length}
+                        </span>
+                      </div>
+
+                      <div
+                        onClick={() => setActiveTab('payments')}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 cursor-pointer hover:border-emerald-500 transition-colors"
+                      >
+                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
+                          Cobros Registrados
+                        </span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-white">
+                          {clientPayments.length}
+                        </span>
+                      </div>
+
+                      <div
+                        onClick={() => setActiveTab('timeline')}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 cursor-pointer hover:border-emerald-500 transition-colors"
+                      >
+                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">
+                          Hitos en Línea
+                        </span>
+                        <span className="text-xl font-bold text-slate-900 dark:text-white">
+                          {selectedClient.timeline?.length || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* TAB 1: INFRASTRUCTURE & SERVICES */}
             {activeTab === 'infrastructure' && (
@@ -1910,9 +2410,91 @@ export function ClientsClient({
                 </div>
               </div>
 
+              {/* Categorización CRM: Real vs Potencial & Paquete de Servicio */}
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    Tipo de Cuenta
+                  </label>
+                  <select
+                    value={editClientType}
+                    onChange={(e: any) => setEditClientType(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="real">🟢 Cliente Real (Activo / Retenido)</option>
+                    <option value="potential">⚡ Cliente Potencial (Lead / Demo 7 Días)</option>
+                  </select>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Permite filtrar leads de prospección vs clientes que pagan.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    Paquete / Servicio Asociado
+                  </label>
+                  <select
+                    value={editServicePackage}
+                    onChange={(e) => setEditServicePackage(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
+                  >
+                    {SERVICE_PACKAGES.map((pkg) => (
+                      <option key={pkg.id} value={pkg.id}>
+                        {pkg.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block truncate">
+                    {getServicePackageInfo(editServicePackage).price}
+                  </span>
+                </div>
+              </div>
+
+              {/* Separación Estricta: Facturación Legal vs Acceso a Portal & Analítica */}
+              <div className="space-y-3 p-3 rounded-xl bg-amber-50/30 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30">
+                <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Separación de Correos (Facturación vs Analítica Portal)</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
+                      Correo de Facturación (Legal / SET)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="facturacion@empresa.com.py"
+                      value={editBillingEmail}
+                      onChange={(e) => setEditBillingEmail(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/40 rounded-lg p-2 text-slate-900 dark:text-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Para facturas oficiales. <u>Sin</u> acceso a analítica.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
+                      Correo Acceso Portal (/portal)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="admin@empresa.com.py"
+                      value={editPortalEmail}
+                      onChange={(e) => setEditPortalEmail(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-500/40 rounded-lg p-2 text-slate-900 dark:text-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Magic link 7 días para ver métricas. <u>Sin</u> datos de facturación.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Correo Electrónico</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Correo General de Contacto</label>
                   <input
                     type="email"
                     value={editEmail}
@@ -2339,6 +2921,79 @@ export function ClientsClient({
                     onChange={(e) => setNewClientPhone(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg p-2.5 text-slate-900 dark:text-white"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    Tipo de Cuenta
+                  </label>
+                  <select
+                    value={newClientType}
+                    onChange={(e: any) => setNewClientType(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="real">🟢 Cliente Real (Activo / Retenido)</option>
+                    <option value="potential">⚡ Cliente Potencial (Lead / Demo 7 Días)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                    Servicio / Oferta Asociada
+                  </label>
+                  <select
+                    value={newClientServicePackage}
+                    onChange={(e) => setNewClientServicePackage(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 text-slate-900 dark:text-white font-medium"
+                  >
+                    {SERVICE_PACKAGES.map((pkg) => (
+                      <option key={pkg.id} value={pkg.id}>
+                        {pkg.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Separación de Correos: Facturación vs Acceso a Portal */}
+              <div className="space-y-3 p-3 rounded-xl bg-amber-50/30 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30">
+                <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-bold">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Separación de Correos (Facturación vs Portal Analítica)</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
+                      Correo Facturación (Legal)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="facturacion@empresa.com.py"
+                      value={newClientBillingEmail}
+                      onChange={(e) => setNewClientBillingEmail(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/40 rounded-lg p-2 text-slate-900 dark:text-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Receptor de facturas.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
+                      Correo Portal (/portal)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="admin@empresa.com.py"
+                      value={newClientPortalEmail}
+                      onChange={(e) => setNewClientPortalEmail(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-500/40 rounded-lg p-2 text-slate-900 dark:text-white font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Magic link analíticas.
+                    </p>
+                  </div>
                 </div>
               </div>
 
