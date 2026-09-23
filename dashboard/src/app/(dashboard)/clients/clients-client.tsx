@@ -39,7 +39,11 @@ import {
   Key,
   Shield,
   CreditCard,
-  Filter
+  Filter,
+  ArrowLeft,
+  ChevronRight,
+  Phone,
+  ArrowRight
 } from 'lucide-react';
 import type { Client, Site, Project, ClientTimelineEvent, Payment } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
@@ -100,7 +104,7 @@ export function ClientsClient({
   const [currentSites, setCurrentSites] = useState<Site[]>(sites);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(clients[0] || null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Active view tab (Apertura inmediata en Ficha CRM 360°)
   const [activeTab, setActiveTab] = useState<'ficha_crm' | 'infrastructure' | 'timeline' | 'projects' | 'payments' | 'web_config'>('ficha_crm');
@@ -329,6 +333,10 @@ export function ClientsClient({
   const handleSelectClient = (c: Client) => {
     setSelectedClient(c);
     setActiveTab('ficha_crm');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', `/clients?id=${c.id}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     setDomainProvider(c.infrastructure?.domain?.provider || 'nic.py');
     setDomainRenewer(c.infrastructure?.domain?.renewer || 'agency');
     setDomainExpiry(c.infrastructure?.domain?.expiryDate || '2026-12-31');
@@ -346,6 +354,41 @@ export function ClientsClient({
     setEmailCost(c.infrastructure?.email?.annualCost || 360);
     setEmailCurrency(c.infrastructure?.email?.currency || 'USD');
   };
+
+  const handleBackToList = () => {
+    setSelectedClient(null);
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/clients');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Sync URL query params on mount and browser navigation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const idParam = params.get('id');
+      const hash = window.location.hash;
+      const hashId = hash.startsWith('#client-') ? hash.replace('#client-', '') : null;
+      const targetId = idParam || hashId;
+
+      if (targetId) {
+        const found = clients.find((c) => c.id === parseInt(targetId, 10));
+        if (found) {
+          handleSelectClient(found);
+        }
+      } else {
+        setSelectedClient(null);
+      }
+    };
+
+    syncFromUrl();
+
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, [clients]);
 
   const openClientDetailsModal = () => {
     if (!selectedClient) return;
@@ -733,192 +776,328 @@ export function ClientsClient({
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Left Column: Client List (4 cols) */}
-      <div className="lg:col-span-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base">Clientes CRM</h3>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {filteredClients.length} de {totalCount}
-            </span>
-          </div>
-          <button
-            onClick={() => setIsNewClientModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nuevo Cliente</span>
-          </button>
-        </div>
-
-        {/* Filter Pills: Reales vs Potenciales vs Bajas */}
-        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-[11px] font-semibold">
-          <button
-            onClick={() => setClientTypeFilter('all')}
-            className={`py-1.5 px-1 rounded-lg transition-all text-center cursor-pointer ${
-              clientTypeFilter === 'all'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Todos ({totalCount})
-          </button>
-          <button
-            onClick={() => setClientTypeFilter('real')}
-            className={`py-1.5 px-1 rounded-lg transition-all text-center flex items-center justify-center gap-1 cursor-pointer ${
-              clientTypeFilter === 'real'
-                ? 'bg-emerald-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-            title="Clientes reales activos en servicio o retenidos"
-          >
-            <span>🟢</span> Reales ({realCount})
-          </button>
-          <button
-            onClick={() => setClientTypeFilter('potential')}
-            className={`py-1.5 px-1 rounded-lg transition-all text-center flex items-center justify-center gap-1 cursor-pointer ${
-              clientTypeFilter === 'potential'
-                ? 'bg-amber-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-            title="Clientes potenciales, leads en negociación y demos 7 días"
-          >
-            <span>⚡</span> Leads ({potentialCount})
-          </button>
-          <button
-            onClick={() => setClientTypeFilter('churned')}
-            className={`py-1.5 px-1 rounded-lg transition-all text-center cursor-pointer ${
-              clientTypeFilter === 'churned'
-                ? 'bg-rose-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Bajas ({churnedCount})
-          </button>
-        </div>
-
-        {/* Service Package Filter Dropdown */}
-        <div className="relative">
-          <select
-            value={serviceFilter}
-            onChange={(e) => setServiceFilter(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500 shadow-sm"
-          >
-            <option value="all">📦 Filtrar por servicio contratado (Todos)</option>
-            {SERVICE_PACKAGES.map((pkg) => (
-              <option key={pkg.id} value={pkg.id}>
-                {pkg.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Search filter */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, RUC, empresa o correo..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-sm"
-          />
-        </div>
-
-        {/* Client Items */}
-        <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
-          {filteredClients.length === 0 ? (
-            <div className="text-center py-8 text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-              No se encontraron clientes con los filtros seleccionados.
+    <div className="space-y-6">
+      {!selectedClient ? (
+        /* VISTA LISTA COMPLETA */
+        <div className="space-y-6">
+          {/* Header & Action */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <span>Directorio de Clientes CRM 360°</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Gestión de cuentas comerciales, perfiles fiscales, infraestructura de hosting y activos web.
+              </p>
             </div>
-          ) : (
-            filteredClients.map((c) => {
-              const isSelected = selectedClient?.id === c.id;
-              const cSites = sites.filter((s) => s.clientId === c.id);
-              const cProjects = projects.filter((p) => p.clientId === c.id);
-              const typeBadge = getClientTypeBadge(c);
-              const pkgInfo = getServicePackageInfo((c as any).servicePackage);
 
-              return (
-                <div
-                  key={c.id}
-                  id={`client-${c.id}`}
-                  onClick={() => handleSelectClient(c)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/10 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+            <button
+              onClick={() => setIsNewClientModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Cliente</span>
+            </button>
+          </div>
+
+          {/* Quick Stats Ribbon */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-xs">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                Total Cartera
+              </span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white mt-1 block">
+                {totalCount}
+              </span>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">Cuentas registradas</span>
+            </div>
+
+            <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs">
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block flex items-center gap-1">
+                <span>🟢</span> Clientes Reales
+              </span>
+              <span className="text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-1 block">
+                {realCount}
+              </span>
+              <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5 block">Servicio activo / recurrente</span>
+            </div>
+
+            <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-950/20 shadow-xs">
+              <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider block flex items-center gap-1">
+                <span>⚡</span> Leads & Demos
+              </span>
+              <span className="text-2xl font-black text-amber-700 dark:text-amber-300 mt-1 block">
+                {potentialCount}
+              </span>
+              <span className="text-[11px] text-amber-600/80 dark:text-amber-400/80 mt-0.5 block">En negociación o demo 7d</span>
+            </div>
+
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-xs">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                Activos / Sitios
+              </span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white mt-1 block">
+                {sites.length}
+              </span>
+              <span className="text-[11px] text-slate-500 mt-0.5 block">Websites vinculados</span>
+            </div>
+          </div>
+
+          {/* Filters & Search Control Bar */}
+          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-semibold">
+                <button
+                  onClick={() => setClientTypeFilter('all')}
+                  className={`py-1.5 px-3 rounded-lg transition-all cursor-pointer ${
+                    clientTypeFilter === 'all'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                          {c.name}
-                        </h4>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${typeBadge.classes}`}>
+                  Todos ({totalCount})
+                </button>
+                <button
+                  onClick={() => setClientTypeFilter('real')}
+                  className={`py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                    clientTypeFilter === 'real'
+                      ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>🟢</span> Reales ({realCount})
+                </button>
+                <button
+                  onClick={() => setClientTypeFilter('potential')}
+                  className={`py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                    clientTypeFilter === 'potential'
+                      ? 'bg-amber-600 text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>⚡</span> Leads ({potentialCount})
+                </button>
+                <button
+                  onClick={() => setClientTypeFilter('churned')}
+                  className={`py-1.5 px-3 rounded-lg transition-all cursor-pointer ${
+                    clientTypeFilter === 'churned'
+                      ? 'bg-rose-600 text-white shadow-xs font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Bajas ({churnedCount})
+                </button>
+              </div>
+
+              {/* Service Package Filter */}
+              <div className="w-full md:w-80">
+                <select
+                  value={serviceFilter}
+                  onChange={(e) => setServiceFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-emerald-500 shadow-xs cursor-pointer"
+                >
+                  <option value="all">📦 Filtrar por paquete de servicio (Todos)</option>
+                  {SERVICE_PACKAGES.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {pkg.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre de cliente, RUC, razón social, empresa, correo general o portal magic link..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Directory Grid / Cards */}
+          {filteredClients.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/20 space-y-3">
+              <Users className="w-8 h-8 text-slate-400 mx-auto" />
+              <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                No se encontraron clientes
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                No hay resultados con los criterios de búsqueda o filtros actuales.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setClientTypeFilter('all');
+                  setServiceFilter('all');
+                }}
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                Restablecer todos los filtros
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredClients.map((c) => {
+                const cSites = sites.filter((s) => s.clientId === c.id);
+                const cProjects = projects.filter((p) => p.clientId === c.id);
+                const typeBadge = getClientTypeBadge(c);
+                const pkgInfo = getServicePackageInfo((c as any).servicePackage);
+                const hasAgencyCard = cSites.some((s) => s.billing?.responsibility === 'tc_agencia');
+
+                // Initials for avatar
+                const initials = c.name
+                  .split(' ')
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase() || 'CL';
+
+                return (
+                  <div
+                    key={c.id}
+                    id={`client-${c.id}`}
+                    onClick={() => handleSelectClient(c)}
+                    className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 hover:border-emerald-500/50 dark:hover:border-emerald-500/40 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group space-y-4"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Header Row */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 dark:from-emerald-500/30 dark:to-teal-500/30 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0">
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-slate-900 dark:text-white text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
+                              {c.name}
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                              {c.legalName || c.company || 'Empresa / Particular'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${typeBadge.classes}`}>
                           {typeBadge.icon} {typeBadge.label}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border truncate max-w-[210px] ${pkgInfo.badge}`}>
-                          {pkgInfo.name}
+                      {/* Package Badge */}
+                      <div>
+                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-lg border inline-block max-w-full truncate ${pkgInfo.badge}`}>
+                          📦 {pkgInfo.name}
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-                        {c.legalName || c.company || 'Empresa'}
-                      </p>
+                      {/* Fiscal & Contact Info */}
+                      <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 pt-1">
+                        {c.ruc && (
+                          <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                            <Receipt className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>RUC: {c.ruc}</span>
+                          </div>
+                        )}
 
-                      {c.ruc && (
-                        <p className="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
-                          RUC: {c.ruc}
-                        </p>
-                      )}
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          {(c as any).portalEmail ? (
+                            <span className="font-mono text-cyan-600 dark:text-cyan-400 truncate" title={`Portal Magic Link: ${(c as any).portalEmail}`}>
+                              🔑 {(c as any).portalEmail}
+                            </span>
+                          ) : (
+                            <span className="truncate">{c.email || 'Sin correo registrado'}</span>
+                          )}
+                        </div>
+
+                        {c.phone && (
+                          <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{c.phone}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {cSites.length} serv • {cProjects.length} proy
-                      </span>
-
-                      {cSites.some((s) => s.billing?.responsibility === 'tc_agencia') && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30">
-                          TC Rodney ⚠️
+                    {/* Footer Row */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                          {cSites.length} {cSites.length === 1 ? 'sitio' : 'sitios'}
                         </span>
-                      )}
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                          {cProjects.length} proy
+                        </span>
+                        {hasAgencyCard && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30">
+                            TC Rodney ⚠️
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                        <span>Ver Ficha 360°</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
                     </div>
                   </div>
-
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-1.5 truncate">
-                      {(c as any).portalEmail ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-cyan-600 dark:text-cyan-400" title={`Acceso Magic Link Portal: ${(c as any).portalEmail}`}>
-                          🔑 {(c as any).portalEmail}
-                        </span>
-                      ) : (
-                        <span className="truncate font-mono">{c.email || 'Sin correo'}</span>
-                      )}
-                    </div>
-                    {c.acquisitionChannel && (
-                      <span className="text-[10px] text-slate-400 capitalize shrink-0">
-                        {c.acquisitionChannel}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
-      </div>
+      ) : (
+        /* VISTA FICHA CRM 360 COMPLETA */
+        <div className="space-y-6">
+          {/* Top Bar: Volver a la Lista + Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackToList}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:text-white transition-all cursor-pointer shadow-xs"
+              >
+                <ArrowLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Volver a la Lista de Clientes</span>
+              </button>
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+              <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+                Directorio CRM / <strong className="text-slate-800 dark:text-slate-200 font-semibold">{selectedClient.name}</strong>
+              </span>
+            </div>
 
-      {/* Right Column: Client 360° CRM & Tabs (8 cols) */}
-      <div className="lg:col-span-8 space-y-6">
-        {selectedClient ? (
-          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400 hidden md:inline">Cambiar cliente:</span>
+              <select
+                value={selectedClient.id}
+                onChange={(e) => {
+                  const nextId = parseInt(e.target.value, 10);
+                  const nextClient = clients.find((c) => c.id === nextId);
+                  if (nextClient) handleSelectClient(nextClient);
+                }}
+                className="text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:border-emerald-500 cursor-pointer shadow-xs"
+              >
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({getClientTypeBadge(c).label})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
             {/* Header: Legal & Operational Profile */}
             <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -2340,12 +2519,7 @@ export function ClientsClient({
               </div>
             )}
           </div>
-        ) : (
-          <div className="p-12 text-center text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/20 shadow-sm">
-            Selecciona un cliente para visualizar su ficha 360°, línea de tiempo e infraestructura.
-          </div>
         )}
-      </div>
 
       {/* MODAL 1: Edit CRM Client Details */}
       {isClientDetailsModalOpen && selectedClient && (
