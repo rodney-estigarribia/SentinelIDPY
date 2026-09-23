@@ -662,6 +662,27 @@ async function runMigration() {
   `;
 
   await sql`
+    ALTER TABLE sites
+    ADD COLUMN IF NOT EXISTS site_config JSONB;
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS site_events (
+      id SERIAL PRIMARY KEY,
+      site_slug TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      path TEXT DEFAULT '/',
+      referrer TEXT,
+      country TEXT,
+      city TEXT,
+      device TEXT DEFAULT 'desktop',
+      visitor_hash TEXT,
+      metadata JSONB,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS uptime_pings (
       id SERIAL PRIMARY KEY,
       site_id INTEGER REFERENCES sites(id) ON DELETE CASCADE,

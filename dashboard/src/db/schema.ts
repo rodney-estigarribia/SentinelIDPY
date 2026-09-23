@@ -139,6 +139,7 @@ export const sites = pgTable('sites', {
   }>>(),
   roadmapNotes: text('roadmap_notes'),
   serviceGroup: text('service_group').default('General'), // e.g. 'Plataforma Dagda', 'Página Web', 'Sistemas Empresariales'
+  siteConfig: jsonb('site_config'), // Configuración editable de CTAs, demo, WhatsApp y tarifas
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -250,6 +251,20 @@ export const payments = pgTable('payments', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+export const siteEvents = pgTable('site_events', {
+  id: serial('id').primaryKey(),
+  siteSlug: text('site_slug').notNull(),
+  eventType: text('event_type').notNull(), // 'pageview', 'whatsapp_click', 'form_submit'
+  path: text('path').default('/'),
+  referrer: text('referrer'),
+  country: text('country'),
+  city: text('city'),
+  device: text('device').default('desktop'), // 'mobile', 'desktop', 'tablet'
+  visitorHash: text('visitor_hash'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
 export type Site = typeof sites.$inferSelect;
@@ -262,6 +277,8 @@ export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
+export type SiteEvent = typeof siteEvents.$inferSelect;
+export type NewSiteEvent = typeof siteEvents.$inferInsert;
 
 // Modern aliases for Services & Assets architecture
 export const services = sites;

@@ -32,7 +32,9 @@ import {
   Briefcase,
   History,
   Tag,
-  Receipt
+  Receipt,
+  Smartphone,
+  Check
 } from 'lucide-react';
 import type { Client, Site, Project, ClientTimelineEvent, Payment } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
@@ -60,8 +62,24 @@ export function ClientsClient({
   const [selectedClient, setSelectedClient] = useState<Client | null>(clients[0] || null);
 
   // Active view tab
-  const [activeTab, setActiveTab] = useState<'infrastructure' | 'timeline' | 'projects' | 'payments'>('infrastructure');
+  const [activeTab, setActiveTab] = useState<'infrastructure' | 'timeline' | 'projects' | 'payments' | 'web_config'>('infrastructure');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Web Config & CTAs Editor State (Etapa 2)
+  const [selectedConfigSiteId, setSelectedConfigSiteId] = useState<number | null>(null);
+  const [cfgSlug, setCfgSlug] = useState('');
+  const [cfgDemoActive, setCfgDemoActive] = useState(true);
+  const [cfgDemoStartDate, setCfgDemoStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [cfgDemoDays, setCfgDemoDays] = useState(7);
+  const [cfgPhone, setCfgPhone] = useState('');
+  const [cfgDefaultMsg, setCfgDefaultMsg] = useState('');
+  const [cfgReservationMsg, setCfgReservationMsg] = useState('');
+  const [cfgCabanaMsg, setCfgCabanaMsg] = useState('');
+  const [cfgCasonaMsg, setCfgCasonaMsg] = useState('');
+  const [cfgPriceWeekday, setCfgPriceWeekday] = useState('');
+  const [cfgPriceWeekend, setCfgPriceWeekend] = useState('');
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configSaveStatus, setConfigSaveStatus] = useState<string | null>(null);
 
   // Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -95,6 +113,30 @@ export function ClientsClient({
   useEffect(() => {
     setPayments(initialPayments);
   }, [initialPayments]);
+
+  useEffect(() => {
+    if (!selectedClient) return;
+    const clientSites = currentSites.filter((s) => s.clientId === selectedClient.id);
+    const targetSite = clientSites.find(s => s.id === selectedConfigSiteId) || clientSites[0];
+    if (targetSite) {
+      setSelectedConfigSiteId(targetSite.id);
+      const conf = (targetSite as any).siteConfig || {};
+      const generatedSlug = conf.slug || targetSite.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      setCfgSlug(generatedSlug);
+      setCfgDemoActive(conf.demo?.active ?? true);
+      setCfgDemoStartDate(conf.demo?.startDate || new Date().toISOString().split('T')[0]);
+      setCfgDemoDays(conf.demo?.days || 7);
+      setCfgPhone(conf.whatsapp?.phone || selectedClient.phone?.replace(/[^0-9]/g, '') || '595981000000');
+      setCfgDefaultMsg(conf.whatsapp?.defaultMessage || '¡Hola! Quisiera consultar disponibilidad...');
+      setCfgReservationMsg(conf.whatsapp?.reservationMessage || '¡Hola! Quiero consultar disponibilidad para reservar...');
+      setCfgCabanaMsg(conf.whatsapp?.cabanaMessage || '');
+      setCfgCasonaMsg(conf.whatsapp?.casonaMessage || '');
+      setCfgPriceWeekday(conf.pricing?.cabana?.weekday || '1.300.000');
+      setCfgPriceWeekend(conf.pricing?.cabana?.weekend || '1.500.000');
+    } else {
+      setSelectedConfigSiteId(null);
+    }
+  }, [selectedClient, selectedConfigSiteId, currentSites]);
 
   // Client Details Edit State
   const [editName, setEditName] = useState('');
@@ -301,6 +343,59 @@ export function ClientsClient({
       });
     } catch (err) {
       console.error('Failed to patch client in DB:', err);
+    }
+  };
+
+  const handleSaveWebConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedConfigSiteId || !cfgSlug) return;
+    setIsSavingConfig(true);
+    setConfigSaveStatus(null);
+
+    const payload = {
+      slug: cfgSlug,
+      demo: {
+        active: cfgDemoActive,
+        startDate: cfgDemoStartDate,
+        days: Number(cfgDemoDays)
+      },
+      whatsapp: {
+        phone: cfgPhone,
+        defaultMessage: cfgDefaultMsg,
+        reservationMessage: cfgReservationMsg,
+        cabanaMessage: cfgCabanaMsg,
+        casonaMessage: cfgCasonaMsg
+      },
+      pricing: {
+        cabana: {
+          name: 'La Cabaña',
+          weekday: cfgPriceWeekday,
+          weekend: cfgPriceWeekend
+        }
+      }
+    };
+
+    try {
+      const res = await fetch(`/api/sites/${cfgSlug}/config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setConfigSaveStatus('✅ ¡Configuración y CTAs actualizados en Neon Postgres!');
+        setCurrentSites((prev) =>
+          prev.map((s) => (s.id === selectedConfigSiteId ? ({ ...s, siteConfig: payload } as any) : s))
+        );
+      } else {
+        setConfigSaveStatus('❌ Error al guardar la configuración.');
+      }
+    } catch (err) {
+      console.error('Error saving web config:', err);
+      setConfigSaveStatus('❌ Error de conexión al guardar.');
+    } finally {
+      setIsSavingConfig(false);
+      setTimeout(() => setConfigSaveStatus(null), 4000);
     }
   };
 
@@ -771,6 +866,18 @@ export function ClientsClient({
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Pagos & Cobros ({clientPayments.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('web_config')}
+                className={`pb-3 flex items-center gap-2 transition-colors cursor-pointer ${
+                  activeTab === 'web_config'
+                    ? 'border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Configuración Web & CTAs (Etapa 2)</span>
               </button>
             </div>
 
@@ -1390,6 +1497,224 @@ export function ClientsClient({
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* TAB 5: WEB CONFIG & CTAs (ETAPA 2) */}
+            {activeTab === 'web_config' && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-5">
+                  <div className="flex items-start justify-between flex-wrap gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-500" />
+                        <span>Gestor Visual de CTAs y Parámetros Web (Etapa 2)</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Controlá en tiempo real los mensajes de WhatsApp, estado de la demo y tarifas sin tocar código.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {selectedClient && (
+                        <a
+                          href={`/api/sites/${cfgSlug}/config`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Ver API JSON</span>
+                        </a>
+                      )}
+                      {clientSites[0]?.url && (
+                        <a
+                          href={`${clientSites[0].url.replace(/\/$/, '')}/portal`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Abrir /portal del Cliente</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {configSaveStatus && (
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                      {configSaveStatus}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveWebConfig} className="space-y-6 text-xs">
+                    {/* Sitio y Slug */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                          Sitio Web Asignado
+                        </label>
+                        <select
+                          value={selectedConfigSiteId || ''}
+                          onChange={(e) => setSelectedConfigSiteId(Number(e.target.value))}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                        >
+                          {clientSites.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.type}) — {s.url}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                          Slug Identificador (Tracker / API)
+                        </label>
+                        <input
+                          type="text"
+                          value={cfgSlug}
+                          onChange={(e) => setCfgSlug(e.target.value)}
+                          placeholder="ej. cabana-del-arbol"
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bloque 1: Control de Demo y Temporizador */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-amber-500" />
+                          <span>Modo Demo & Cuenta Regresiva (7 Días)</span>
+                        </span>
+                        <label className="inline-flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={cfgDemoActive}
+                            onChange={(e) => setCfgDemoActive(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {cfgDemoActive ? 'Demo Activa (con banner y bloqueo)' : 'Sitio Definitivo (Sin banner)'}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Fecha de Inicio de Demo</label>
+                          <input
+                            type="date"
+                            value={cfgDemoStartDate}
+                            onChange={(e) => setCfgDemoStartDate(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Días de Vigencia</label>
+                          <input
+                            type="number"
+                            value={cfgDemoDays}
+                            onChange={(e) => setCfgDemoDays(Number(e.target.value))}
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bloque 2: WhatsApp & Concierge */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-3">
+                      <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-emerald-500" />
+                        <span>Teléfono y Mensajes de WhatsApp</span>
+                      </span>
+
+                      <div className="space-y-3 pt-2">
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+                            Número de WhatsApp Comercial (Código de país sin espacios)
+                          </label>
+                          <input
+                            type="text"
+                            value={cfgPhone}
+                            onChange={(e) => setCfgPhone(e.target.value)}
+                            placeholder="595982957509"
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+                            Mensaje por Defecto (Botón Flotante / General)
+                          </label>
+                          <textarea
+                            value={cfgDefaultMsg}
+                            onChange={(e) => setCfgDefaultMsg(e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+                            Mensaje de Reserva Estructurado
+                          </label>
+                          <textarea
+                            value={cfgReservationMsg}
+                            onChange={(e) => setCfgReservationMsg(e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-[11px]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bloque 3: Tarifas Rápidas */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-3">
+                      <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-emerald-500" />
+                        <span>Tarifas Principales (Gs.)</span>
+                      </span>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Tarifa Entre Semana (Gs.)</label>
+                          <input
+                            type="text"
+                            value={cfgPriceWeekday}
+                            onChange={(e) => setCfgPriceWeekday(e.target.value)}
+                            placeholder="1.300.000"
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">Tarifa Fin de Semana (Gs.)</label>
+                          <input
+                            type="text"
+                            value={cfgPriceWeekend}
+                            onChange={(e) => setCfgPriceWeekend(e.target.value)}
+                            placeholder="1.500.000"
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        disabled={isSavingConfig || !selectedConfigSiteId}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>{isSavingConfig ? 'Guardando en Base de Datos...' : 'Guardar Configuración en Neon Postgres'}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
           </div>

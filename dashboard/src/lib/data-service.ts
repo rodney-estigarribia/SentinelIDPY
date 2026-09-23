@@ -14,7 +14,9 @@ import type {
   NewProject,
   Payment,
   NewPayment,
-  ClientTimelineEvent
+  ClientTimelineEvent,
+  SiteEvent,
+  NewSiteEvent
 } from '@/db/schema';
 import {
   INITIAL_CLIENTS,
@@ -35,6 +37,7 @@ let memoryServiceGroups = [...INITIAL_SERVICE_GROUPS];
 let memoryProjects = [...INITIAL_PROJECTS];
 let memoryPayments = [...INITIAL_PAYMENTS];
 let memoryFinancialSettings = { ...DEFAULT_FINANCIAL_SETTINGS };
+let memorySiteEvents: SiteEvent[] = [];
 
 // Ultra-fast in-memory cache for snappy navigation between pages
 // Cache TTL is 30 seconds; invalidated immediately upon any write/mutation
@@ -274,6 +277,7 @@ export const dataService = {
       relationships: data.relationships || null,
       roadmapNotes: data.roadmapNotes || null,
       serviceGroup: data.serviceGroup || 'General',
+      siteConfig: (data as any).siteConfig || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -775,6 +779,71 @@ export const dataService = {
     }
     memoryFinancialSettings = updated;
     return memoryFinancialSettings;
+  },
+
+  // --- TRACKER & CLIENT PORTAL ---
+  async recordSiteEvent(data: NewSiteEvent): Promise<SiteEvent> {
+    await ensureDbSchema();
+    if (db) {
+      try {
+        const [inserted] = await db.insert(schema.siteEvents).values(data).returning();
+        if (inserted) return inserted;
+      } catch (err) {
+        console.error('Failed to insert siteEvent into DB, using memory:', err);
+      }
+    }
+    const memEvent: SiteEvent = {
+      id: Math.floor(Math.random() * 1000000),
+      siteSlug: data.siteSlug,
+      eventType: data.eventType,
+      path: data.path || '/',
+      referrer: data.referrer || null,
+      country: data.country || null,
+      city: data.city || null,
+      device: data.device || 'desktop',
+      visitorHash: data.visitorHash || null,
+      metadata: data.metadata || null,
+      createdAt: new Date(),
+    };
+    memorySiteEvents.push(memEvent);
+    return memEvent;
+  },
+
+  async getSiteEvents(siteSlug: string, days = 30): Promise<SiteEvent[]> {
+    await ensureDbSchema();
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(schema.siteEvents)
+          .where(eq(schema.siteEvents.siteSlug, siteSlug))
+          .orderBy(desc(schema.siteEvents.createdAt));
+        return rows.filter((r) => r.createdAt && new Date(r.createdAt) >= since);
+      } catch (err) {
+        console.warn('Failed to query siteEvents from DB, falling back to memory:', err);
+      }
+    }
+    return memorySiteEvents.filter(
+      (e) => e.siteSlug === siteSlug && e.createdAt && new Date(e.createdAt) >= since
+    );
+  },
+
+  async getSiteBySlug(slug: string): Promise<Site | undefined> {
+    const allSites = await this.getSites({ includeArchived: true });
+    return allSites.find((s) => {
+      const config = (s as any).siteConfig;
+      if (config && config.slug === slug) return true;
+      if (s.url && s.url.includes(slug)) return true;
+      const cleanName = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return cleanName === slug;
+    });
+  },
+
+  async getClientByEmail(email: string): Promise<Client | undefined> {
+    const allClients = await this.getClients();
+    const cleanEmail = email.trim().toLowerCase();
+    return allClients.find((c) => c.email && c.email.trim().toLowerCase() === cleanEmail);
   },
 
   isDatabaseConnected(): boolean {

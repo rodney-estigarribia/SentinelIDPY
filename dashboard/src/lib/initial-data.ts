@@ -584,6 +584,7 @@ function seedSite(data: Partial<Site> & { id: number; name: string; type: string
     relationships: null,
     roadmapNotes: null,
     serviceGroup: data.serviceGroup || 'General',
+    siteConfig: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...data,
