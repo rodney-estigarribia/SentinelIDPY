@@ -125,8 +125,33 @@ Este documento es la **fuente única de verdad** sobre el avance, los frentes ab
 
 ---
 
+## 🟢 FASE 3.5: Analítica Ligera, Portales de Clientes & Micro-SaaS MiPyME
+
+- [x] **Micro-Tracker Nativo de Impulsos Digitales (< 1.5 KB)**:
+  - [x] Script `public/tracker.js` incrustable en webs estáticas y WordPress.
+  - [x] Endpoint receptor `/api/tracker` con CORS y geolocalización de borde gratuita en Vercel (`x-vercel-ip-country`, `x-vercel-ip-city`).
+  - [x] Captura automática de pageviews y clics de conversión en botones de WhatsApp (`data-whatsapp`).
+  - [x] Hashing anónimo de visitantes diarios para cálculo de usuarios únicos sin almacenar IPs.
+- [x] **Portal de Acceso al Cliente (`/portal`)**:
+  - [x] Acceso directo en el dominio del cliente (ej. `[negocio].com.py/portal` o `.vercel.app/portal`).
+  - [x] Autenticación sin contraseñas (Passwordless) mediante **Magic Link** firmado por HMAC con vigencia de 7 días (`/api/portal/magic-link`).
+  - [x] Consumo de métricas seguras exclusivas por sitio (`/api/portal/stats`).
+  - [x] Desglose visual de visitas, conversiones a WhatsApp, ciudades de Paraguay y móviles vs. desktop.
+- [x] **Etapa 2: Editor Visual de CTAs y Parámetros Web (SentinelIDPY Admin)**:
+  - [x] Pestaña interactiva en `/clients` para configurar en caliente: teléfono de WhatsApp, mensajes por defecto, estado de demo y tarifas.
+  - [x] API remota `/api/sites/[slug]/config` (GET / PATCH) con persistencia en Neon Postgres (`site_config`) y sincronización en segundo plano con `config.js`.
+- [ ] **Etapa 3: Autoservicio en el Portal del Cliente (PLANIFICADO)**:
+  - [ ] Permitir al cliente con sesión activa de 7 días en su `/portal` editar sus propios teléfonos de WhatsApp, mensajes y tarifas directamente desde una interfaz simplificada sin intervención técnica.
+
+---
+
 ## 📝 Registro de Cambios & Hitos Alcanzados (Changelog)
 
+- **2026-09-23**:
+  - Implementada infraestructura completa de Analítica Ligera y Micro-Tracker (< 1.5 KB) en `public/tracker.js` y `/api/tracker`.
+  - Desplegado Portal de Clientes con Magic Link de 7 días (`/portal`) integrado en `cabana-del-arbol` y APIs de SentinelIDPY.
+  - Completada la **Etapa 2**: Editor visual de CTAs, WhatsApp y estado de Demo en el panel `/clients` de SentinelIDPY con API remota `/api/sites/[slug]/config`.
+  - Agendada formalmente la **Etapa 3** (Autoservicio de CTAs por el cliente) en el roadmap oficial.
 - **2026-09-21**:
   - Creada librería de componentes estandarizada en `@/components/ui` (`Badge`, `Note`, `Card`, `Form`, `Button`).
   - Resuelto contraste y legibilidad en Modo Claro y Modo Oscuro en todas las vistas (`/services`, `/clients`, `/settings`, `/templates`, `/agency`, `/analytics`, `/updates`).
