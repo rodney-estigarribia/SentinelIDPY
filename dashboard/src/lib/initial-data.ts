@@ -52,79 +52,64 @@ export const RAW_INITIAL_CLIENTS: Array<Partial<Client> & { id: number; name: st
   },
   {
     id: 2,
-    name: 'CGA Corporativo',
+    name: 'CGA Consultora de Gestión Ambiental',
     legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
     ruc: '80092994-2',
     email: 'cgasociedadanonima@gmail.com',
+    billingEmail: 'cgasociedadanonima@gmail.com',
+    portalEmail: 'cgasociedadanonima@gmail.com',
     phone: '+595 981 234567',
     company: 'CGA Consultora de Gestión Ambiental S.A.',
-    notes: 'Cliente corporativo - Web institucional, Portal de clientes y Mantenimiento Plan Elite',
+    notes: 'Cliente corporativo integral. 3 servicios activos: 1) Sitio Web Institucional (WordPress), 2) Portal de Clientes (WordPress), 3) Microsoft 365 (Correo corporativo y productividad). Dominio propio (cga.com.py) y hosting cPanel.',
     status: 'active',
+    clientType: 'real',
+    servicePackage: 'mantenimiento_elite',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cga-gestion-ambiental',
     timeline: [
       {
         id: 't-2-1',
         year: '2022',
-        title: 'Desarrollo Web Institucional',
-        description: 'Sitio corporativo y estructuración de presencia digital.',
+        title: 'Desarrollo Web Institucional WordPress',
+        description: 'Sitio corporativo institucional (cga.com.py) y estructuración de presencia digital.',
         category: 'milestone',
         actor: 'martin'
       },
       {
         id: 't-2-2',
         year: '2024',
-        title: 'Lanzamiento Portal CGA en Vercel',
-        description: 'Aplicación web para gestión interna de reportes ambientales.',
+        title: 'Despliegue Portal Clientes WordPress',
+        description: 'Plataforma WordPress en subdominio portal.cga.com.py para gestión de reportes ambientales.',
         category: 'upgrade',
         actor: 'martin'
       },
       {
         id: 't-2-3',
+        year: '2025',
+        title: 'Configuración e Integración Microsoft 365',
+        description: 'Gestión de correos corporativos y suite ofimática en la nube.',
+        category: 'upgrade',
+        actor: 'ana'
+      },
+      {
+        id: 't-2-4',
         year: '2026',
         title: 'Contrato Mantenimiento Plan Elite',
-        description: 'Mantenimiento mensual recurrente activo (₲250.000 / mes).',
+        description: 'Mantenimiento mensual recurrente activo (₲250.000 / mes) para web, portal y soporte cloud.',
         category: 'upgrade',
         actor: 'ana'
       }
     ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-12-15', annualCost: 150000, currency: 'PYG', notes: 'Lo hace el cliente - Vence en diciembre' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Lo hace el cliente - Vence anual en agosto' },
-      dns: { provider: 'cPanel Host', notes: 'DNS en cPanel' },
-      email: { provider: 'cPanel Webmail', accountsCount: 8, annualCost: 0, currency: 'PYG' },
-      systems: [{ name: 'CGA Portal', type: 'Vercel', plan: 'Impulsos Digitales Plan' }]
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 3,
-    name: 'CGA Portal',
-    legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
-    ruc: '80092994-2',
-    email: 'cgasociedadanonima@gmail.com',
-    phone: '+595 981 234567',
-    company: 'CGA Consultora de Gestión Ambiental S.A.',
-    notes: 'Portal web interno de clientes alojado en Vercel',
-    status: 'active',
-    acquisitionChannel: 'referral',
-    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
-    timeline: [
-      {
-        id: 't-3-1',
-        year: '2024',
-        title: 'Despliegue Portal Clientes',
-        description: 'Subdominio portal.cga.com.py conectado a Vercel.',
-        category: 'milestone',
-        actor: 'martin'
-      }
-    ],
-    infrastructure: {
-      domain: { provider: 'nic.py (Subdominio)', renewer: 'agency', expiryDate: '2026-11-20', annualCost: 0, currency: 'PYG' },
-      hosting: { provider: 'Vercel', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' },
-      dns: { provider: 'cPanel DNS CNAME', notes: 'portal.cga.com.py -> cname.vercel-dns.com' },
-      email: { provider: 'Mismo que CGA', accountsCount: 0 }
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-12-15', annualCost: 150000, currency: 'PYG', notes: 'Dominio cga.com.py en nic.py (vence en diciembre)' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Hosting cPanel para web institucional y portal (vence anual en agosto)' },
+      dns: { provider: 'cPanel Host', notes: 'DNS en cPanel con registros para Web, Portal y Microsoft 365' },
+      email: { provider: 'Microsoft 365', accountsCount: 8, annualCost: 0, currency: 'USD', notes: 'Microsoft 365 Corporativo (Gestión de correo y productividad)' },
+      systems: [
+        { name: 'Sitio Web Institucional', type: 'WordPress', plan: 'cga.com.py' },
+        { name: 'Portal Clientes CGA', type: 'WordPress', plan: 'portal.cga.com.py' },
+        { name: 'Microsoft 365', type: 'M365 Suite', plan: 'Cuentas corporativas y soporte' }
+      ]
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -804,8 +789,9 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
   {
     id: 2,
     clientId: 2,
-    name: 'CGA Corporativo',
+    name: 'CGA Corporativo (Web)',
     type: 'wordpress',
+    serviceGroup: 'Ecosistema Digital CGA',
     url: 'https://cga.com.py',
     token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 2.1,
@@ -831,17 +817,18 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
       rulesDetail: 'Actualizadas'
     },
     performanceInfo: { cachePlugin: 'WP Super Cache', cacheEnabled: true, siteSizeGb: 1.2, diskFreeGb: 0.9 },
-    metadata: {},
+    metadata: { notes: 'Web Institucional WordPress' },
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     id: 3,
-    clientId: 3,
+    clientId: 2,
     name: 'CGA Portal Clientes',
-    type: 'vercel',
+    type: 'wordpress',
+    serviceGroup: 'Ecosistema Digital CGA',
     url: 'https://portal.cga.com.py',
-    token: '',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
     diskAllocatedGb: 2.1,
     status: 'online',
     lastStatusCode: 200,
@@ -849,13 +836,41 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     lastCheckedAt: new Date(),
     lastBackupAt: new Date(),
     sslDaysLeft: 70,
-    wpVersion: null,
-    phpVersion: null,
-    siteHealthScore: null,
-    pendingUpdates: null,
-    wordfenceStats: null,
-    performanceInfo: null,
-    metadata: { vercelProjectId: 'prj_cga_portal_2026', gitRepo: 'github.com/impulsosdigitales/cga-portal' },
+    wpVersion: '6.7.1',
+    phpVersion: '8.1.30',
+    siteHealthScore: { status: 'good', good: 15, recommended: 2, critical: 0 },
+    pendingUpdates: { plugins: 0, themes: 0, wordpress: 0, details: [] },
+    wordfenceStats: { totalAttacks: 240, rulesOk: true },
+    performanceInfo: { cachePlugin: 'cPanel FastCGI', cacheEnabled: true, siteSizeGb: 0.8, diskFreeGb: 1.3 },
+    metadata: { notes: 'Portal Clientes WordPress' },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 201,
+    clientId: 2,
+    name: 'Microsoft 365 CGA (Correo & Productividad)',
+    category: 'correo',
+    provider: 'Microsoft 365',
+    serviceGroup: 'Ecosistema Digital CGA',
+    type: 'sistema',
+    url: 'https://outlook.office.com',
+    diskAllocatedGb: 0,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: 110,
+    lastCheckedAt: new Date(),
+    billing: {
+      responsibility: 'tc_cliente',
+      cycle: 'annual',
+      cost: 0,
+      currency: 'USD',
+      notes: 'Plan corporativo contratado por el cliente. Soporte de configuración incluido en Plan Elite.'
+    },
+    relationships: [
+      { targetId: 2, targetName: 'CGA Corporativo (Web)', type: 'connects_to' }
+    ],
+    roadmapNotes: '8 cuentas de correo y suite de productividad Microsoft 365 con registros MX/SPF/DKIM en cPanel.',
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -1451,8 +1466,8 @@ export const INITIAL_SERVICE_GROUPS: Array<ServiceGroup> = [
   {
     id: 4,
     clientId: 2,
-    name: 'Sitio Web Corporativo',
-    description: 'Web institucional y portal de clientes',
+    name: 'Ecosistema Digital CGA',
+    description: 'Web institucional WordPress, Portal de clientes WordPress y suite Microsoft 365',
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -1547,15 +1562,15 @@ export const INITIAL_PROJECTS: Array<Project> = [
   {
     id: 6,
     clientId: 2, // CGA
-    name: 'Portal Clientes CGA (Vercel)',
-    category: 'cloud',
+    name: 'Portal Clientes CGA (WordPress)',
+    category: 'web_corp',
     status: 'completed',
     waitingOn: 'agency',
     budget: 2500000,
     currency: 'PYG',
     advancePaid: 2500000,
     targetDeliveryDate: '2026-02-15',
-    notes: 'Aplicación web portal.cga.com.py desplegada en Vercel para reportes ambientales.',
+    notes: 'Plataforma web WordPress portal.cga.com.py para gestión y reportes ambientales.',
     driveUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
     assignedRole: 'martin',
     createdAt: new Date(),

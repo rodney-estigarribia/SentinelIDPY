@@ -26,11 +26,22 @@ export async function POST(
   try {
     const body = await request.json().catch(() => ({}));
     const updateType = (body.type || 'plugins') as 'all' | 'core' | 'plugins' | 'themes';
-    const slugs = Array.isArray(body.slugs) ? body.slugs : undefined;
+
+    let slugs: string[] | undefined = undefined;
+    if (Array.isArray(body.slugs)) {
+      slugs = body.slugs.map((s: any) => String(s).trim()).filter(Boolean);
+    } else if (typeof body.slug === 'string' && body.slug.trim()) {
+      slugs = [body.slug.trim()];
+    } else if (typeof body.slugs === 'string' && body.slugs.trim()) {
+      slugs = [body.slugs.trim()];
+    }
+
+    const isAll = body.all === true || updateType === 'all';
 
     const res = await sentinelWpClient.applyUpdates(site.url, token, {
       type: updateType,
       slugs,
+      all: isAll,
     });
 
     if (res.status === 'error') {

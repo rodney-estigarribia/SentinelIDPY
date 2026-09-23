@@ -29,7 +29,9 @@ import {
   Settings,
   Trash2,
   AlertOctagon,
-  X
+  X,
+  ArrowUpCircle,
+  Loader2
 } from 'lucide-react';
 import type { Site, Client, ConfigTemplate } from '@/db/schema';
 
@@ -55,9 +57,8 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
   const isDeleteConfirmed = deleteConfirmText.trim().toLowerCase() === requiredClientName.toLowerCase();
 
   // Updates state
-  const [selectedUpdates, setSelectedUpdates] = useState<string[]>(
-    site.pendingUpdates?.details?.map((d) => d.slug) || []
-  );
+  const [selectedUpdates, setSelectedUpdates] = useState<string[]>([]);
+  const [updatingSlug, setUpdatingSlug] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateLog, setUpdateLog] = useState<string | null>(null);
 
@@ -184,6 +185,44 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
       setUpdateLog(`❌ Error: ${err.message}`);
     } finally {
       setIsUpdating(false);
+      setTimeout(() => setUpdateLog(null), 7000);
+    }
+  };
+
+  const handleUpdateSingle = async (update: { slug: string; name: string; type?: string; newVersion: string }) => {
+    setUpdatingSlug(update.slug);
+    setUpdateLog(`Iniciando actualización exclusiva de "${update.name}" a versión ${update.newVersion}...`);
+
+    try {
+      const typeParam = update.type === 'theme' ? 'themes' : (update.type === 'core' ? 'core' : 'plugins');
+      const res = await fetch(`/api/sites/${site.id}/updates/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: typeParam, slugs: [update.slug] }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `Error al actualizar ${update.name}`);
+      }
+
+      setUpdateLog(`✅ "${update.name}" actualizado con éxito a v${update.newVersion}.`);
+      setInstalledPlugins((prev) =>
+        prev.map((p) => (p.slug === update.slug ? { ...p, version: update.newVersion, update: null } : p))
+      );
+      setSelectedUpdates((prev) => prev.filter((s) => s !== update.slug));
+
+      if (site.pendingUpdates?.details) {
+        site.pendingUpdates.details = site.pendingUpdates.details.filter((d) => d.slug !== update.slug);
+        if (update.type === 'theme' && site.pendingUpdates.themes > 0) {
+          site.pendingUpdates.themes -= 1;
+        } else if (site.pendingUpdates.plugins > 0) {
+          site.pendingUpdates.plugins -= 1;
+        }
+      }
+    } catch (err: any) {
+      setUpdateLog(`❌ Error al actualizar ${update.name}: ${err.message}`);
+    } finally {
+      setUpdatingSlug(null);
       setTimeout(() => setUpdateLog(null), 7000);
     }
   };
@@ -549,16 +588,25 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
               </div>
 
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() =>
-                    setSelectedUpdates(
-                      site.pendingUpdates?.details?.map((d) => d.slug) || []
-                    )
-                  }
-                  className="text-xs text-slate-400 hover:text-white"
-                >
-                  Seleccionar Todas
-                </button>
+                {selectedUpdates.length > 0 ? (
+                  <button
+                    onClick={() => setSelectedUpdates([])}
+                    className="text-xs text-slate-400 hover:text-white"
+                  >
+                    Deseleccionar Todas
+                  </button>
+                ) : (
+                  <button
+                    onClick={() =>
+                      setSelectedUpdates(
+                        site.pendingUpdates?.details?.map((d) => d.slug) || []
+                      )
+                    }
+                    className="text-xs text-slate-400 hover:text-white"
+                  >
+                    Seleccionar Todas
+                  </button>
+                )}
                 <button
                   onClick={handleApplyUpdates}
                   disabled={selectedUpdates.length === 0 || isUpdating}
@@ -612,9 +660,30 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
                         </div>
                       </div>
 
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                        Actualización disponible
-                      </span>
+                      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                          v{update.newVersion}
+                        </span>
+
+                        <button
+                          onClick={() => handleUpdateSingle(update)}
+                          disabled={updatingSlug === update.slug || isUpdating}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-xs"
+                          title={`Actualizar exclusivamente ${update.name}`}
+                        >
+                          {updatingSlug === update.slug ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Actualizando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowUpCircle className="w-3.5 h-3.5" />
+                              <span>Actualizar solo este</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   );
                 })

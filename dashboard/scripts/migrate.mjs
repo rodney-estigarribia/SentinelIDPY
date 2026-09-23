@@ -42,47 +42,36 @@ const INITIAL_CLIENTS = [
   },
   {
     id: 2,
-    name: 'CGA Corporativo',
+    name: 'CGA Consultora de Gestión Ambiental',
     legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
     ruc: '80092994-2',
     email: 'cgasociedadanonima@gmail.com',
-    phone: '+595 981 123456',
+    billingEmail: 'cgasociedadanonima@gmail.com',
+    portalEmail: 'cgasociedadanonima@gmail.com',
+    phone: '+595 981 234567',
     company: 'CGA Consultora de Gestión Ambiental S.A.',
-    notes: 'Cliente corporativo principal - Web institucional, Portal de clientes y Mantenimiento Plan Elite',
+    notes: 'Cliente corporativo integral. 3 servicios activos: 1) Sitio Web Institucional (WordPress), 2) Portal de Clientes (WordPress), 3) Microsoft 365 (Correo corporativo y productividad). Dominio propio (cga.com.py) y hosting cPanel.',
     status: 'active',
+    clientType: 'real',
+    servicePackage: 'mantenimiento_elite',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cga-gestion-ambiental',
     timeline: [
-      { id: 't-2-1', year: '2023', title: 'Desarrollo Web Corporativa', description: 'Lanzamiento del portal web principal en WordPress.', category: 'milestone', actor: 'rodney' },
-      { id: 't-2-2', year: '2024', title: 'Plan Elite de Mantenimiento', description: 'Contratación de soporte técnico preventivo mensual.', category: 'upgrade', actor: 'ana' }
+      { id: 't-2-1', year: '2022', title: 'Desarrollo Web Institucional WordPress', description: 'Sitio corporativo institucional (cga.com.py) y estructuración de presencia digital.', category: 'milestone', actor: 'martin' },
+      { id: 't-2-2', year: '2024', title: 'Despliegue Portal Clientes WordPress', description: 'Plataforma WordPress en subdominio portal.cga.com.py para gestión de reportes ambientales.', category: 'upgrade', actor: 'martin' },
+      { id: 't-2-3', year: '2025', title: 'Configuración e Integración Microsoft 365', description: 'Gestión de correos corporativos y suite ofimática en la nube.', category: 'upgrade', actor: 'ana' },
+      { id: 't-2-4', year: '2026', title: 'Contrato Mantenimiento Plan Elite', description: 'Mantenimiento mensual recurrente activo (₲250.000 / mes) para web, portal y soporte cloud.', category: 'upgrade', actor: 'ana' }
     ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-12-15', annualCost: 150000, currency: 'PYG', notes: 'Lo hace el cliente - Vence en diciembre' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business 10GB', annualCost: 450000, currency: 'PYG', notes: 'Lo hace el cliente - Vence anual en agosto' },
-      dns: { provider: 'cPanel Host' },
-      email: { provider: 'Microsoft 365', accountsCount: 8, annualCost: 0, currency: 'PYG', notes: 'Microsoft 365 corporativo' }
-    }
-  },
-  {
-    id: 3,
-    name: 'CGA Portal',
-    legalName: 'CONSULTORA DE GESTIÓN AMBIENTAL',
-    ruc: '80092994-2',
-    email: 'cgasociedadanonima@gmail.com',
-    phone: '+595 981 123456',
-    company: 'CGA Consultora de Gestión Ambiental S.A.',
-    notes: 'Portal secundario y recursos para colaboradores en Vercel',
-    status: 'active',
-    acquisitionChannel: 'referral',
-    driveFolderUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
-    timeline: [
-      { id: 't-3-1', year: '2024', title: 'Lanzamiento Portal Interno', description: 'Despliegue del portal de colaboradores en Vercel.', category: 'milestone', actor: 'martin' }
-    ],
-    infrastructure: {
-      domain: { provider: 'nic.py (subdominio portal.cga...)', renewer: 'agency', expiryDate: '2026-11-20', annualCost: 0, currency: 'PYG' },
-      hosting: { provider: 'Vercel', plan: 'Impulsos Digitales Plan', annualCost: 0, currency: 'USD' },
-      dns: { provider: 'cPanel Host' },
-      email: { provider: 'Microsoft 365 (incluido en Corp)', accountsCount: 0, annualCost: 0, currency: 'USD' }
+      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-12-15', annualCost: 150000, currency: 'PYG', notes: 'Dominio cga.com.py en nic.py (vence en diciembre)' },
+      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG', notes: 'Hosting cPanel para web institucional y portal (vence anual en agosto)' },
+      dns: { provider: 'cPanel Host', notes: 'DNS en cPanel con registros para Web, Portal y Microsoft 365' },
+      email: { provider: 'Microsoft 365', accountsCount: 8, annualCost: 0, currency: 'USD', notes: 'Microsoft 365 Corporativo (Gestión de correo y productividad)' },
+      systems: [
+        { name: 'Sitio Web Institucional', type: 'WordPress', plan: 'cga.com.py' },
+        { name: 'Portal Clientes CGA', type: 'WordPress', plan: 'portal.cga.com.py' },
+        { name: 'Microsoft 365', type: 'M365 Suite', plan: 'Cuentas corporativas y soporte' }
+      ]
     }
   },
   {
@@ -317,6 +306,10 @@ const INITIAL_CLIENTS = [
     company: 'Repar Soluciones',
     notes: 'Nuevo cliente: Proyecto web corporativo en diseño y consultoría de seguridad digital en relevamiento.',
     status: 'lead',
+    clientType: 'potential',
+    servicePackage: 'hardening',
+    billingEmail: 'facturacion@repar.com.py',
+    portalEmail: 'contacto@repar.com.py',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/repar-2026',
     timeline: [
@@ -326,6 +319,78 @@ const INITIAL_CLIENTS = [
     infrastructure: {
       domain: { provider: 'nic.py (En gestión)', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG' }
+    }
+  },
+  {
+    id: 15,
+    name: 'Cabaña del Árbol',
+    legalName: 'Cabaña del Árbol San Bernardino',
+    ruc: '80149201-1',
+    email: 'contacto@cabanadelarbol.com.py',
+    phone: '+595 982 957509',
+    company: 'Cabaña del Árbol',
+    notes: 'Alquiler temporal en San Bernardino frente al Lago Ypacaraí. Proyecto Mi Primera Web MiPyME Express.',
+    status: 'lead',
+    clientType: 'potential',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'facturacion@cabanadelarbol.com.py',
+    portalEmail: 'reservas@cabanadelarbol.com.py',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cabana-del-arbol',
+    timeline: [
+      { id: 't-15-1', year: '2026', title: 'Lanzamiento Demo Express 7 Días', description: 'Despliegue de landing page con timer y propuesta interactiva en San Bernardino.', category: 'milestone', actor: 'rodney' }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py (Propuesto)', renewer: 'agency', expiryDate: '2027-09-23', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Hobby/Impulsos Digitales', annualCost: 0, currency: 'USD' }
+    }
+  },
+  {
+    id: 16,
+    name: 'Don Mendoza',
+    legalName: 'Alcides Mendoza Denis',
+    ruc: '80153890-4',
+    email: 'contacto@donmendoza.com.py',
+    phone: '+595 981 438296',
+    company: 'Don Mendoza - Cuidado de Piscinas de Autor',
+    notes: 'Servicio de mantenimiento y química de piscinas en Asunción y San Bernardino. Sitio comprado y activo.',
+    status: 'active',
+    clientType: 'real',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'facturacion@donmendoza.com.py',
+    portalEmail: 'contacto@donmendoza.com.py',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/don-mendoza',
+    timeline: [
+      { id: 't-16-1', year: '2026', title: 'Sitio Comprado y Publicado', description: 'Sitio web activo con animaciones 3D e integración de WhatsApp para presupuestos.', category: 'milestone', actor: 'rodney' }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' }
+    }
+  },
+  {
+    id: 17,
+    name: 'Terrazas Bungalow',
+    legalName: 'Terrazas Bungalow Alquileres',
+    ruc: '80164210-9',
+    email: 'contacto@terrazasbungalow.com.py',
+    phone: '+595 981 000000',
+    company: 'Terrazas Bungalow',
+    notes: 'Complejo de descanso y bungalows. Sitio adquirido y activo.',
+    status: 'active',
+    clientType: 'real',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'facturacion@terrazasbungalow.com.py',
+    portalEmail: 'reservas@terrazasbungalow.com.py',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/terrazas-bungalow',
+    timeline: [
+      { id: 't-17-1', year: '2026', title: 'Sitio Web Adquirido', description: 'Landing y cotizador directo para bungalows activo en Vercel.', category: 'milestone', actor: 'rodney' }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' }
     }
   }
 ];
@@ -409,15 +474,15 @@ const INITIAL_PROJECTS = [
   {
     id: 6,
     clientId: 2,
-    name: 'Portal Clientes CGA (Vercel)',
-    category: 'cloud',
+    name: 'Portal Clientes CGA (WordPress)',
+    category: 'web_corp',
     status: 'completed',
     waitingOn: 'agency',
     budget: 2500000,
     currency: 'PYG',
     advancePaid: 2500000,
     targetDeliveryDate: '2026-02-15',
-    notes: 'Aplicación web portal.cga.com.py desplegada en Vercel para reportes ambientales.',
+    notes: 'Plataforma web WordPress portal.cga.com.py para gestión y reportes ambientales.',
     driveUrl: 'https://drive.google.com/drive/folders/cga-portal-app',
     assignedRole: 'martin'
   },
@@ -510,6 +575,77 @@ const INITIAL_PAYMENTS = [
   { id: 24, clientId: 6, projectId: null, amount: 250000, currency: 'PYG', date: '2026-08-15', concept: 'mantenimiento_mensual', description: 'Mantenimiento Plan Elite Agosto 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-024', status: 'completed', notes: '' },
   { id: 25, clientId: 2, projectId: null, amount: 250000, currency: 'PYG', date: '2026-08-20', concept: 'mantenimiento_mensual', description: 'Mantenimiento CGA Corp Agosto 2026', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-025', status: 'completed', notes: '' },
   { id: 26, clientId: 8, projectId: null, amount: 850000, currency: 'PYG', date: '2026-08-26', concept: 'consultoria', description: 'Servicios de consultoría TI y optimización', paymentMethod: 'transferencia', receiptNumber: 'FAC-2026-026', status: 'completed', notes: '' }
+];
+
+const INITIAL_SITES = [
+  { id: 1, clientId: 1, name: 'IDPY Admin', type: 'wordpress', url: 'https://admin.impulsosdigitales.com.py', serviceGroup: 'General' },
+  { id: 2, clientId: 2, name: 'CGA Corporativo (Web)', type: 'wordpress', url: 'https://cga.com.py', serviceGroup: 'Ecosistema Digital CGA' },
+  { id: 3, clientId: 2, name: 'CGA Portal Clientes', type: 'wordpress', url: 'https://portal.cga.com.py', serviceGroup: 'Ecosistema Digital CGA' },
+  { id: 4, clientId: 4, name: 'Cope Market Deli', type: 'wordpress', url: 'https://copemarketdeli.com.py', serviceGroup: 'General' },
+  { id: 5, clientId: 5, name: 'dagda.com.py (Dominio)', category: 'dominio', type: 'sistema', url: 'https://nic.py', serviceGroup: 'Plataforma Dagda' },
+  { id: 501, clientId: 5, name: 'Hosting & DNS cPanel', category: 'hosting', type: 'sistema', url: 'https://cpanel.dagda.com.py:2083', serviceGroup: 'Plataforma Dagda' },
+  { id: 502, clientId: 5, name: 'Correo Corporativo (Microsoft 365)', category: 'correo', type: 'sistema', url: 'https://outlook.office.com', serviceGroup: 'Sistemas Empresariales' },
+  { id: 503, clientId: 5, name: 'Office 365 Personal / Familiar', category: 'licencia', type: 'sistema', url: 'https://account.microsoft.com', serviceGroup: 'Sistemas Empresariales' },
+  { id: 504, clientId: 5, name: 'Backend API & Base de Datos (Render Postgres)', category: 'servidor_bd', type: 'sistema', url: 'https://api.dagda.com.py', serviceGroup: 'Plataforma Dagda' },
+  { id: 505, clientId: 5, name: 'App Móvil Dagda (Android & iOS)', category: 'app_movil', type: 'sistema', url: 'https://play.google.com/store/apps', serviceGroup: 'Plataforma Dagda' },
+  { id: 506, clientId: 5, name: 'Web App & Panel Admin (Angular)', category: 'web_app', type: 'sistema', url: 'https://app.dagda.com.py', serviceGroup: 'Plataforma Dagda' },
+  { id: 6, clientId: 6, name: 'GeneSur', type: 'wordpress', url: 'https://genesur.com.py', serviceGroup: 'General' },
+  { id: 7, clientId: 7, name: 'Navíos Argentina', type: 'sistema', url: 'https://naviosargentina.com', serviceGroup: 'General' },
+  { id: 8, clientId: 8, name: 'Synexa', type: 'vercel', url: 'https://synexa.com.py', serviceGroup: 'General' },
+  { id: 9, clientId: 9, name: 'Misa Guarani', type: 'wordpress', url: 'https://misaguarani.com', serviceGroup: 'General' },
+  { id: 10, clientId: 10, name: 'My Life', type: 'wordpress', url: 'https://mylife.com.py', serviceGroup: 'General' },
+  {
+    id: 11,
+    clientId: 15,
+    name: 'Cabaña del Árbol',
+    type: 'vercel',
+    url: 'https://cabana-del-arbol-demo.vercel.app',
+    serviceGroup: 'General',
+    siteConfig: {
+      slug: 'cabana-del-arbol',
+      demo: { active: true, startDate: '2026-09-23', days: 8 },
+      proposal: { active: true },
+      whatsapp: { phone: '595982957509', defaultMessage: '¡Hola! Estuve viendo la web de Cabaña del Árbol y quisiera consultar disponibilidad. ¿Me podrían ayudar? 🌿' }
+    }
+  },
+  {
+    id: 12,
+    clientId: 16,
+    name: 'Don Mendoza',
+    type: 'vercel',
+    url: 'https://donmendoza.com.py',
+    serviceGroup: 'General',
+    siteConfig: {
+      slug: 'don-mendoza',
+      demo: { active: false, startDate: '2026-09-01', days: 7 },
+      proposal: { active: false },
+      whatsapp: { phone: '595981438296', defaultMessage: 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.' }
+    }
+  },
+  {
+    id: 13,
+    clientId: 17,
+    name: 'Terrazas Bungalow',
+    type: 'vercel',
+    url: 'https://terrazasbungalow.com.py',
+    serviceGroup: 'General',
+    siteConfig: {
+      slug: 'terrazas-bungalow',
+      demo: { active: false, startDate: '2026-09-01', days: 7 },
+      proposal: { active: false },
+      whatsapp: { phone: '595981000000', defaultMessage: '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.' }
+    }
+  },
+  {
+    id: 201,
+    clientId: 2,
+    name: 'Microsoft 365 CGA (Correo & Productividad)',
+    category: 'correo',
+    provider: 'Microsoft 365',
+    serviceGroup: 'Ecosistema Digital CGA',
+    type: 'sistema',
+    url: 'https://outlook.office.com'
+  }
 ];
 
 async function runMigration() {
@@ -752,20 +888,73 @@ async function runMigration() {
     ON CONFLICT (key) DO NOTHING;
   `;
 
-  // 2. Synchronize / update client data
+  // 1.1 Consolidate CGA: Reassign ID 3 to ID 2 and delete duplicate client 3
+  try {
+    await sql`UPDATE sites SET client_id = 2 WHERE client_id = 3;`;
+    await sql`UPDATE sites SET type = 'wordpress' WHERE id = 3 OR url LIKE '%portal.cga.com.py%';`;
+    await sql`UPDATE projects SET client_id = 2 WHERE client_id = 3;`;
+    await sql`UPDATE payments SET client_id = 2 WHERE client_id = 3;`;
+    await sql`UPDATE service_groups SET client_id = 2 WHERE client_id = 3;`;
+    await sql`DELETE FROM clients WHERE id = 3;`;
+  } catch (err) {
+    console.log('ℹ️ [migrate] Notice on CGA consolidation:', err.message);
+  }
+
+  // 2. Synchronize / update client data (including Don Mendoza, Terrazas, Cabaña del Árbol, and unified CGA)
   for (const client of INITIAL_CLIENTS) {
     await sql`
       INSERT INTO clients (
         id, name, legal_name, ruc, email, phone, company, notes,
-        status, acquisition_channel, drive_folder_url, timeline, infrastructure
+        status, acquisition_channel, client_type, service_package,
+        billing_email, portal_email, drive_folder_url, timeline, infrastructure
       ) VALUES (
-        ${client.id}, ${client.name}, ${client.legalName}, ${client.ruc}, ${client.email}, ${client.phone}, ${client.company}, ${client.notes},
-        ${client.status}, ${client.acquisitionChannel}, ${client.driveFolderUrl}, ${JSON.stringify(client.timeline || [])}, ${JSON.stringify(client.infrastructure)}
+        ${client.id}, ${client.name}, ${client.legalName || null}, ${client.ruc || null}, ${client.email || null}, ${client.phone || null}, ${client.company || null}, ${client.notes || null},
+        ${client.status || 'active'}, ${client.acquisitionChannel || 'direct'}, ${client.clientType || 'real'}, ${client.servicePackage || 'custom'},
+        ${client.billingEmail || null}, ${client.portalEmail || null}, ${client.driveFolderUrl || null}, ${JSON.stringify(client.timeline || [])}, ${JSON.stringify(client.infrastructure || {})}
       )
-      ON CONFLICT (id) DO NOTHING;
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        legal_name = EXCLUDED.legal_name,
+        ruc = EXCLUDED.ruc,
+        email = EXCLUDED.email,
+        phone = EXCLUDED.phone,
+        company = EXCLUDED.company,
+        notes = EXCLUDED.notes,
+        status = EXCLUDED.status,
+        acquisition_channel = EXCLUDED.acquisition_channel,
+        client_type = EXCLUDED.client_type,
+        service_package = EXCLUDED.service_package,
+        billing_email = EXCLUDED.billing_email,
+        portal_email = EXCLUDED.portal_email,
+        drive_folder_url = EXCLUDED.drive_folder_url,
+        timeline = EXCLUDED.timeline,
+        infrastructure = EXCLUDED.infrastructure,
+        updated_at = NOW();
     `;
   }
   await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;
+
+  // 2.1 Synchronize / update sites data (including Vercel sites: Cabaña, Don Mendoza, Terrazas, and M365 #201)
+  for (const s of INITIAL_SITES) {
+    await sql`
+      INSERT INTO sites (
+        id, client_id, name, type, url, category, provider, service_group, site_config
+      ) VALUES (
+        ${s.id}, ${s.clientId}, ${s.name}, ${s.type}, ${s.url}, ${s.category || null}, ${s.provider || null}, ${s.serviceGroup || 'General'}, ${JSON.stringify(s.siteConfig || {})}
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        client_id = EXCLUDED.client_id,
+        name = EXCLUDED.name,
+        type = EXCLUDED.type,
+        url = EXCLUDED.url,
+        category = COALESCE(EXCLUDED.category, sites.category),
+        provider = COALESCE(EXCLUDED.provider, sites.provider),
+        service_group = EXCLUDED.service_group,
+        site_config = COALESCE(sites.site_config, EXCLUDED.site_config),
+        updated_at = NOW();
+    `;
+  }
+  await sql`SELECT setval('sites_id_seq', (SELECT GREATEST(MAX(id), 1) FROM sites));`;
 
   // 3. Seed projects if table is empty
   const existingProjects = await sql`SELECT COUNT(*)::int as count FROM projects`;
@@ -884,7 +1073,14 @@ async function runMigration() {
     WHERE id = 10;
   `;
 
-  console.log('✅ [migrate] Database schema and CRM data synchronized successfully (MainWP updates aligned).');
+  // 6. Record schema version 6 in app_settings
+  await sql`
+    INSERT INTO app_settings (key, value, updated_at)
+    VALUES ('schema_version', ${JSON.stringify({ version: 6 })}, NOW())
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+  `;
+
+  console.log('✅ [migrate] Database schema and CRM data synchronized successfully (MainWP updates aligned, Schema v6).');
 }
 
 runMigration()

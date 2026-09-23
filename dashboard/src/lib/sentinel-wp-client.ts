@@ -245,7 +245,7 @@ export const sentinelWpClient = {
   async applyUpdates(
     siteUrl: string,
     token: string,
-    params: { type: 'all' | 'core' | 'plugins' | 'themes' | 'translations'; slugs?: string[] }
+    params: { type: 'all' | 'core' | 'plugins' | 'themes' | 'translations'; slugs?: string[]; all?: boolean }
   ): Promise<{ status: string; results?: any; error?: string }> {
     const endpoint = this.buildUrl(siteUrl, '/updates/apply', token);
     const res = await safeJsonFetch(endpoint, {

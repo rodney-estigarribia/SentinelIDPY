@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 4.6
+ * Version: 4.7
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '4.6' );
+define( 'SENTINEL_PLUGIN_VERSION', '4.7' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -1480,8 +1480,59 @@ function sentinel_apply_updates( WP_REST_Request $request ) {
         );
     }
 
-    $type  = $request->get_param( 'type' ) ?: 'plugins';
-    $slugs = $request->get_param( 'slugs' ) ?: array();
+    $type = (string) ( $request->get_param( 'type' ) ?: 'plugins' );
+
+    // 1. Extraer slugs con máxima compatibilidad (array, string singular, JSON body, comas)
+    $raw_slugs = $request->get_param( 'slugs' );
+    if ( empty( $raw_slugs ) ) {
+        $single_slug = $request->get_param( 'slug' );
+        if ( ! empty( $single_slug ) ) {
+            $raw_slugs = array( $single_slug );
+        }
+    }
+
+    if ( empty( $raw_slugs ) && method_exists( $request, 'get_json_params' ) ) {
+        $json_params = $request->get_json_params();
+        if ( is_array( $json_params ) ) {
+            if ( ! empty( $json_params['slugs'] ) ) {
+                $raw_slugs = $json_params['slugs'];
+            } elseif ( ! empty( $json_params['slug'] ) ) {
+                $raw_slugs = array( $json_params['slug'] );
+            }
+        }
+    }
+
+    $slugs = array();
+    if ( is_array( $raw_slugs ) ) {
+        $slugs = array_values( array_filter( array_map( 'sanitize_text_field', $raw_slugs ) ) );
+    } elseif ( is_string( $raw_slugs ) && trim( $raw_slugs ) !== '' ) {
+        if ( strpos( $raw_slugs, ',' ) !== false ) {
+            $slugs = array_values( array_filter( array_map( 'sanitize_text_field', explode( ',', $raw_slugs ) ) ) );
+        } else {
+            $slugs = array( sanitize_text_field( trim( $raw_slugs ) ) );
+        }
+    }
+
+    // 2. Determinar si se solicitó explícitamente actualizar TODO
+    $is_explicit_all = (
+        $type === 'all' ||
+        $request->get_param( 'all' ) === true ||
+        $request->get_param( 'all' ) === 'true' ||
+        $request->get_param( 'all' ) === 1 ||
+        in_array( 'all', $slugs, true )
+    );
+
+    // GUARDIA DE SEGURIDAD CRÍTICA:
+    // Si no es una solicitud explícita de "actualizar todo", slugs NO PUEDE estar vacío.
+    // Evita actualizar accidentalmente todos los componentes cuando el frontend solicita uno solo.
+    if ( ! $is_explicit_all && empty( $slugs ) ) {
+        ob_end_clean();
+        return new WP_Error(
+            'no_slugs_specified',
+            'No se especificaron componentes para actualizar. Para actualizar todos, pase {"all": true}.',
+            array( 'status' => 400 )
+        );
+    }
 
     $results = array();
     $skin    = new WP_Ajax_Upgrader_Skin();
@@ -1492,8 +1543,23 @@ function sentinel_apply_updates( WP_REST_Request $request ) {
         $files_to_update = array();
 
         foreach ( $all_updates as $file => $data ) {
-            $slug = dirname( $file ) !== '.' ? dirname( $file ) : sanitize_title( $data->Name );
-            if ( empty( $slugs ) || in_array( $slug, $slugs, true ) || in_array( $file, $slugs, true ) ) {
+            $slug      = dirname( $file ) !== '.' ? dirname( $file ) : sanitize_title( $data->Name );
+            $name_slug = sanitize_title( $data->Name );
+            $base_file = basename( $file, '.php' );
+
+            $should_update = false;
+            if ( $is_explicit_all ) {
+                $should_update = true;
+            } else {
+                $should_update = (
+                    in_array( $slug, $slugs, true ) ||
+                    in_array( $file, $slugs, true ) ||
+                    in_array( $name_slug, $slugs, true ) ||
+                    in_array( $base_file, $slugs, true )
+                );
+            }
+
+            if ( $should_update ) {
                 $files_to_update[] = $file;
             }
         }
@@ -1510,6 +1576,11 @@ function sentinel_apply_updates( WP_REST_Request $request ) {
                 }
             }
             $results['plugins'] = $normalized;
+        } else {
+            $results['plugins'] = array(
+                'status'  => 'skipped',
+                'message' => 'No se encontraron actualizaciones pendientes coincidentes con los slugs provistos: ' . implode( ', ', $slugs )
+            );
         }
     }
 
@@ -1519,7 +1590,19 @@ function sentinel_apply_updates( WP_REST_Request $request ) {
         $themes_to_update = array();
 
         foreach ( $all_updates as $stylesheet => $data ) {
-            if ( empty( $slugs ) || in_array( $stylesheet, $slugs, true ) ) {
+            $theme_name_slug = sanitize_title( $data->get( 'Name' ) );
+            $should_update   = false;
+
+            if ( $is_explicit_all ) {
+                $should_update = true;
+            } else {
+                $should_update = (
+                    in_array( $stylesheet, $slugs, true ) ||
+                    in_array( $theme_name_slug, $slugs, true )
+                );
+            }
+
+            if ( $should_update ) {
                 $themes_to_update[] = $stylesheet;
             }
         }

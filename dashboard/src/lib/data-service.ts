@@ -83,6 +83,10 @@ const entityCache: CacheStore & { invalidate: (key?: keyof CacheStore) => void }
 };
 
 export const dataService = {
+  invalidateCache(key?: keyof CacheStore) {
+    entityCache.invalidate(key);
+  },
+
   // --- CLIENTS ---
   async getClients(): Promise<Client[]> {
     if (entityCache.clients && Date.now() - entityCache.clients.time < CACHE_TTL) {

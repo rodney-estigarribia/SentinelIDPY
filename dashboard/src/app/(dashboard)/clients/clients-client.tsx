@@ -43,7 +43,8 @@ import {
   ArrowLeft,
   ChevronRight,
   Phone,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from 'lucide-react';
 import type { Client, Site, Project, ClientTimelineEvent, Payment } from '@/db/schema';
 import { GroupManagerModal } from '@/components/services/group-manager-modal';
@@ -150,6 +151,45 @@ export function ClientsClient({
   const [newPayProjectId, setNewPayProjectId] = useState<number | ''>('');
   const [newPayNotes, setNewPayNotes] = useState('');
   const [isSavingPay, setIsSavingPay] = useState(false);
+
+  // Seed & DB Catalog Synchronization State
+  const [isSyncingSeed, setIsSyncingSeed] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  const handleSyncCatalog = async () => {
+    setIsSyncingSeed(true);
+    setSyncFeedback('Sincronizando Don Mendoza, Terrazas y Cabaña con la base de datos...');
+    try {
+      const res = await fetch('/api/admin/seed-sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error de sincronización');
+      }
+
+      // Re-fetch fresh clients and sites
+      const [resClients, resSites] = await Promise.all([
+        fetch('/api/clients').then((r) => r.json()),
+        fetch('/api/sites').then((r) => r.json()),
+      ]);
+
+      if (Array.isArray(resClients) && resClients.length > 0) {
+        setClients(resClients);
+      }
+      if (Array.isArray(resSites) && resSites.length > 0) {
+        setCurrentSites(resSites);
+      }
+
+      setSyncFeedback(
+        `✅ Catálogo sincronizado con éxito (${data.totalClients} clientes totales). Nuevos clientes cargados en la base de datos.`
+      );
+      setTimeout(() => setSyncFeedback(null), 7000);
+    } catch (err: any) {
+      setSyncFeedback(`❌ Error al sincronizar: ${err.message}`);
+      setTimeout(() => setSyncFeedback(null), 6000);
+    } finally {
+      setIsSyncingSeed(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentSites(sites);
@@ -792,14 +832,41 @@ export function ClientsClient({
               </p>
             </div>
 
-            <button
-              onClick={() => setIsNewClientModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo Cliente</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSyncCatalog}
+                disabled={isSyncingSeed}
+                title="Sincronizar Don Mendoza, Terrazas Bungalow y Cabaña del Árbol con la base de datos"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all border border-slate-200 dark:border-slate-700 disabled:opacity-50 cursor-pointer shadow-xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSeed ? 'animate-spin text-emerald-500' : ''}`} />
+                <span>{isSyncingSeed ? 'Sincronizando...' : 'Sincronizar Catálogo'}</span>
+              </button>
+
+              <button
+                onClick={() => setIsNewClientModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Nuevo Cliente</span>
+              </button>
+            </div>
           </div>
+
+          {syncFeedback && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs font-medium flex items-center justify-between shadow-xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>{syncFeedback}</span>
+              </div>
+              <button
+                onClick={() => setSyncFeedback(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Quick Stats Ribbon */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -3,28 +3,33 @@ import { neon } from '@neondatabase/serverless';
 let isInitialized = false;
 let initPromise: Promise<boolean> | null = null;
 
-export async function ensureDbSchema(): Promise<boolean> {
-  if (isInitialized) return true;
-  if (initPromise) return initPromise;
+export async function ensureDbSchema(force = false): Promise<boolean> {
+  if (isInitialized && !force) return true;
+  if (initPromise && !force) return initPromise;
 
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) {
     return false;
   }
 
+  const SCHEMA_VERSION_TARGET = 6;
+
   initPromise = (async () => {
     try {
       const sql = neon(connectionString);
 
-      // Fast-path: Check if database is already fully initialized in a single quick query
-      try {
-        const check = await sql`SELECT 1 FROM app_settings WHERE key = 'salary_ladder_config' LIMIT 1;`;
-        if (check && check.length > 0) {
-          isInitialized = true;
-          return true;
+      // Fast-path: Check if database schema version is already up-to-date
+      if (!force) {
+        try {
+          const verRow = await sql`SELECT value FROM app_settings WHERE key = 'schema_version' LIMIT 1;`;
+          const currentVersion = verRow && verRow.length > 0 ? (verRow[0].value as any)?.version || 0 : 0;
+          if (currentVersion >= SCHEMA_VERSION_TARGET) {
+            isInitialized = true;
+            return true;
+          }
+        } catch {
+          // Table doesn't exist yet, continue to full auto-migration below
         }
-      } catch {
-        // Table doesn't exist yet, continue to full auto-migration below
       }
 
       // 1. Create and update all tables if not exists
@@ -43,6 +48,11 @@ export async function ensureDbSchema(): Promise<boolean> {
         drive_folder_url TEXT,
         timeline JSONB,
         infrastructure JSONB,
+        client_type TEXT DEFAULT 'real',
+        service_package TEXT DEFAULT 'custom',
+        billing_email TEXT,
+        portal_email TEXT,
+        billing_details JSONB,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -56,7 +66,12 @@ export async function ensureDbSchema(): Promise<boolean> {
       ADD COLUMN IF NOT EXISTS acquisition_channel TEXT,
       ADD COLUMN IF NOT EXISTS drive_folder_url TEXT,
       ADD COLUMN IF NOT EXISTS timeline JSONB,
-      ADD COLUMN IF NOT EXISTS infrastructure JSONB;
+      ADD COLUMN IF NOT EXISTS infrastructure JSONB,
+      ADD COLUMN IF NOT EXISTS client_type TEXT DEFAULT 'real',
+      ADD COLUMN IF NOT EXISTS service_package TEXT DEFAULT 'custom',
+      ADD COLUMN IF NOT EXISTS billing_email TEXT,
+      ADD COLUMN IF NOT EXISTS portal_email TEXT,
+      ADD COLUMN IF NOT EXISTS billing_details JSONB;
     `;
 
     await sql`
@@ -87,6 +102,7 @@ export async function ensureDbSchema(): Promise<boolean> {
         relationships JSONB,
         roadmap_notes TEXT,
         service_group TEXT,
+        site_config JSONB,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -99,7 +115,8 @@ export async function ensureDbSchema(): Promise<boolean> {
       ADD COLUMN IF NOT EXISTS billing JSONB,
       ADD COLUMN IF NOT EXISTS relationships JSONB,
       ADD COLUMN IF NOT EXISTS roadmap_notes TEXT,
-      ADD COLUMN IF NOT EXISTS service_group TEXT;
+      ADD COLUMN IF NOT EXISTS service_group TEXT,
+      ADD COLUMN IF NOT EXISTS site_config JSONB;
     `;
 
     await sql`
@@ -211,46 +228,80 @@ export async function ensureDbSchema(): Promise<boolean> {
       );
     `;
 
-    // 2. Check if clients table is empty, seed if empty
-    const clientCount = await sql`SELECT COUNT(*)::int as count FROM clients`;
-    if (clientCount[0].count === 0) {
-      const { INITIAL_CLIENTS } = await import('@/lib/initial-data');
-      for (const c of INITIAL_CLIENTS) {
-        await sql`
-          INSERT INTO clients (
-            id, name, legal_name, ruc, email, phone, company, notes,
-            status, acquisition_channel, drive_folder_url, timeline, infrastructure
-          ) VALUES (
-            ${c.id}, ${c.name}, ${c.legalName || null}, ${c.ruc || null}, ${c.email || null}, ${c.phone || null}, ${c.company || null}, ${c.notes || null},
-            ${c.status || 'active'}, ${c.acquisitionChannel || 'direct'}, ${c.driveFolderUrl || null}, ${JSON.stringify(c.timeline || [])}, ${JSON.stringify(c.infrastructure || {})}
-          ) ON CONFLICT (id) DO NOTHING;
-        `;
-      }
-      await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;
+    // 1.1 Consolidate CGA: Reassign ID 3 to ID 2 and delete duplicate client 3
+    try {
+      await sql`UPDATE sites SET client_id = 2 WHERE client_id = 3;`;
+      await sql`UPDATE sites SET type = 'wordpress' WHERE id = 3 OR url LIKE '%portal.cga.com.py%';`;
+      await sql`UPDATE projects SET client_id = 2 WHERE client_id = 3;`;
+      await sql`UPDATE payments SET client_id = 2 WHERE client_id = 3;`;
+      await sql`UPDATE service_groups SET client_id = 2 WHERE client_id = 3;`;
+      await sql`DELETE FROM clients WHERE id = 3;`;
+    } catch {
+      // Non-blocking if tables/records already migrated
     }
 
-    // 3. Check if sites table is empty, seed if empty
-    const siteCount = await sql`SELECT COUNT(*)::int as count FROM sites`;
-    if (siteCount[0].count === 0) {
-      const { INITIAL_SITES } = await import('@/lib/initial-data');
-      for (const s of INITIAL_SITES) {
-        await sql`
-          INSERT INTO sites (
-            id, client_id, name, type, url, token, disk_allocated_gb,
-            status, last_status_code, last_response_time_ms, last_checked_at, last_backup_at,
-            wp_version, php_version, ssl_days_left, site_health_score, pending_updates,
-            wordfence_stats, performance_info, metadata, category, provider, billing, relationships, roadmap_notes, service_group
-          ) VALUES (
-            ${s.id}, ${s.clientId}, ${s.name}, ${s.type}, ${s.url}, ${s.token}, ${s.diskAllocatedGb},
-            ${s.status}, ${s.lastStatusCode}, ${s.lastResponseTimeMs}, ${s.lastCheckedAt ? new Date(s.lastCheckedAt) : null}, ${s.lastBackupAt ? new Date(s.lastBackupAt) : null},
-            ${s.wpVersion}, ${s.phpVersion}, ${s.sslDaysLeft}, ${JSON.stringify(s.siteHealthScore || {})}, ${JSON.stringify(s.pendingUpdates || {})},
-            ${JSON.stringify(s.wordfenceStats || {})}, ${JSON.stringify(s.performanceInfo || {})}, ${JSON.stringify(s.metadata || {})}, ${s.category}, ${s.provider},
-            ${JSON.stringify(s.billing || {})}, ${JSON.stringify(s.relationships || {})}, ${s.roadmapNotes || null}, ${s.serviceGroup}
-          ) ON CONFLICT (id) DO NOTHING;
-        `;
-      }
-      await sql`SELECT setval('sites_id_seq', (SELECT GREATEST(MAX(id), 1) FROM sites));`;
+    // 2. Sync all clients (including Don Mendoza, Terrazas Bungalow, Cabaña del Árbol, and unified CGA)
+    const { INITIAL_CLIENTS, INITIAL_SITES } = await import('@/lib/initial-data');
+    for (const c of INITIAL_CLIENTS) {
+      await sql`
+        INSERT INTO clients (
+          id, name, legal_name, ruc, email, phone, company, notes,
+          status, acquisition_channel, client_type, service_package,
+          billing_email, portal_email, billing_details, drive_folder_url, timeline, infrastructure
+        ) VALUES (
+          ${c.id}, ${c.name}, ${c.legalName || null}, ${c.ruc || null}, ${c.email || null}, ${c.phone || null}, ${c.company || null}, ${c.notes || null},
+          ${c.status || 'active'}, ${c.acquisitionChannel || 'direct'}, ${(c as any).clientType || 'real'}, ${(c as any).servicePackage || 'custom'},
+          ${(c as any).billingEmail || null}, ${(c as any).portalEmail || null}, ${JSON.stringify((c as any).billingDetails || {})}, ${c.driveFolderUrl || null}, ${JSON.stringify(c.timeline || [])}, ${JSON.stringify(c.infrastructure || {})}
+        ) ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          legal_name = EXCLUDED.legal_name,
+          ruc = EXCLUDED.ruc,
+          email = EXCLUDED.email,
+          phone = EXCLUDED.phone,
+          company = EXCLUDED.company,
+          notes = EXCLUDED.notes,
+          status = EXCLUDED.status,
+          acquisition_channel = EXCLUDED.acquisition_channel,
+          client_type = EXCLUDED.client_type,
+          service_package = EXCLUDED.service_package,
+          billing_email = EXCLUDED.billing_email,
+          portal_email = EXCLUDED.portal_email,
+          billing_details = EXCLUDED.billing_details,
+          drive_folder_url = EXCLUDED.drive_folder_url,
+          timeline = EXCLUDED.timeline,
+          infrastructure = EXCLUDED.infrastructure,
+          updated_at = NOW();
+      `;
     }
+    await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;
+
+    // 3. Sync all sites (including Cabaña del Árbol #11, Don Mendoza #12, Terrazas Bungalow #13, M365 #201)
+    for (const s of INITIAL_SITES) {
+      await sql`
+        INSERT INTO sites (
+          id, client_id, name, type, url, token, disk_allocated_gb,
+          status, last_status_code, last_response_time_ms, last_checked_at, last_backup_at,
+          wp_version, php_version, ssl_days_left, site_health_score, pending_updates,
+          wordfence_stats, performance_info, metadata, category, provider, billing, relationships, roadmap_notes, service_group, site_config
+        ) VALUES (
+          ${s.id}, ${s.clientId}, ${s.name}, ${s.type}, ${s.url}, ${s.token}, ${s.diskAllocatedGb},
+          ${s.status}, ${s.lastStatusCode}, ${s.lastResponseTimeMs}, ${s.lastCheckedAt ? new Date(s.lastCheckedAt) : null}, ${s.lastBackupAt ? new Date(s.lastBackupAt) : null},
+          ${s.wpVersion}, ${s.phpVersion}, ${s.sslDaysLeft}, ${JSON.stringify(s.siteHealthScore || {})}, ${JSON.stringify(s.pendingUpdates || {})},
+          ${JSON.stringify(s.wordfenceStats || {})}, ${JSON.stringify(s.performanceInfo || {})}, ${JSON.stringify(s.metadata || {})}, ${s.category}, ${s.provider},
+          ${JSON.stringify(s.billing || {})}, ${JSON.stringify(s.relationships || {})}, ${s.roadmapNotes || null}, ${s.serviceGroup}, ${JSON.stringify((s as any).siteConfig || {})}
+        ) ON CONFLICT (id) DO UPDATE SET
+          client_id = EXCLUDED.client_id,
+          name = EXCLUDED.name,
+          type = EXCLUDED.type,
+          url = EXCLUDED.url,
+          category = COALESCE(EXCLUDED.category, sites.category),
+          provider = COALESCE(EXCLUDED.provider, sites.provider),
+          service_group = EXCLUDED.service_group,
+          site_config = COALESCE(sites.site_config, EXCLUDED.site_config),
+          updated_at = NOW();
+      `;
+    }
+    await sql`SELECT setval('sites_id_seq', (SELECT GREATEST(MAX(id), 1) FROM sites));`;
 
     // 3.1 Auto-heal updates to match MainWP (12 updates: 5 plugins, 7 translations)
     try {
@@ -339,12 +390,18 @@ export async function ensureDbSchema(): Promise<boolean> {
       await sql`SELECT setval('config_templates_id_seq', (SELECT GREATEST(MAX(id), 1) FROM config_templates));`;
     }
 
-    // 8. Check if app_settings has salary_ladder_config
+    // 8. Check if app_settings has salary_ladder_config and schema_version
     const { DEFAULT_FINANCIAL_SETTINGS } = await import('@/lib/initial-data');
     await sql`
       INSERT INTO app_settings (key, value)
       VALUES ('salary_ladder_config', ${JSON.stringify(DEFAULT_FINANCIAL_SETTINGS)})
       ON CONFLICT (key) DO NOTHING;
+    `;
+
+    await sql`
+      INSERT INTO app_settings (key, value, updated_at)
+      VALUES ('schema_version', ${JSON.stringify({ version: SCHEMA_VERSION_TARGET })}, NOW())
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
     `;
 
     isInitialized = true;
