@@ -21,6 +21,16 @@ export const clients = pgTable('clients', {
   notes: text('notes'),
   status: text('status').notNull().default('active'), // 'active', 'migrated', 'churned', 'lead'
   acquisitionChannel: text('acquisition_channel'), // 'referral', 'direct', 'social', 'network'
+  clientType: text('client_type').notNull().default('real'), // 'real' | 'potential'
+  servicePackage: text('service_package').default('custom'), // 'mipyme_express', 'mantenimiento_crecimiento', 'mantenimiento_elite', 'hardening', 'cloud_infra', 'custom'
+  billingEmail: text('billing_email'), // Correo exclusivo para facturación y cobranzas
+  portalEmail: text('portal_email'), // Correo exclusivo para acceso a su portal de analítica
+  billingDetails: jsonb('billing_details').$type<{
+    billingAddress?: string;
+    city?: string;
+    paymentTerms?: string;
+    taxIdNotes?: string;
+  }>(),
   driveFolderUrl: text('drive_folder_url'), // Link directo a carpeta Google Drive
   timeline: jsonb('timeline').$type<ClientTimelineEvent[]>(), // Línea de tiempo cronológica
   // Infrastructure map: domain, hosting, dns, email, systems, costs

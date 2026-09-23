@@ -41,6 +41,42 @@ import { GroupManagerModal } from '@/components/services/group-manager-modal';
 import { TeamSnippetsModal } from '@/components/team/team-snippets-modal';
 import { Badge, Note } from '@/components/ui';
 
+export const SERVICE_PACKAGES = [
+  { id: 'mipyme_express', name: 'Mi Primera Web MiPyME Express', price: '₲610.000 / año (Lanzamiento Mano de Obra ₲0)', badge: 'bg-cyan-50 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/30' },
+  { id: 'hardening', name: 'Hardening & Ciberseguridad', price: 'Desde ₲1.800.000 (One-off / Proyecto)', badge: 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30' },
+  { id: 'cloud_infra', name: 'Cloud & Infraestructura', price: 'Desde ₲2.500.000', badge: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30' },
+  { id: 'mantenimiento_crecimiento', name: 'Plan Mantenimiento Crecimiento', price: '₲140.000 / mes', badge: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30' },
+  { id: 'mantenimiento_elite', name: 'Plan Mantenimiento Elite', price: '₲250.000 / mes', badge: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30' },
+  { id: 'custom', name: 'Desarrollo Web / Sistema a Medida', price: 'A cotizar', badge: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' },
+];
+
+export function getServicePackageInfo(id?: string | null) {
+  return SERVICE_PACKAGES.find(p => p.id === id) || SERVICE_PACKAGES.find(p => p.id === 'custom')!;
+}
+
+export function getClientTypeBadge(client: Client) {
+  const isPotential = (client as any).clientType === 'potential' || client.status === 'lead';
+  if (isPotential) {
+    return {
+      label: 'Potencial (Lead)',
+      classes: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30',
+      icon: '⚡'
+    };
+  }
+  if (client.status === 'churned') {
+    return {
+      label: 'Baja Histórica',
+      classes: 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/30',
+      icon: '⚪'
+    };
+  }
+  return {
+    label: 'Cliente Real',
+    classes: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30',
+    icon: '🟢'
+  };
+}
+
 interface ClientsClientProps {
   initialClients: Client[];
   sites: Site[];
@@ -61,15 +97,18 @@ export function ClientsClient({
   const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [selectedClient, setSelectedClient] = useState<Client | null>(clients[0] || null);
 
-  // Active view tab
-  const [activeTab, setActiveTab] = useState<'infrastructure' | 'timeline' | 'projects' | 'payments' | 'web_config'>('infrastructure');
+  // Active view tab (Apertura inmediata en Ficha CRM 360°)
+  const [activeTab, setActiveTab] = useState<'ficha_crm' | 'infrastructure' | 'timeline' | 'projects' | 'payments' | 'web_config'>('ficha_crm');
   const [searchQuery, setSearchQuery] = useState('');
+  const [clientTypeFilter, setClientTypeFilter] = useState<'all' | 'real' | 'potential' | 'churned'>('all');
+  const [serviceFilter, setServiceFilter] = useState<string>('all');
 
   // Web Config & CTAs Editor State (Etapa 2)
   const [selectedConfigSiteId, setSelectedConfigSiteId] = useState<number | null>(null);
   const [cfgSlug, setCfgSlug] = useState('');
   const [cfgDemoActive, setCfgDemoActive] = useState(true);
   const [cfgProposalActive, setCfgProposalActive] = useState(true);
+  const [cfgPortalEmail, setCfgPortalEmail] = useState('');
   const [cfgDemoStartDate, setCfgDemoStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [cfgDemoDays, setCfgDemoDays] = useState(7);
   const [cfgPhone, setCfgPhone] = useState('');
@@ -126,6 +165,7 @@ export function ClientsClient({
       setCfgSlug(generatedSlug);
       setCfgDemoActive(conf.demo?.active ?? (generatedSlug === 'cabana-del-arbol'));
       setCfgProposalActive(conf.proposal?.active ?? (generatedSlug === 'cabana-del-arbol'));
+      setCfgPortalEmail(conf.portalEmail || selectedClient.email || '');
       setCfgDemoStartDate(conf.demo?.startDate || new Date().toISOString().split('T')[0]);
       setCfgDemoDays(conf.demo?.days || 7);
       setCfgPhone(conf.whatsapp?.phone || selectedClient.phone?.replace(/[^0-9]/g, '') || '595981000000');
@@ -146,8 +186,12 @@ export function ClientsClient({
   const [editRuc, setEditRuc] = useState('');
   const [editCompany, setEditCompany] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editBillingEmail, setEditBillingEmail] = useState('');
+  const [editPortalEmail, setEditPortalEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editStatus, setEditStatus] = useState<string>('active');
+  const [editClientType, setEditClientType] = useState<'real' | 'potential'>('real');
+  const [editServicePackage, setEditServicePackage] = useState('custom');
   const [editAcquisitionChannel, setEditAcquisitionChannel] = useState('');
   const [editDriveFolderUrl, setEditDriveFolderUrl] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -188,8 +232,12 @@ export function ClientsClient({
   const [newClientRuc, setNewClientRuc] = useState('');
   const [newClientCompany, setNewClientCompany] = useState('');
   const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientBillingEmail, setNewClientBillingEmail] = useState('');
+  const [newClientPortalEmail, setNewClientPortalEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientStatus, setNewClientStatus] = useState<'active' | 'migrated' | 'churned' | 'lead'>('active');
+  const [newClientType, setNewClientType] = useState<'real' | 'potential'>('real');
+  const [newClientServicePackage, setNewClientServicePackage] = useState('custom');
   const [newClientChannel, setNewClientChannel] = useState('direct');
   const [newClientDrive, setNewClientDrive] = useState('');
 
@@ -275,6 +323,7 @@ export function ClientsClient({
 
   const handleSelectClient = (c: Client) => {
     setSelectedClient(c);
+    setActiveTab('ficha_crm');
     setDomainProvider(c.infrastructure?.domain?.provider || 'nic.py');
     setDomainRenewer(c.infrastructure?.domain?.renewer || 'agency');
     setDomainExpiry(c.infrastructure?.domain?.expiryDate || '2026-12-31');
@@ -300,8 +349,12 @@ export function ClientsClient({
     setEditRuc(selectedClient.ruc || '');
     setEditCompany(selectedClient.company || '');
     setEditEmail(selectedClient.email || '');
+    setEditBillingEmail((selectedClient as any).billingEmail || '');
+    setEditPortalEmail((selectedClient as any).portalEmail || '');
     setEditPhone(selectedClient.phone || '');
     setEditStatus(selectedClient.status || 'active');
+    setEditClientType((selectedClient as any).clientType || (selectedClient.status === 'lead' ? 'potential' : 'real'));
+    setEditServicePackage((selectedClient as any).servicePackage || 'custom');
     setEditAcquisitionChannel(selectedClient.acquisitionChannel || 'direct');
     setEditDriveFolderUrl(selectedClient.driveFolderUrl || '');
     setEditNotes(selectedClient.notes || '');
@@ -320,6 +373,10 @@ export function ClientsClient({
       email: editEmail || null,
       phone: editPhone || null,
       status: editStatus,
+      clientType: editClientType,
+      servicePackage: editServicePackage,
+      billingEmail: editBillingEmail || null,
+      portalEmail: editPortalEmail || null,
       acquisitionChannel: editAcquisitionChannel || null,
       driveFolderUrl: editDriveFolderUrl || null,
       notes: editNotes || null,
@@ -364,6 +421,7 @@ export function ClientsClient({
       proposal: {
         active: cfgProposalActive
       },
+      portalEmail: cfgPortalEmail,
       whatsapp: {
         phone: cfgPhone,
         defaultMessage: cfgDefaultMsg,
@@ -510,6 +568,11 @@ export function ClientsClient({
       phone: newClientPhone || null,
       status: newClientStatus,
       acquisitionChannel: newClientChannel || null,
+      clientType: newClientType,
+      servicePackage: newClientServicePackage,
+      billingEmail: newClientBillingEmail || null,
+      portalEmail: newClientPortalEmail || null,
+      billingDetails: null,
       driveFolderUrl: newClientDrive || null,
       notes: '',
       timeline: [
@@ -1652,6 +1715,34 @@ export function ClientsClient({
                             {cfgProposalActive ? 'Visible (ON)' : 'Oculta / Redirigida (OFF)'}
                           </span>
                         </label>
+                      </div>
+                    </div>
+
+                    {/* Bloque 1.8: Correo(s) Autorizado(s) para el Portal (/portal) */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-indigo-500" />
+                          <span>Acceso al Portal del Cliente (/portal)</span>
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40">
+                          Magic Link 7 Días
+                        </span>
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 dark:text-slate-400 font-medium mb-1">
+                          Correo(s) Electrónico(s) Autorizado(s)
+                        </label>
+                        <input
+                          type="text"
+                          value={cfgPortalEmail}
+                          onChange={(e) => setCfgPortalEmail(e.target.value)}
+                          placeholder="ej. reservas@cabanadelarbol.com.py (o varios correos separados por coma)"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-xs"
+                        />
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          Este correo podrá entrar a <code>/portal</code> con el enlace mágico sin contraseña. Si el cliente tiene socios o encargados, podés escribir varios correos separados por coma.
+                        </p>
                       </div>
                     </div>
 

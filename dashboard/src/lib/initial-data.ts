@@ -9,7 +9,7 @@ import type {
 } from '@/db/schema';
 
 // Initial seed data from clientes.json, SERVICIOS Y RENOVACIONES CLIENTES and infrastructure mappings
-export const INITIAL_CLIENTS: Array<Client> = [
+export const RAW_INITIAL_CLIENTS: Array<Partial<Client> & { id: number; name: string }> = [
   {
     id: 1,
     name: 'IDPY (Impulsos Digitales)',
@@ -555,6 +555,10 @@ export const INITIAL_CLIENTS: Array<Client> = [
       domain: { provider: 'nic.py (En gestión)', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
       hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared Business', annualCost: 450000, currency: 'PYG' }
     },
+    clientType: 'potential',
+    servicePackage: 'hardening',
+    billingEmail: 'facturacion@repar.com.py',
+    portalEmail: 'contacto@repar.com.py',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -563,11 +567,15 @@ export const INITIAL_CLIENTS: Array<Client> = [
     name: 'Cabaña del Árbol',
     legalName: 'Cabaña del Árbol San Bernardino',
     ruc: '80149201-1',
-    email: 'reservas@cabanadelarbol.com.py',
+    email: 'contacto@cabanadelarbol.com.py',
     phone: '+595 982 957509',
     company: 'Cabaña del Árbol',
     notes: 'Alquiler temporal en San Bernardino frente al Lago Ypacaraí. Proyecto Mi Primera Web MiPyME Express.',
     status: 'lead',
+    clientType: 'potential',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'facturacion@cabanadelarbol.com.py',
+    portalEmail: 'reservas@cabanadelarbol.com.py',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cabana-del-arbol',
     timeline: [
@@ -597,6 +605,10 @@ export const INITIAL_CLIENTS: Array<Client> = [
     company: 'Don Mendoza - Cuidado de Piscinas de Autor',
     notes: 'Servicio de mantenimiento y química de piscinas en Asunción y San Bernardino. Sitio comprado y activo.',
     status: 'active',
+    clientType: 'real',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'facturacion@donmendoza.com.py',
+    portalEmail: 'contacto@donmendoza.com.py',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/don-mendoza',
     timeline: [
@@ -621,11 +633,15 @@ export const INITIAL_CLIENTS: Array<Client> = [
     name: 'Terrazas Bungalow',
     legalName: 'Terrazas Bungalow Alquileres',
     ruc: '80164210-9',
-    email: 'reservas@terrazasbungalow.com.py',
+    email: 'contacto@terrazasbungalow.com.py',
     phone: '+595 981 000000',
     company: 'Terrazas Bungalow',
     notes: 'Complejo de descanso y bungalows. Sitio adquirido y activo.',
     status: 'active',
+    clientType: 'real',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'facturacion@terrazasbungalow.com.py',
+    portalEmail: 'reservas@terrazasbungalow.com.py',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/terrazas-bungalow',
     timeline: [
@@ -646,6 +662,33 @@ export const INITIAL_CLIENTS: Array<Client> = [
     updatedAt: new Date(),
   }
 ];
+
+function seedClient(data: Partial<Client> & { id: number; name: string }): Client {
+  const isPotential = data.status === 'lead' || data.clientType === 'potential';
+  return {
+    legalName: null,
+    ruc: null,
+    email: null,
+    phone: null,
+    company: null,
+    notes: null,
+    status: 'active',
+    acquisitionChannel: 'direct',
+    clientType: isPotential ? 'potential' : (data.clientType || 'real'),
+    servicePackage: data.servicePackage || 'custom',
+    billingEmail: data.billingEmail || null,
+    portalEmail: data.portalEmail || null,
+    billingDetails: data.billingDetails || null,
+    driveFolderUrl: null,
+    timeline: [],
+    infrastructure: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...data,
+  };
+}
+
+export const INITIAL_CLIENTS: Array<Client> = RAW_INITIAL_CLIENTS.map(seedClient);
 
 function seedSite(data: Partial<Site> & { id: number; name: string; type: string; url: string }): Site {
   return {

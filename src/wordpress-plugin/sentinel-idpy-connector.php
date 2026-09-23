@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 4.3
+ * Version: 4.6
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '4.3' );
+define( 'SENTINEL_PLUGIN_VERSION', '4.6' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -130,6 +130,12 @@ add_action( 'rest_api_init', function () {
     register_rest_route( 'sentinel/v1', '/updates/apply', array(
         'methods'  => 'POST',
         'callback' => 'sentinel_apply_updates',
+        'permission_callback' => 'verify_wf_report_token'
+    ) );
+    // MainWP Bridge (cuando MainWP Dashboard está presente en el sitio)
+    register_rest_route( 'sentinel/v1', '/mainwp/updates', array(
+        'methods'  => 'GET',
+        'callback' => 'sentinel_get_mainwp_updates',
         'permission_callback' => 'verify_wf_report_token'
     ) );
     // Plugins
@@ -1220,15 +1226,31 @@ function sentinel_get_updates() {
         require_once ABSPATH . 'wp-admin/includes/theme.php';
     }
 
+    if ( ! empty( $_GET['force_check'] ) ) {
+        if ( function_exists( 'wp_update_plugins' ) ) {
+            wp_update_plugins();
+        }
+        if ( function_exists( 'wp_update_themes' ) ) {
+            wp_update_themes();
+        }
+    }
+
     $plugin_updates_raw = get_plugin_updates();
     $plugins = array();
     foreach ( $plugin_updates_raw as $file => $data ) {
+        $cur_ver = $data->Version ?? '';
+        $new_ver = $data->update->new_version ?? '';
+        // Evitar falsos positivos si las versiones son idénticas
+        if ( ! empty( $new_ver ) && version_compare( $new_ver, $cur_ver, '<=' ) ) {
+            continue;
+        }
+
         $plugins[] = array(
             'name'            => $data->Name,
             'slug'            => dirname( $file ) !== '.' ? dirname( $file ) : sanitize_title( $data->Name ),
             'plugin_file'     => $file,
-            'current_version' => $data->Version,
-            'new_version'     => $data->update->new_version ?? '',
+            'current_version' => $cur_ver,
+            'new_version'     => $new_ver,
             'package'         => $data->update->package ?? ''
         );
     }
@@ -1236,11 +1258,17 @@ function sentinel_get_updates() {
     $theme_updates_raw = get_theme_updates();
     $themes = array();
     foreach ( $theme_updates_raw as $stylesheet => $data ) {
+        $cur_ver = $data->get( 'Version' ) ?: '';
+        $new_ver = $data->update['new_version'] ?? '';
+        if ( ! empty( $new_ver ) && version_compare( $new_ver, $cur_ver, '<=' ) ) {
+            continue;
+        }
+
         $themes[] = array(
             'name'            => $data->get( 'Name' ),
             'slug'            => $stylesheet,
-            'current_version' => $data->get( 'Version' ),
-            'new_version'     => $data->update['new_version'] ?? '',
+            'current_version' => $cur_ver,
+            'new_version'     => $new_ver,
             'package'         => $data->update['package'] ?? ''
         );
     }
@@ -1257,11 +1285,166 @@ function sentinel_get_updates() {
         $core['package']          = $core_updates[0]->download ?? '';
     }
 
+    // Traducciones
+    $translations_raw = function_exists( 'wp_get_translation_updates' ) ? wp_get_translation_updates() : array();
+    $translations = array();
+    foreach ( (array) $translations_raw as $trans ) {
+        $translations[] = array(
+            'type'        => $trans->type ?? 'plugin',
+            'slug'        => $trans->slug ?? sanitize_title( $trans->name ?? 'translation' ),
+            'name'        => ! empty( $trans->name ) ? $trans->name : 'Traducción (' . ( $trans->language ?? 'es_ES' ) . ')',
+            'language'    => $trans->language ?? 'es_ES',
+            'version'     => $trans->version ?? 'Actual',
+        );
+    }
+
     return array(
-        'status'    => 'success',
-        'wordpress' => $core,
-        'plugins'   => $plugins,
-        'themes'    => $themes,
+        'status'       => 'success',
+        'wordpress'    => $core,
+        'plugins'      => $plugins,
+        'themes'       => $themes,
+        'translations' => $translations,
+        'counts'       => array(
+            'plugins'      => count( $plugins ),
+            'themes'       => count( $themes ),
+            'wordpress'    => $core['update_available'] ? 1 : 0,
+            'translations' => count( $translations ),
+            'total'        => count( $plugins ) + count( $themes ) + ( $core['update_available'] ? 1 : 0 ) + count( $translations ),
+        )
+    );
+}
+
+/**
+ * 1.1 OBTENER ESTADO CENTRALIZADO DESDE MAINWP DASHBOARD (SI ESTÁ PRESENTE)
+ */
+function sentinel_get_mainwp_updates() {
+    global $wpdb;
+    $mainwp_table = $wpdb->prefix . 'mainwp_wp';
+    $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$mainwp_table}'" );
+
+    if ( ! $table_exists ) {
+        return array(
+            'status'     => 'not_applicable',
+            'has_mainwp' => false,
+            'message'    => 'MainWP Dashboard no está instalado en este WordPress host.',
+        );
+    }
+
+    $rows = $wpdb->get_results( "SELECT id, name, url, siteurl, plugin_upgrades, theme_upgrades, translation_upgrades, wp_upgrades, dtsync FROM {$mainwp_table}" );
+
+    $child_sites = array();
+    $total_plugins = 0;
+    $total_themes = 0;
+    $total_core = 0;
+    $total_translations = 0;
+
+    foreach ( (array) $rows as $row ) {
+        $p_raw = maybe_unserialize( $row->plugin_upgrades );
+        if ( is_string( $p_raw ) ) {
+            $p_raw = json_decode( $p_raw, true );
+        }
+        $t_raw = maybe_unserialize( $row->theme_upgrades );
+        if ( is_string( $t_raw ) ) {
+            $t_raw = json_decode( $t_raw, true );
+        }
+        $tr_raw = maybe_unserialize( $row->translation_upgrades );
+        if ( is_string( $tr_raw ) ) {
+            $tr_raw = json_decode( $tr_raw, true );
+        }
+        $w_raw = maybe_unserialize( $row->wp_upgrades );
+        if ( is_string( $w_raw ) ) {
+            $w_raw = json_decode( $w_raw, true );
+        }
+
+        $plugins_list = array();
+        if ( is_array( $p_raw ) ) {
+            foreach ( $p_raw as $plugin_file => $p_info ) {
+                $p_obj = is_object( $p_info ) ? (array) $p_info : $p_info;
+                $p_name = $p_obj['Name'] ?? $p_obj['name'] ?? basename( (string) $plugin_file, '.php' );
+                $plugins_list[] = array(
+                    'name'            => $p_name,
+                    'slug'            => dirname( (string) $plugin_file ) !== '.' ? dirname( (string) $plugin_file ) : sanitize_title( $p_name ),
+                    'file'            => (string) $plugin_file,
+                    'current_version' => $p_obj['Version'] ?? $p_obj['current_version'] ?? '',
+                    'new_version'     => $p_obj['new_version'] ?? $p_obj['update']['new_version'] ?? '',
+                );
+            }
+        }
+
+        $themes_list = array();
+        if ( is_array( $t_raw ) ) {
+            foreach ( $t_raw as $th_slug => $th_info ) {
+                $th_obj = is_object( $th_info ) ? (array) $th_info : $th_info;
+                $themes_list[] = array(
+                    'name'            => $th_obj['Name'] ?? $th_obj['name'] ?? $th_slug,
+                    'slug'            => (string) $th_slug,
+                    'current_version' => $th_obj['Version'] ?? $th_obj['current_version'] ?? '',
+                    'new_version'     => $th_obj['new_version'] ?? '',
+                );
+            }
+        }
+
+        $translations_list = array();
+        if ( is_array( $tr_raw ) ) {
+            foreach ( $tr_raw as $tr_item ) {
+                $tr_obj = is_object( $tr_item ) ? (array) $tr_item : $tr_item;
+                $translations_list[] = array(
+                    'name'     => $tr_obj['name'] ?? 'Traducción (' . ( $tr_obj['language'] ?? 'es_ES' ) . ')',
+                    'slug'     => $tr_obj['slug'] ?? 'translation',
+                    'language' => $tr_obj['language'] ?? 'es_ES',
+                    'version'  => $tr_obj['version'] ?? 'Actual',
+                );
+            }
+        }
+
+        $p_count = count( $plugins_list );
+        $t_count = count( $themes_list );
+        $tr_count = count( $translations_list );
+        $w_count = ! empty( $w_raw ) ? 1 : 0;
+
+        $total_plugins += $p_count;
+        $total_themes += $t_count;
+        $total_translations += $tr_count;
+        $total_core += $w_count;
+
+        $child_sites[] = array(
+            'mainwp_id'    => (int) $row->id,
+            'name'         => $row->name,
+            'url'          => untrailingslashit( $row->url ?: $row->siteurl ),
+            'last_sync'    => $row->dtsync ? date( 'Y-m-d H:i:s', (int) $row->dtsync ) : null,
+            'plugins'      => $plugins_list,
+            'themes'       => $themes_list,
+            'translations' => $translations_list,
+            'wordpress'    => $w_raw,
+            'counts'       => array(
+                'plugins'      => $p_count,
+                'themes'       => $t_count,
+                'wordpress'    => $w_count,
+                'translations' => $tr_count,
+                'total'        => $p_count + $t_count + $w_count + $tr_count,
+            )
+        );
+    }
+
+    // Actualizaciones del host local (IDPY Admin)
+    $local = sentinel_get_updates();
+    $local_plugins = count( $local['plugins'] ?? array() );
+    $local_themes = count( $local['themes'] ?? array() );
+    $local_core = ! empty( $local['wordpress']['update_available'] ) ? 1 : 0;
+    $local_translations = count( $local['translations'] ?? array() );
+
+    return array(
+        'status'     => 'success',
+        'has_mainwp' => true,
+        'summary'    => array(
+            'total_updates' => $total_plugins + $total_themes + $total_core + $total_translations + $local_plugins + $local_themes + $local_core + $local_translations,
+            'plugins'       => $total_plugins + $local_plugins,
+            'themes'        => $total_themes + $local_themes,
+            'wordpress'     => $total_core + $local_core,
+            'translations'  => $total_translations + $local_translations,
+        ),
+        'child_sites'  => $child_sites,
+        'local_host'   => $local,
     );
 }
 
@@ -1269,11 +1452,33 @@ function sentinel_get_updates() {
  * 2. APLICAR ACTUALIZACIONES EN LOTE
  */
 function sentinel_apply_updates( WP_REST_Request $request ) {
+    // Increase limits for long-running upgrades
+    if ( ! ini_get( 'safe_mode' ) ) {
+        @set_time_limit( 300 );
+        @ini_set( 'memory_limit', '256M' );
+    }
+
+    // Suppress any stray output that would corrupt the JSON response
+    ob_start();
+
+    require_once ABSPATH . 'wp-admin/includes/update.php';
     require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
     require_once ABSPATH . 'wp-admin/includes/theme.php';
     require_once ABSPATH . 'wp-admin/includes/misc.php';
+    require_once ABSPATH . 'wp-admin/includes/class-wp-ajax-upgrader-skin.php';
+
+    // Initialize the WP Filesystem — mandatory before any upgrader
+    $credentials = request_filesystem_credentials( site_url(), '', false, ABSPATH, null, true );
+    if ( ! WP_Filesystem( $credentials ) ) {
+        ob_end_clean();
+        return new WP_Error(
+            'fs_unavailable',
+            'No se pudo inicializar el sistema de archivos de WordPress.',
+            array( 'status' => 500 )
+        );
+    }
 
     $type  = $request->get_param( 'type' ) ?: 'plugins';
     $slugs = $request->get_param( 'slugs' ) ?: array();
@@ -1295,7 +1500,16 @@ function sentinel_apply_updates( WP_REST_Request $request ) {
 
         if ( ! empty( $files_to_update ) ) {
             $res = $upgrader->bulk_upgrade( $files_to_update );
-            $results['plugins'] = $res;
+            // Normalize: replace WP_Error objects with serializable arrays
+            $normalized = array();
+            foreach ( (array) $res as $k => $v ) {
+                if ( is_wp_error( $v ) ) {
+                    $normalized[ $k ] = array( 'error' => $v->get_error_message() );
+                } else {
+                    $normalized[ $k ] = $v;
+                }
+            }
+            $results['plugins'] = $normalized;
         }
     }
 
@@ -1312,9 +1526,31 @@ function sentinel_apply_updates( WP_REST_Request $request ) {
 
         if ( ! empty( $themes_to_update ) ) {
             $res = $upgrader->bulk_upgrade( $themes_to_update );
-            $results['themes'] = $res;
+            $normalized = array();
+            foreach ( (array) $res as $k => $v ) {
+                if ( is_wp_error( $v ) ) {
+                    $normalized[ $k ] = array( 'error' => $v->get_error_message() );
+                } else {
+                    $normalized[ $k ] = $v;
+                }
+            }
+            $results['themes'] = $normalized;
         }
     }
+
+    if ( in_array( $type, array( 'translations', 'all' ), true ) ) {
+        if ( ! class_exists( 'Language_Pack_Upgrader' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        }
+        $lp_upgrader = new Language_Pack_Upgrader( $skin );
+        $trans_updates = function_exists( 'wp_get_translation_updates' ) ? wp_get_translation_updates() : array();
+        if ( ! empty( $trans_updates ) ) {
+            $results['translations'] = $lp_upgrader->bulk_upgrade( $trans_updates );
+        }
+    }
+
+    // Discard any stray HTML output from the upgrader
+    ob_end_clean();
 
     // Invalidar OPcache tras la actualización
     if ( function_exists( 'opcache_reset' ) ) {
@@ -1365,32 +1601,80 @@ function sentinel_get_plugins() {
  * 4. INSTALAR PLUGIN (DESDE SLUG WP.ORG O ZIP)
  */
 function sentinel_install_plugin( WP_REST_Request $request ) {
+    // Increase limits for downloads and unzip operations
+    if ( ! ini_get( 'safe_mode' ) ) {
+        @set_time_limit( 300 );
+        @ini_set( 'memory_limit', '256M' );
+    }
+
+    // Suppress any stray HTML output that would corrupt the JSON response
+    ob_start();
+
+    require_once ABSPATH . 'wp-admin/includes/update.php';
     require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+    require_once ABSPATH . 'wp-admin/includes/class-wp-ajax-upgrader-skin.php';
     require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
     require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/misc.php';
 
-    $slug     = sanitize_text_field( (string) $request->get_param( 'slug' ) );
-    $zip_url  = esc_url_raw( (string) $request->get_param( 'zip_url' ) );
-    $activate = (bool) $request->get_param( 'activate' );
+    // Initialize the WP Filesystem — mandatory before any upgrader
+    $credentials = request_filesystem_credentials( site_url(), '', false, ABSPATH, null, true );
+    if ( ! WP_Filesystem( $credentials ) ) {
+        ob_end_clean();
+        return new WP_Error(
+            'fs_unavailable',
+            'No se pudo inicializar el sistema de archivos de WordPress.',
+            array( 'status' => 500 )
+        );
+    }
+
+    $slug       = sanitize_text_field( (string) $request->get_param( 'slug' ) );
+    $zip_url    = esc_url_raw( (string) $request->get_param( 'zip_url' ) );
+    $zip_base64 = $request->get_param( 'zip_base64' );
+    $activate   = (bool) $request->get_param( 'activate' );
 
     $skin     = new WP_Ajax_Upgrader_Skin();
     $upgrader = new Plugin_Upgrader( $skin );
 
-    if ( ! empty( $slug ) ) {
+    // Allow overwriting existing plugin folder (e.g. updating an existing plugin via ZIP)
+    add_filter( 'upgrader_package_options', function( $options ) {
+        $options['clear_destination'] = true;
+        $options['abort_if_destination_exists'] = false;
+        return $options;
+    } );
+
+    $installed = false;
+
+    if ( ! empty( $zip_base64 ) ) {
+        $temp_file = wp_tempnam( 'plugin_zip_' ) . '.zip';
+        $decoded   = base64_decode( $zip_base64 );
+        if ( empty( $decoded ) ) {
+            ob_end_clean();
+            return new WP_Error( 'invalid_zip', 'Los datos del archivo ZIP están corruptos o vacíos.', array( 'status' => 400 ) );
+        }
+        file_put_contents( $temp_file, $decoded );
+        $installed = $upgrader->install( $temp_file, array( 'overwrite_package' => true ) );
+        @unlink( $temp_file );
+    } elseif ( ! empty( $zip_url ) ) {
+        $installed = $upgrader->install( $zip_url, array( 'overwrite_package' => true ) );
+    } elseif ( ! empty( $slug ) ) {
         $api = plugins_api( 'plugin_information', array( 'slug' => $slug, 'fields' => array( 'sections' => false ) ) );
         if ( is_wp_error( $api ) ) {
+            ob_end_clean();
             return new WP_Error( 'install_failed', $api->get_error_message(), array( 'status' => 400 ) );
         }
-        $installed = $upgrader->install( $api->download_link );
-    } elseif ( ! empty( $zip_url ) ) {
-        $installed = $upgrader->install( $zip_url );
+        $installed = $upgrader->install( $api->download_link, array( 'overwrite_package' => true ) );
     } else {
-        return new WP_Error( 'missing_param', 'Se requiere slug o zip_url', array( 'status' => 400 ) );
+        ob_end_clean();
+        return new WP_Error( 'missing_param', 'Se requiere slug, zip_url o zip_base64', array( 'status' => 400 ) );
     }
 
+    ob_end_clean();
+
     if ( is_wp_error( $installed ) || false === $installed ) {
-        return new WP_Error( 'install_error', 'No se pudo instalar el plugin.', array( 'status' => 500 ) );
+        $err_msg = is_wp_error( $installed ) ? $installed->get_error_message() : 'No se pudo instalar el plugin.';
+        return new WP_Error( 'install_error', $err_msg, array( 'status' => 500 ) );
     }
 
     $plugin_file = $upgrader->plugin_info();
@@ -1398,9 +1682,14 @@ function sentinel_install_plugin( WP_REST_Request $request ) {
         activate_plugin( $plugin_file );
     }
 
+    // Invalidar OPcache tras la instalación
+    if ( function_exists( 'opcache_reset' ) ) {
+        @opcache_reset();
+    }
+
     return array(
         'status'      => 'success',
-        'message'     => 'Plugin instalado exitosamente.',
+        'message'     => 'Plugin instalado y procesado exitosamente.',
         'plugin_file' => $plugin_file,
     );
 }

@@ -129,7 +129,14 @@ async function safeJsonFetch<T = any>(
     }
 
     if (!res.ok) {
-      const errMsg = json?.message || json?.error || `Error del servidor HTTP ${res.status}: ${res.statusText}`;
+      let errMsg =
+        json?.data?.error?.message ||
+        json?.message ||
+        json?.error ||
+        `Error del servidor HTTP ${res.status}: ${res.statusText}`;
+      if (typeof errMsg === 'string') {
+        errMsg = errMsg.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      }
       return { ok: false, status: res.status, data: json, error: errMsg };
     }
 
@@ -267,7 +274,7 @@ export const sentinelWpClient = {
   async installPlugin(
     siteUrl: string,
     token: string,
-    payload: { slug?: string; zipUrl?: string; activate?: boolean }
+    payload: { slug?: string; zipUrl?: string; zipBase64?: string; activate?: boolean }
   ): Promise<{ status: string; message?: string; error?: string }> {
     const endpoint = this.buildUrl(siteUrl, '/plugins/install', token);
     const res = await safeJsonFetch(endpoint, {
@@ -279,9 +286,10 @@ export const sentinelWpClient = {
       body: JSON.stringify({
         slug: payload.slug,
         zip_url: payload.zipUrl,
+        zip_base64: payload.zipBase64,
         activate: payload.activate,
       }),
-    }, 90000);
+    }, 120000);
 
     if (!res.ok) {
       return { status: 'error', error: res.error };

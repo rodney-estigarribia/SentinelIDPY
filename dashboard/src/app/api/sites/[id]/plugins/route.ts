@@ -38,11 +38,11 @@ export async function POST(
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { slug, zipUrl, activate = true } = body;
+    const { slug, zipUrl, zipBase64, activate = true } = body;
 
-    if (!slug && !zipUrl) {
+    if (!slug && !zipUrl && !zipBase64) {
       return NextResponse.json(
-        { error: 'Se requiere especificar "slug" o "zipUrl"' },
+        { error: 'Se requiere especificar "slug", "zipUrl" o archivo ZIP' },
         { status: 400 }
       );
     }
@@ -50,6 +50,7 @@ export async function POST(
     const res = await sentinelWpClient.installPlugin(site.url, token, {
       slug,
       zipUrl,
+      zipBase64,
       activate,
     });
 

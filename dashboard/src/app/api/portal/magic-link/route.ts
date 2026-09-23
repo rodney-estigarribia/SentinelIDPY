@@ -38,13 +38,17 @@ export async function POST(req: NextRequest) {
       client = await dataService.getClientByEmail(cleanEmail);
     }
 
-    // Validación: El correo debe coincidir con el cliente registrado (o permitir al admin de la agencia)
-    const isOwner = client && client.email && client.email.trim().toLowerCase() === cleanEmail;
-    const isAgencyAdmin = cleanEmail.includes('impulsosdigitales') || cleanEmail.includes('admin');
+    // Validación estricta: El correo debe coincidir con portalEmail (config o cliente), o fallback a email institucional
+    const cfgEmail = (site as any)?.siteConfig?.portalEmail?.trim().toLowerCase();
+    const isConfigAuthorized = cfgEmail && cfgEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+    const clientPortalEmail = (client as any)?.portalEmail?.trim().toLowerCase();
+    const isClientPortalAuthorized = clientPortalEmail && clientPortalEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+    const isOwnerFallback = !clientPortalEmail && !cfgEmail && client && client.email && client.email.trim().toLowerCase() === cleanEmail;
+    const isAgencyAdmin = cleanEmail.includes('impulsosdigitales') || cleanEmail.includes('admin') || cleanEmail === 'rodney@impulsosdigitales.com.py';
 
-    if (!isOwner && !isAgencyAdmin && client) {
+    if (!isConfigAuthorized && !isClientPortalAuthorized && !isOwnerFallback && !isAgencyAdmin && (client || cfgEmail)) {
       return NextResponse.json(
-        { error: 'El correo ingresado no coincide con el titular registrado de este sitio.' },
+        { error: 'El correo ingresado no coincide con el correo autorizado para el portal de analítica de este cliente.' },
         { status: 403, headers: corsHeaders }
       );
     }

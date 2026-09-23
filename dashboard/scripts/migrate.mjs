@@ -667,6 +667,15 @@ async function runMigration() {
   `;
 
   await sql`
+    ALTER TABLE clients
+    ADD COLUMN IF NOT EXISTS client_type TEXT DEFAULT 'real',
+    ADD COLUMN IF NOT EXISTS service_package TEXT DEFAULT 'custom',
+    ADD COLUMN IF NOT EXISTS billing_email TEXT,
+    ADD COLUMN IF NOT EXISTS portal_email TEXT,
+    ADD COLUMN IF NOT EXISTS billing_details JSONB;
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS site_events (
       id SERIAL PRIMARY KEY,
       site_slug TEXT NOT NULL,

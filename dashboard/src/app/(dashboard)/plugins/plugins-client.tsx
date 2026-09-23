@@ -10,7 +10,12 @@ import {
   Globe,
   Play,
   Check,
-  ExternalLink
+  ExternalLink,
+  Terminal,
+  Copy,
+  ClipboardCheck,
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 import type { Site } from '@/db/schema';
 
@@ -58,8 +63,31 @@ export function PluginsClient({ sites }: PluginsClientProps) {
 
   const [selectedSites, setSelectedSites] = useState<number[]>(sites.map((s) => s.id));
   const [selectedPlugin, setSelectedPlugin] = useState<any>(searchResults[0]);
+  const [selectedZipFile, setSelectedZipFile] = useState<File | null>(null);
+
+  // Execution & Live Console state
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLogs = () => {
+    navigator.clipboard.writeText(logs.join('\n')).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleClearLogs = () => {
+    setLogs([]);
+    setDeployResult(null);
+    setProgress(0);
+    setCompletedCount(0);
+    setCurrentStep(null);
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +104,7 @@ export function PluginsClient({ sites }: PluginsClientProps) {
       if (data.plugins?.length) {
         setSearchResults(data.plugins);
         setSelectedPlugin(data.plugins[0]);
+        setSelectedZipFile(null);
       }
     } catch (err) {
       console.warn('WP.org search fallback:', err);
@@ -87,45 +116,105 @@ export function PluginsClient({ sites }: PluginsClientProps) {
   const handleDeploy = async () => {
     if (selectedSites.length === 0 || !selectedPlugin) return;
     setIsDeploying(true);
+    setProgress(5);
+    setCompletedCount(0);
     setDeployResult(null);
 
-    let success = 0;
-    let failed = 0;
-    const errors: string[] = [];
+    const total = selectedSites.length;
+    let base64Content: string | undefined = undefined;
 
-    for (const siteId of selectedSites) {
-      const site = sites.find((s) => s.id === siteId);
+    setLogs((prev) => [
+      `[SentinelIDPY] Iniciando despliegue de plugin: ${selectedPlugin.name}...`,
+      `[SentinelIDPY] Total sitios seleccionados: ${total}`,
+      ...prev,
+    ]);
+
+    if (selectedPlugin.isZip && selectedZipFile) {
+      setCurrentStep(`Procesando archivo ZIP local (${selectedZipFile.name})...`);
       try {
-        const res = await fetch(`/api/sites/${siteId}/plugins`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slug: selectedPlugin.slug,
-            activate: true,
-          }),
+        base64Content = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const raw = reader.result as string;
+            const clean = raw.includes(',') ? raw.split(',')[1] : raw;
+            resolve(clean);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedZipFile);
         });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || 'Error en instalación');
-        }
-        success++;
+        setLogs((prev) => [
+          `[OK] Archivo ZIP leído y codificado (${Math.round(((base64Content?.length || 0) * 3) / 4 / 1024)} KB listo para envío).`,
+          ...prev,
+        ]);
       } catch (err: any) {
-        failed++;
-        errors.push(`${site?.name || siteId}: ${err.message}`);
+        setIsDeploying(false);
+        setCurrentStep(null);
+        setLogs((prev) => [
+          `[ERROR] No se pudo leer el archivo ZIP local: ${err.message}`,
+          ...prev,
+        ]);
+        return;
       }
     }
 
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < total; i++) {
+      const siteId = selectedSites[i];
+      const site = sites.find((s) => s.id === siteId);
+      const siteName = site?.name || `Sitio #${siteId}`;
+
+      setCurrentStep(`Desplegando en ${siteName} (${i + 1}/${total})...`);
+
+      try {
+        const payload: any = {
+          slug: selectedPlugin.slug,
+          activate: true,
+        };
+        if (base64Content) {
+          payload.zipBase64 = base64Content;
+        }
+
+        const res = await fetch(`/api/sites/${siteId}/plugins`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Error en instalación en el sitio');
+        }
+
+        success++;
+        setLogs((prev) => [
+          `[OK] ${siteName}: Plugin "${selectedPlugin.name}" instalado y activado con éxito.`,
+          ...prev,
+        ]);
+      } catch (err: any) {
+        failed++;
+        setLogs((prev) => [
+          `[ERROR] ${siteName}: ${err.message}`,
+          ...prev,
+        ]);
+      }
+
+      setCompletedCount(i + 1);
+      setProgress(Math.round(((i + 1) / total) * 100));
+    }
+
     setIsDeploying(false);
+    setCurrentStep(null);
+
     if (failed === 0) {
       setDeployResult(
         `✅ Plugin "${selectedPlugin.name}" instalado y activado exitosamente en los ${success} sitios seleccionados.`
       );
     } else {
       setDeployResult(
-        `⚠️ Despliegue: ${success} instalados con éxito, ${failed} fallidos. ${errors.length > 0 ? '(' + errors.slice(0, 2).join('; ') + ')' : ''}`
+        `⚠️ Despliegue con errores: ${success} exitosos, ${failed} fallidos. Revisa la consola abajo para diagnósticos.`
       );
     }
-    setTimeout(() => setDeployResult(null), 8000);
   };
 
   const handleToggleSite = (id: number) => {
@@ -135,37 +224,129 @@ export function PluginsClient({ sites }: PluginsClientProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Left Column: Explorer & Uploader (7 cols) */}
-      <div className="lg:col-span-7 space-y-5">
-        {/* Search Bar */}
+    <div className="space-y-6">
+      {/* Live Deployment Console */}
+      {(isDeploying || logs.length > 0) && (
         <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-              <DownloadCloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Explorar Directorio Oficial WordPress.org</span>
-            </h3>
-
-            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-              <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <span>Instalar desde ZIP</span>
-              <input
-                type="file"
-                accept=".zip"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setSelectedPlugin({
-                      name: e.target.files[0].name.replace('.zip', ''),
-                      slug: 'custom-zip-upload',
-                      version: 'Manual',
-                      short_description: `Paquete ZIP subido: ${e.target.files[0].name}`,
-                    });
-                  }
-                }}
-              />
-            </label>
+            <div className="flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                Consola de Despliegue de Plugins en Vivo
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                {completedCount} / {selectedSites.length} completados ({progress}%)
+              </span>
+              {logs.length > 0 && (
+                <>
+                  <button
+                    onClick={handleCopyLogs}
+                    title="Copiar logs al portapapeles"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 cursor-pointer"
+                  >
+                    {copied ? (
+                      <>
+                        <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Copiado</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copiar</span>
+                      </>
+                    )}
+                  </button>
+                  {!isDeploying && (
+                    <button
+                      onClick={handleClearLogs}
+                      title="Limpiar consola"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-300 transition-colors border border-slate-700 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Limpiar</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
+
+          <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+            <div
+              className="bg-emerald-500 h-full transition-all duration-300 rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {currentStep && (
+            <div className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-emerald-500 animate-spin" />
+              <span>{currentStep}</span>
+            </div>
+          )}
+
+          <div className="bg-slate-900 dark:bg-slate-950 p-3.5 rounded-lg border border-slate-800 max-h-56 overflow-y-auto font-mono text-xs text-slate-300 space-y-1">
+            {logs.map((log, i) => (
+              <div
+                key={i}
+                className={
+                  log.includes('[ERROR]')
+                    ? 'text-rose-400'
+                    : log.includes('[OK]')
+                    ? 'text-emerald-400'
+                    : log.includes('[ZIP]')
+                    ? 'text-amber-300'
+                    : 'text-slate-300'
+                }
+              >
+                {log}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Explorer & Uploader (7 cols) */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* Search Bar */}
+          <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <DownloadCloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>Explorar Directorio Oficial WordPress.org</span>
+              </h3>
+
+              <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <Upload className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>Instalar desde ZIP</span>
+                <input
+                  type="file"
+                  accept=".zip"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedZipFile(file);
+                      setSelectedPlugin({
+                        name: file.name.replace('.zip', ''),
+                        slug: file.name.replace('.zip', '').toLowerCase().replace(/[^a-z0-9_-]/g, '-'),
+                        version: 'Manual (ZIP)',
+                        author: 'Archivo Local',
+                        short_description: `Paquete ZIP local (${(file.size / 1024).toFixed(1)} KB): ${file.name}`,
+                        isZip: true,
+                      });
+                      setLogs((prev) => [
+                        `[ZIP] Paquete cargado: ${file.name} (${(file.size / 1024).toFixed(1)} KB). Listo para desplegar en los sitios seleccionados.`,
+                        ...prev,
+                      ]);
+                    }
+                  }}
+                />
+              </label>
+            </div>
 
           <form onSubmit={handleSearch} className="flex gap-2">
             <input
@@ -316,6 +497,7 @@ export function PluginsClient({ sites }: PluginsClientProps) {
                 : `Instalar y Activar en ${selectedSites.length} Sitios`}
             </span>
           </button>
+          </div>
         </div>
       </div>
     </div>
