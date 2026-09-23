@@ -557,6 +557,93 @@ export const INITIAL_CLIENTS: Array<Client> = [
     },
     createdAt: new Date(),
     updatedAt: new Date(),
+  },
+  {
+    id: 15,
+    name: 'Cabaña del Árbol',
+    legalName: 'Cabaña del Árbol San Bernardino',
+    ruc: '80149201-1',
+    email: 'reservas@cabanadelarbol.com.py',
+    phone: '+595 982 957509',
+    company: 'Cabaña del Árbol',
+    notes: 'Alquiler temporal en San Bernardino frente al Lago Ypacaraí. Proyecto Mi Primera Web MiPyME Express.',
+    status: 'lead',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/cabana-del-arbol',
+    timeline: [
+      {
+        id: 't-15-1',
+        year: '2026',
+        title: 'Lanzamiento Demo Express 7 Días',
+        description: 'Despliegue de landing page con timer y propuesta interactiva en San Bernardino.',
+        category: 'milestone',
+        actor: 'rodney'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py (Propuesto)', renewer: 'agency', expiryDate: '2027-09-23', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Hobby/Impulsos Digitales', annualCost: 0, currency: 'USD' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 16,
+    name: 'Don Mendoza',
+    legalName: 'Alcides Mendoza Denis',
+    ruc: '80153890-4',
+    email: 'contacto@donmendoza.com.py',
+    phone: '+595 981 438296',
+    company: 'Don Mendoza - Cuidado de Piscinas de Autor',
+    notes: 'Servicio de mantenimiento y química de piscinas en Asunción y San Bernardino. Sitio comprado y activo.',
+    status: 'active',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/don-mendoza',
+    timeline: [
+      {
+        id: 't-16-1',
+        year: '2026',
+        title: 'Sitio Comprado y Publicado',
+        description: 'Sitio web activo con animaciones 3D e integración de WhatsApp para presupuestos.',
+        category: 'milestone',
+        actor: 'rodney'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 17,
+    name: 'Terrazas Bungalow',
+    legalName: 'Terrazas Bungalow Alquileres',
+    ruc: '80164210-9',
+    email: 'reservas@terrazasbungalow.com.py',
+    phone: '+595 981 000000',
+    company: 'Terrazas Bungalow',
+    notes: 'Complejo de descanso y bungalows. Sitio adquirido y activo.',
+    status: 'active',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/terrazas-bungalow',
+    timeline: [
+      {
+        id: 't-17-1',
+        year: '2026',
+        title: 'Sitio Web Adquirido',
+        description: 'Landing y cotizador directo para bungalows activo en Vercel.',
+        category: 'milestone',
+        actor: 'rodney'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'nic.py', renewer: 'agency', expiryDate: '2027-09-01', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Impulsos Digitales', annualCost: 0, currency: 'USD' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
   }
 ];
 
@@ -1116,6 +1203,114 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     wordfenceStats: { totalAttacks: 3120, lastScan: '2026-09-19 02:00:00', rulesOk: true },
     performanceInfo: { cachePlugin: 'WP Rocket', cacheEnabled: true, siteSizeGb: 6.2, diskFreeGb: 4.29 },
     metadata: {},
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 11,
+    clientId: 15,
+    name: 'Cabaña del Árbol',
+    type: 'vercel',
+    url: 'https://cabana-del-arbol-demo.vercel.app',
+    token: '',
+    diskAllocatedGb: 0.15,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: 85,
+    lastCheckedAt: new Date(),
+    lastBackupAt: null,
+    wpVersion: null,
+    phpVersion: null,
+    siteHealthScore: null,
+    pendingUpdates: null,
+    wordfenceStats: null,
+    performanceInfo: null,
+    sslDaysLeft: 89,
+    metadata: { notes: 'Demo Express 7 Días con banner y propuesta' },
+    siteConfig: {
+      slug: 'cabana-del-arbol',
+      demo: { active: true, startDate: '2026-09-23', days: 8 },
+      proposal: { active: true },
+      whatsapp: {
+        phone: '595982957509',
+        defaultMessage: '¡Hola! Estuve viendo la web de Cabaña del Árbol y quisiera consultar disponibilidad. ¿Me podrían ayudar? 🌿',
+        reservationMessage: '¡Hola! Vi la web de Cabaña del Árbol y quiero hacer una reserva.\n\n📅 Fechas: \n👥 Opción: \n\n¿Me pueden confirmar disponibilidad y los datos para la seña?',
+        cabanaMessage: '¡Hola! Me interesa reservar *La Cabaña* (solo parejas) a Gs. 1.300.000 / 1.500.000 por noche.\n\n📅 Fechas: \n\n¿Tienen disponibilidad?',
+        casonaMessage: '¡Hola! Me interesa reservar *La Casona* (grupal) a Gs. 2.500.000 por noche.\n\n📅 Fechas: \n👥 Cantidad de personas: \n\n¿Tienen disponibilidad?'
+      },
+      pricing: {
+        cabana: { name: 'La Cabaña', weekday: '1.300.000', weekend: '1.500.000' },
+        casona: { name: 'La Casona', night: '2.500.000' }
+      }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 12,
+    clientId: 16,
+    name: 'Don Mendoza',
+    type: 'vercel',
+    url: 'https://donmendoza.com.py',
+    token: '',
+    diskAllocatedGb: 0.18,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: 90,
+    lastCheckedAt: new Date(),
+    lastBackupAt: null,
+    wpVersion: null,
+    phpVersion: null,
+    siteHealthScore: null,
+    pendingUpdates: null,
+    wordfenceStats: null,
+    performanceInfo: null,
+    sslDaysLeft: 120,
+    metadata: { notes: 'Web comprada. Timer apagado y propuesta oculta.' },
+    siteConfig: {
+      slug: 'don-mendoza',
+      demo: { active: false, startDate: '2026-09-01', days: 7 },
+      proposal: { active: false },
+      whatsapp: {
+        phone: '595981438296',
+        defaultMessage: 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.'
+      },
+      pricing: {}
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 13,
+    clientId: 17,
+    name: 'Terrazas Bungalow',
+    type: 'vercel',
+    url: 'https://terrazasbungalow.com.py',
+    token: '',
+    diskAllocatedGb: 0.14,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: 88,
+    lastCheckedAt: new Date(),
+    lastBackupAt: null,
+    wpVersion: null,
+    phpVersion: null,
+    siteHealthScore: null,
+    pendingUpdates: null,
+    wordfenceStats: null,
+    performanceInfo: null,
+    sslDaysLeft: 115,
+    metadata: { notes: 'Web comprada. Timer apagado y propuesta oculta.' },
+    siteConfig: {
+      slug: 'terrazas-bungalow',
+      demo: { active: false, startDate: '2026-09-01', days: 7 },
+      proposal: { active: false },
+      whatsapp: {
+        phone: '595981000000',
+        defaultMessage: '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.'
+      },
+      pricing: {}
+    },
     createdAt: new Date(),
     updatedAt: new Date()
   }

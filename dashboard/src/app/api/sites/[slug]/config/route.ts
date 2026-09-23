@@ -16,16 +16,44 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     const { slug } = await params;
     const site = await dataService.getSiteBySlug(slug);
 
+    const isCabana = slug === 'cabana-del-arbol';
+    const isBought = slug === 'don-mendoza' || slug === 'terrazas-bungalow';
+
     if (!site) {
-      return NextResponse.json({ error: 'Sitio no encontrado' }, { status: 404, headers: corsHeaders });
+      return NextResponse.json({
+        slug,
+        demo: { active: !isBought, startDate: new Date().toISOString().split('T')[0], days: 7 },
+        proposal: { active: isCabana },
+        whatsapp: {
+          phone: isCabana ? '595982957509' : slug === 'don-mendoza' ? '595981438296' : '595981000000',
+          defaultMessage: isCabana
+            ? '¡Hola! Quisiera consultar disponibilidad en Cabaña del Árbol.'
+            : slug === 'don-mendoza'
+            ? 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.'
+            : '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.'
+        },
+        pricing: {}
+      }, { headers: corsHeaders });
     }
 
     const config = (site as any).siteConfig || {
       slug,
-      demo: { active: true, startDate: new Date().toISOString().split('T')[0], days: 7 },
-      whatsapp: { phone: '595981000000', defaultMessage: '¡Hola! Quisiera consultar disponibilidad...' },
+      demo: { active: !isBought, startDate: new Date().toISOString().split('T')[0], days: 7 },
+      proposal: { active: isCabana },
+      whatsapp: {
+        phone: isCabana ? '595982957509' : slug === 'don-mendoza' ? '595981438296' : '595981000000',
+        defaultMessage: isCabana
+          ? '¡Hola! Quisiera consultar disponibilidad en Cabaña del Árbol.'
+          : slug === 'don-mendoza'
+          ? 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.'
+          : '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.'
+      },
       pricing: {}
     };
+
+    if (config.proposal === undefined) {
+      config.proposal = { active: isCabana };
+    }
 
     return NextResponse.json(config, { headers: corsHeaders });
   } catch (error) {

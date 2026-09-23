@@ -69,6 +69,7 @@ export function ClientsClient({
   const [selectedConfigSiteId, setSelectedConfigSiteId] = useState<number | null>(null);
   const [cfgSlug, setCfgSlug] = useState('');
   const [cfgDemoActive, setCfgDemoActive] = useState(true);
+  const [cfgProposalActive, setCfgProposalActive] = useState(true);
   const [cfgDemoStartDate, setCfgDemoStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [cfgDemoDays, setCfgDemoDays] = useState(7);
   const [cfgPhone, setCfgPhone] = useState('');
@@ -123,7 +124,8 @@ export function ClientsClient({
       const conf = (targetSite as any).siteConfig || {};
       const generatedSlug = conf.slug || targetSite.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       setCfgSlug(generatedSlug);
-      setCfgDemoActive(conf.demo?.active ?? true);
+      setCfgDemoActive(conf.demo?.active ?? (generatedSlug === 'cabana-del-arbol'));
+      setCfgProposalActive(conf.proposal?.active ?? (generatedSlug === 'cabana-del-arbol'));
       setCfgDemoStartDate(conf.demo?.startDate || new Date().toISOString().split('T')[0]);
       setCfgDemoDays(conf.demo?.days || 7);
       setCfgPhone(conf.whatsapp?.phone || selectedClient.phone?.replace(/[^0-9]/g, '') || '595981000000');
@@ -358,6 +360,9 @@ export function ClientsClient({
         active: cfgDemoActive,
         startDate: cfgDemoStartDate,
         days: Number(cfgDemoDays)
+      },
+      proposal: {
+        active: cfgProposalActive
       },
       whatsapp: {
         phone: cfgPhone,
@@ -1621,6 +1626,32 @@ export function ClientsClient({
                             className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                           />
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Bloque 1.5: Control de Propuesta Comercial (/propuesta) */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            <span>Página de Propuesta Comercial (/propuesta)</span>
+                          </span>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Si está inactiva (OFF), cualquier visita a /propuesta se redirige al inicio (ideal cuando ya se cerró la venta o venció la oferta).
+                          </p>
+                        </div>
+                        <label className="inline-flex items-center gap-2 cursor-pointer shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={cfgProposalActive}
+                            onChange={(e) => setCfgProposalActive(e.target.checked)}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                          />
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfgProposalActive ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                            {cfgProposalActive ? 'Visible (ON)' : 'Oculta / Redirigida (OFF)'}
+                          </span>
+                        </label>
                       </div>
                     </div>
 
