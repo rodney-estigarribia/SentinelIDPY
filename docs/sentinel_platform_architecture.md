@@ -136,7 +136,28 @@ El plugin en `plugin/src/wordpress-plugin/sentinel-idpy-connector.php` expone lo
 
 ---
 
-## 6. Flujo de Ramas Git
+## 6. Portal de Clientes y Telemetría Centralizada Multi-Tenant (`/portal/[slug]`)
+
+La plataforma SentinelIDPY actúa como el motor centralizado y multi-inquilino de telemetría y portal para todas las webs estáticas, onepages en Vercel y proyectos a medida de la agencia:
+
+### 1. Motor Centralizado de Vistas (`dashboard/src/app/portal/[slug]`):
+- **Cero Duplicación de Código**: Las webs de los clientes no alojan código del portal ni archivos HTML estáticos. El frontend reactivo se renderiza en Next.js desde SentinelIDPY.
+- **Proyección Transparente (Vercel Rewrites)**: Cada sitio de cliente mapea `/portal` hacia `https://idpy-admin.vercel.app/portal/[slug]` y `/_next/(.*)` hacia `https://idpy-admin.vercel.app/_next/$1`, manteniendo el dominio propio del cliente.
+- **Actualizaciones Inmediatas**: Cualquier feature nueva (exportación PDF, reportes, mejoras de UX) se despliega únicamente en SentinelIDPY y se propaga automáticamente a toda la flota de clientes sin tocar repositorios externos.
+
+### 2. Telemetría Ligera en Vivo (`/telemetry.js` & `/api/tracker`):
+- Script de borde sin dependencias insertado en el `<head>` de los clientes.
+- Rastreo de páginas vistas y clics de conversión a WhatsApp con hashes anónimos de visitante diario y geolocalización basada en cabeceras de borde de Vercel.
+
+### 3. Autenticación Magic Link sin Contraseñas (`/api/portal/magic-link`):
+- Token firmado criptográficamente con HMAC SHA-256 y caducidad estricta de 7 días.
+- Despacho transaccional vía Resend al correo autorizado del cliente.
+- Seguridad reforzada: Omitido cualquier bypass directo en pantalla o JSON para garantizar autenticación obligatoria por casilla de correo.
+- Loader suave de entrada (*"Accediendo... Validando tu enlace de acceso seguro"*) con umbral de 450 ms que elimina cualquier parpadeo del formulario de login.
+
+---
+
+## 7. Flujo de Ramas Git
 
 - `main`: Rama de producción lista para desplegar en Vercel.
 - `develop`: Rama de desarrollo activo donde se integran y prueban todas las nuevas características antes de pasar a producción.

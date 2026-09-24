@@ -17,9 +17,9 @@
 
 ---
 
-## 🏛️ Los Dos Pilares Clave Obligatorios
+## 🏛️ Los Tres Pilares Clave Obligatorios
 
-Cada nuevo proyecto que se genere **debe incluir desde el inicio** estos dos componentes sin necesidad de prompts adicionales:
+Cada nuevo proyecto que se genere **debe incluir desde el inicio** estos tres componentes sin necesidad de prompts adicionales:
 
 ### Pilar 1: El Sistema de Demo & Cuenta Regresiva (7 Días)
 * **Control Centralizado en `config.js`:**
@@ -47,6 +47,20 @@ Compara 4 frentes visuales (en versión Computadora y Celular):
    * **Vista previa de WhatsApp:** Tarjeta enriquecida con foto de portada y descripción al compartir el link.
    * **Simulación Auténtica de ChatGPT Search:** Captura móvil con la interfaz real de ChatGPT (logotipo oficial, pill *"Buscó en la web: [búsqueda]"*, recomendación persuasiva del negocio y tarjeta de cita oficial `[ 🌐 minegocio.com.py 1 ]`).
 5. **Pie de Página Institucional:** Con crédito y enlace a `https://impulsosdigitales.com.py/`.
+
+### Pilar 3: Telemetría y Portal de Clientes Centralizado Multi-Tenant (`/portal`)
+Se proyecta en la ruta `/portal` (`https://[negocio].com.py/portal` o `https://[negocio]-demo.vercel.app/portal`) con **cero líneas de código o archivos HTML locales en el repositorio del cliente**.
+* **Arquitectura de Mantenimiento Cero (Single Source of Truth):**
+  * El motor del portal reside al 100% en `SentinelIDPY` (`dashboard/src/app/portal/[slug]`).
+  * La web del cliente solo incluye reglas de `rewrites` en `vercel.json` que proyectan la ruta central de forma transparente manteniendo el dominio propio del cliente.
+  * Si mañana se añade una mejora (ej. gráficos avanzados, exportar PDF, filtros de fecha), se actualiza una sola vez en SentinelIDPY y **el 100% de los clientes la reciben al instante**.
+* **Telemetría Ligera en Vivo:**
+  * Script liviano en `<head>`: `<script src="https://idpy-admin.vercel.app/telemetry.js" data-site="[slug]" defer></script>`.
+  * Rastrea visitas únicas, clics en el botón de WhatsApp (conversión directa), dispositivo y ciudades sin cookies invasivas.
+* **Seguridad y Acceso Magic Link por Correo:**
+  * Login sin contraseñas: El cliente ingresa su correo registrado y recibe un Magic Link firmado con HMAC (vigencia de 7 días) entregado por Resend.
+  * Sin tokens visibles en pantalla ni enlaces directos vulnerables en la respuesta de la API.
+  * **Experiencia de Entrada Suave:** Al pulsar el enlace del correo, no parpadea el formulario de login; entra directamente una tarjeta con spinner animado (*"Accediendo... Validando tu enlace de acceso seguro"* con umbral visual de 450ms) y despliega el tablero de estadísticas.
 
 ---
 
@@ -144,10 +158,42 @@ const SITE_CONFIG = {
    sips -s format jpeg -s formatOptions 85 propuesta/despues/*.png --out propuesta/web/despues/
    ```
 
-### 3. Despliegue en Vercel:
+### 3. Configuración del Portal de Clientes y Telemetría Centralizada (2 min):
+Cada nueva web debe conectarse al motor centralizado de `SentinelIDPY` sin crear carpetas de portal locales:
+
+1. **Inyectar el Tracker en `index.html` (dentro de `<head>`):**
+   ```html
+   <!-- Telemetría Ligera SentinelIDPY -->
+   <script src="https://idpy-admin.vercel.app/telemetry.js" data-site="[slug-cliente]" defer></script>
+   ```
+2. **Configurar la Proyección en `vercel.json`:**
+   En el archivo `vercel.json` de la raíz del proyecto, agregar la regla de `rewrites`:
+   ```json
+   "rewrites": [
+     {
+       "source": "/portal",
+       "destination": "https://idpy-admin.vercel.app/portal/[slug-cliente]"
+     },
+     {
+       "source": "/portal/(.*)",
+       "destination": "https://idpy-admin.vercel.app/portal/[slug-cliente]/$1"
+     },
+     {
+       "source": "/_next/(.*)",
+       "destination": "https://idpy-admin.vercel.app/_next/$1"
+     }
+   ]
+   ```
+3. **Dar de alta en el Dashboard SentinelIDPY:**
+   Cargar el cliente en el CRM o base de datos con su `slug` (ej: `hotel-los-lagos`), nombre del negocio y correo autorizado para recibir el Magic Link.
+
+### 4. Despliegue en Vercel:
 * `vercel --prod`
 * Subdominio: `https://[nombre-negocio]-demo.vercel.app`
-* Verificar carga en celular: `/` (web) y `/propuesta` (comparativa antes/después).
+* Verificar carga en celular:
+  * `/` (Web principal)
+  * `/propuesta` (Comparativa antes/después)
+  * `/portal` (Portal de clientes proyectado con telemetría en vivo)
 
 ---
 
@@ -222,24 +268,70 @@ Para evolucionar este modelo sin sobrecargar de costos ni complejidad técnica:
 * **Etapa 2 (Panel Admin SentinelIDPY):** Vista en `/clients` para inspeccionar y actualizar los valores de `config.js` de cada cliente desde el panel central.
 * **Etapa 3 (Portal de Autoservicio del Cliente):** Pantalla sencilla donde el cliente puede modificar su teléfono de WhatsApp, precios y horarios sin tocar código.
 
-### 2. Arquitectura de Analítica Ligera (Construir vs. Comprar):
-* **El Problema de Servicios Externos:** Herramientas como Plausible o Matomo alojadas afuera cobran mensualidades o requieren servidores VPS que aumentan los costos fijos.
-* **Solución Recomendada: Micro-Tracker Nativo SentinelIDPY (100% Free en Vercel + Neon):**
-  * **El Script (`tracker.js`):** Script de solo 1.5 KB incrustado en cada web estática:
-    ```html
-    <script defer src="https://admin.impulsosdigitales.com.py/tracker.js" data-site="cabana-del-arbol"></script>
-    ```
-  * **Geolocalización Gratuita:** El endpoint receptor en Next.js aprovecha los headers automáticos de borde de Vercel:
-    * `req.headers.get('x-vercel-ip-country')`
-    * `req.headers.get('x-vercel-ip-city')`
-    *(Cero costo en bases de datos externas de IP como MaxMind).*
-  * **Métricas Clave:**
-    1. Páginas vistas únicas por día/mes.
-    2. Clics en el botón de WhatsApp (Conversiones reales).
-    3. Ciudad / País de origen.
-    4. Dispositivo (Móvil vs. Desktop).
-* **Acceso del Cliente vía "Magic Link" (Sin contraseñas):**
-  * El cliente entra a `https://admin.impulsosdigitales.com.py/portal`.
-  * Ingresa su correo electrónico registrado.
-  * El sistema le envía un correo con un enlace mágico firmado (JWT) con **vigencia estricta de 7 días**.
-  * Al hacer clic, se abre una vista limpia y exclusiva con sus métricas (sin ver a otros clientes). Pasados los 7 días, la sesión expira automáticamente.
+### 2. Arquitectura del Portal Centralizado Multi-Tenant (Implementado & Operativo):
+
+```mermaid
+flowchart TD
+    subgraph Clientes ["Webs Satélites de Clientes (Vercel)"]
+        C1["cabanadelarbol.com.py/portal"]
+        C2["terrazasbungalow.com.py/portal"]
+        C3["donmendoza.com.py/portal"]
+        CN["[futuro-cliente].com.py/portal"]
+    end
+
+    subgraph Core ["Motor Central SentinelIDPY (idpy-admin.vercel.app)"]
+        Router["/portal/[slug] (Next.js Dynamic Route)"]
+        UI["PortalClient (React + Tailwind + Lucide)"]
+        Auth["Magic Link Engine (HMAC SHA-256 / 7 Días)"]
+        Resend["Despacho Transaccional Resend"]
+        DB[(Neon Serverless Postgres)]
+    end
+
+    C1 -->|"Vercel Rewrite (Transparente)"| Router
+    C2 -->|"Vercel Rewrite (Transparente)"| Router
+    C3 -->|"Vercel Rewrite (Transparente)"| Router
+    CN -->|"Vercel Rewrite (Transparente)"| Router
+    Router --> UI
+    UI --> Auth
+    Auth --> Resend
+    UI --> DB
+```
+
+#### Regla de Oro: Mantenimiento Cero en Clientes (Single Source of Truth)
+* **El Problema Superado:** En versiones anteriores se copiaba un archivo `portal/index.html` estático en cada repositorio. Esto obligaba a hacer commits y deploys en decenas de repositorios ante cualquier cambio estético o funcional.
+* **Solución Centralizada:**
+  * El código fuente del portal vive **únicamente** en `SentinelIDPY` en la ruta `/portal/[slug]`.
+  * Los repositorios de los clientes no tienen carpetas de portal ni archivos HTML duplicados.
+  * Cuando se añade una mejora a SentinelIDPY (nuevos gráficos, reportes descargables, filtros de fecha), **el 100% de la flota de clientes la recibe al instante de forma automática**.
+
+#### Especificaciones Técnicas y de Seguridad:
+1. **Enrutamiento y Assets:**
+   En cada web de cliente, `vercel.json` proyecta tanto la página como los chunks de estilos/scripts de Next.js:
+   ```json
+   "rewrites": [
+     { "source": "/portal", "destination": "https://idpy-admin.vercel.app/portal/[slug]" },
+     { "source": "/portal/(.*)", "destination": "https://idpy-admin.vercel.app/portal/[slug]/$1" },
+     { "source": "/_next/(.*)", "destination": "https://idpy-admin.vercel.app/_next/$1" }
+   ]
+   ```
+2. **Seguridad del Magic Link:**
+   * Sin contraseñas: El cliente solo digita su correo registrado.
+   * La API `/api/portal/magic-link` valida contra la base de datos y envía el enlace exclusivo por correo mediante Resend.
+   * **Seguridad Estricta:** La respuesta JSON de la API **omite `magicLink` y `token`**, impidiendo cualquier bypass desde la pantalla o herramientas de desarrollador.
+   * El token está firmado criptográficamente con HMAC SHA-256 y caduca estrictamente a los 7 días.
+3. **Experiencia de Entrada Suave (Smooth Loader):**
+   * Al pulsar el enlace del correo (`?token=...`), el formulario de login no se muestra en ningún momento.
+   * Se despliega inmediatamente un loader circular con el mensaje *"Accediendo... Validando tu enlace de acceso seguro"*.
+   * Un umbral visual de 450 ms asegura una transición suave hacia el panel de métricas reales.
+4. **Métricas en Pantalla:**
+   * Visitas Totales y Visitantes Únicos (30 días).
+   * Clics en WhatsApp destacados en verde (conversión web real a reservas).
+   * Tasa de conversión calculada automáticamente (% de visitantes que iniciaron conversación).
+   * Desglose diario de los últimos 7 días con badges visuales.
+   * Ciudades de origen de los visitantes y proporción de dispositivos (Celulares vs. Computadoras).
+
+#### Checklist Rápido para Nuevas Implementaciones (2 minutos):
+- [ ] 1. En `SentinelIDPY`: Registrar el cliente en el CRM con su `slug` (ej: `hotel-los-lagos`) y el correo del dueño para autorizar su acceso.
+- [ ] 2. En la web del cliente (`index.html`): Agregar `<script src="https://idpy-admin.vercel.app/telemetry.js" data-site="hotel-los-lagos" defer></script>`.
+- [ ] 3. En la web del cliente (`vercel.json`): Agregar las 3 reglas de `rewrites` apuntando a `https://idpy-admin.vercel.app/portal/hotel-los-lagos`.
+- [ ] 4. Desplegar (`git push` o `vercel --prod`) y verificar en `https://[dominio]/portal`.
