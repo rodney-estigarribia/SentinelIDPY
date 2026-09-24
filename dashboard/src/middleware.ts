@@ -63,6 +63,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/cron') ||
     pathname.startsWith('/api/portal') ||
+    pathname.startsWith('/portal') ||
     pathname.startsWith('/api/tracker') ||
     pathname.endsWith('/config') ||
     pathname === '/login' ||
