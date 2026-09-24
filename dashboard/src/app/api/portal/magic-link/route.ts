@@ -169,17 +169,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: true,
-        message: emailSent
-          ? 'Enlace mágico enviado con éxito a tu correo electrónico.'
-          : 'Enlace de acceso generado con éxito. Podés ingresar directamente con el botón en pantalla.',
+        message: 'Te enviamos un enlace de acceso a tu correo.',
         emailDelivery: {
           sent: emailSent,
-          status: emailStatus,
-          error: emailError
-        },
-        expiresInDays: 7,
-        magicLink, // Incluido para acceso directo inmediato
-        token
+          status: emailStatus
+        }
       },
       { headers: corsHeaders }
     );
