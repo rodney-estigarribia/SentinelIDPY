@@ -852,7 +852,12 @@ export const dataService = {
   async getClientByEmail(email: string): Promise<Client | undefined> {
     const allClients = await this.getClients();
     const cleanEmail = email.trim().toLowerCase();
-    return allClients.find((c) => c.email && c.email.trim().toLowerCase() === cleanEmail);
+    return allClients.find((c) => {
+      const matchEmail = c.email && c.email.trim().toLowerCase() === cleanEmail;
+      const matchPortal = (c as any).portalEmail && (c as any).portalEmail.trim().toLowerCase().split(',').map((x: string) => x.trim()).includes(cleanEmail);
+      const matchBilling = (c as any).billingEmail && (c as any).billingEmail.trim().toLowerCase().split(',').map((x: string) => x.trim()).includes(cleanEmail);
+      return matchEmail || matchPortal || matchBilling;
+    });
   },
 
   isDatabaseConnected(): boolean {

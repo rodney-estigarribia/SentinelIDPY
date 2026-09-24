@@ -45,11 +45,26 @@ async function verifyTokenEdge(token: string, secret: string): Promise<boolean> 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Handle CORS preflight for all public endpoints
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   // Paths that do not require authentication
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/api/portal') ||
+    pathname.startsWith('/api/tracker') ||
+    pathname.endsWith('/config') ||
     pathname === '/login' ||
     pathname.includes('.')
   ) {

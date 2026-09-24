@@ -12,7 +12,7 @@
     var siteSlug = script ? script.getAttribute('data-site') : null;
     if (!siteSlug) return;
 
-    var endpoint = script.getAttribute('data-endpoint') || 'https://admin.impulsosdigitales.com.py/api/tracker';
+    var endpoint = script.getAttribute('data-endpoint') || 'https://idpy-admin.vercel.app/api/tracker';
 
     function sendEvent(type, metadata) {
       var payload = JSON.stringify({

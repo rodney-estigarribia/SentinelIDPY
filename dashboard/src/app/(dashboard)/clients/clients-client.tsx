@@ -2698,7 +2698,7 @@ export function ClientsClient({
                   <span>Separación de Correos (Facturación vs Analítica Portal)</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
                       Correo de Facturación (Legal / SET)
@@ -3204,7 +3204,7 @@ export function ClientsClient({
                   <span>Separación de Correos (Facturación vs Portal Analítica)</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
                       Correo Facturación (Legal)

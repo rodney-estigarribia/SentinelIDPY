@@ -38,15 +38,34 @@ export async function POST(req: NextRequest) {
       client = await dataService.getClientByEmail(cleanEmail);
     }
 
-    // Validación estricta: El correo debe coincidir con portalEmail (config o cliente), o fallback a email institucional
+    // Validación: El correo debe coincidir con portalEmail, email de cliente, facturación, o ser admin de la agencia
     const cfgEmail = (site as any)?.siteConfig?.portalEmail?.trim().toLowerCase();
     const isConfigAuthorized = cfgEmail && cfgEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+
     const clientPortalEmail = (client as any)?.portalEmail?.trim().toLowerCase();
     const isClientPortalAuthorized = clientPortalEmail && clientPortalEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
-    const isOwnerFallback = !clientPortalEmail && !cfgEmail && client && client.email && client.email.trim().toLowerCase() === cleanEmail;
-    const isAgencyAdmin = cleanEmail.includes('impulsosdigitales') || cleanEmail.includes('admin') || cleanEmail === 'rodney@impulsosdigitales.com.py';
 
-    if (!isConfigAuthorized && !isClientPortalAuthorized && !isOwnerFallback && !isAgencyAdmin && (client || cfgEmail)) {
+    const clientGeneralEmail = (client as any)?.email?.trim().toLowerCase();
+    const isClientGeneralAuthorized = clientGeneralEmail && clientGeneralEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+
+    const clientBillingEmail = (client as any)?.billingEmail?.trim().toLowerCase();
+    const isClientBillingAuthorized = clientBillingEmail && clientBillingEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+
+    const isAgencyAdmin =
+      cleanEmail.includes('impulsosdigitales') ||
+      cleanEmail.includes('admin') ||
+      cleanEmail === 'rodney@impulsosdigitales.com.py' ||
+      cleanEmail.includes('rodney.estigarribia') ||
+      cleanEmail === 'rodney.estigarribia@outlook.com';
+
+    const isAuthorized =
+      isConfigAuthorized ||
+      isClientPortalAuthorized ||
+      isClientGeneralAuthorized ||
+      isClientBillingAuthorized ||
+      isAgencyAdmin;
+
+    if (!isAuthorized && (client || cfgEmail)) {
       return NextResponse.json(
         { error: 'El correo ingresado no coincide con el correo autorizado para el portal de analítica de este cliente.' },
         { status: 403, headers: corsHeaders }
