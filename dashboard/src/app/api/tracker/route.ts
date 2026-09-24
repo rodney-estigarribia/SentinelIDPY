@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dataService } from '@/lib/data-service';
 import crypto from 'node:crypto';
 
+export const dynamic = 'force-dynamic';
+
 // CORS Headers para permitir llamadas desde las webs de los clientes
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'Cache-Control': 'no-store, no-cache, must-revalidate',
 };
 
 export async function OPTIONS() {
