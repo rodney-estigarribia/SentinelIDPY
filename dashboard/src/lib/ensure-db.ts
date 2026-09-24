@@ -252,25 +252,7 @@ export async function ensureDbSchema(force = false): Promise<boolean> {
           ${c.id}, ${c.name}, ${c.legalName || null}, ${c.ruc || null}, ${c.email || null}, ${c.phone || null}, ${c.company || null}, ${c.notes || null},
           ${c.status || 'active'}, ${c.acquisitionChannel || 'direct'}, ${(c as any).clientType || 'real'}, ${(c as any).servicePackage || 'custom'},
           ${(c as any).billingEmail || null}, ${(c as any).portalEmail || null}, ${JSON.stringify((c as any).billingDetails || {})}, ${c.driveFolderUrl || null}, ${JSON.stringify(c.timeline || [])}, ${JSON.stringify(c.infrastructure || {})}
-        ) ON CONFLICT (id) DO UPDATE SET
-          name = EXCLUDED.name,
-          legal_name = EXCLUDED.legal_name,
-          ruc = EXCLUDED.ruc,
-          email = EXCLUDED.email,
-          phone = EXCLUDED.phone,
-          company = EXCLUDED.company,
-          notes = EXCLUDED.notes,
-          status = EXCLUDED.status,
-          acquisition_channel = EXCLUDED.acquisition_channel,
-          client_type = EXCLUDED.client_type,
-          service_package = EXCLUDED.service_package,
-          billing_email = EXCLUDED.billing_email,
-          portal_email = EXCLUDED.portal_email,
-          billing_details = EXCLUDED.billing_details,
-          drive_folder_url = EXCLUDED.drive_folder_url,
-          timeline = EXCLUDED.timeline,
-          infrastructure = EXCLUDED.infrastructure,
-          updated_at = NOW();
+        ) ON CONFLICT (id) DO NOTHING;
       `;
     }
     await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;

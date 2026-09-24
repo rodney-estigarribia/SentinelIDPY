@@ -84,41 +84,101 @@ export async function POST(req: NextRequest) {
 
     // Envío por correo vía Resend si existe la clave de API
     const resendKey = process.env.RESEND_API_KEY;
+    let emailSent = false;
+    let emailStatus = 'unconfigured'; // 'sent' | 'failed' | 'unconfigured'
+    let emailError: string | null = null;
+
     if (resendKey) {
       try {
-        await fetch('https://api.resend.com/emails', {
+        const primaryFrom = process.env.RESEND_FROM || 'Impulsos Digitales <notificaciones@impulsosdigitales.com.py>';
+
+        let resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${resendKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: 'Impulsos Digitales <notificaciones@impulsosdigitales.com.py>',
+            from: primaryFrom,
             to: cleanEmail,
             subject: `Tu enlace de acceso a las estadísticas de ${site?.name || siteSlug}`,
             html: `
-              <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                <h2 style="color: #0f172a; margin-top: 0;">Portal de Clientes · Impulsos Digitales</h2>
-                <p style="color: #475569; font-size: 15px;">Hacé clic en el siguiente botón para acceder a las estadísticas de tu sitio web. Tu sesión permanecerá activa de forma segura por <strong>7 días</strong>:</p>
-                <div style="text-align: center; margin: 28px 0;">
-                  <a href="${magicLink}" style="background-color: #0284c7; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">Ver Estadísticas de mi Web</a>
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: auto; padding: 28px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Portal de Clientes · Impulsos Digitales</h2>
+                <p style="color: #475569; font-size: 15px; line-height: 1.5;">Hacé clic en el botón de abajo para acceder a las estadísticas de tu sitio web (<strong>${site?.name || siteSlug}</strong>). Tu sesión permanecerá activa de forma segura por <strong>7 días</strong>:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${magicLink}" style="background-color: #0284c7; color: white; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; font-size: 15px;">Ver Estadísticas de mi Web</a>
                 </div>
-                <p style="color: #94a3b8; font-size: 12px;">Si no solicitaste este acceso, podés ignorar este correo. Este enlace expirará automáticamente en 7 días.</p>
+                <p style="color: #94a3b8; font-size: 12px; line-height: 1.4;">Si no solicitaste este acceso, podés ignorar este mensaje con tranquilidad. Este enlace expirará automáticamente en 7 días.</p>
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center;">
+                  Impulsos Digitales · Infraestructura Cloud & Analítica
+                </div>
               </div>
             `
           })
         });
-      } catch (err) {
-        console.warn('[Magic Link] Resend email dispatch failed:', err);
+
+        let resendData = await resendRes.json().catch(() => null);
+
+        // Si falló por dominio no verificado, reintentar con remitente de testing de Resend
+        if (!resendRes.ok && (resendData?.message?.toLowerCase().includes('domain') || resendData?.name === 'validation_error')) {
+          console.warn('[Magic Link] Resend primary domain failed, retrying with onboarding@resend.dev:', resendData);
+          resendRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: 'Impulsos Digitales <onboarding@resend.dev>',
+              to: cleanEmail,
+              subject: `Tu enlace de acceso a las estadísticas de ${site?.name || siteSlug}`,
+              html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: auto; padding: 28px 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+                  <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Portal de Clientes · Impulsos Digitales</h2>
+                  <p style="color: #475569; font-size: 15px; line-height: 1.5;">Hacé clic en el botón de abajo para acceder a las estadísticas de tu sitio web (<strong>${site?.name || siteSlug}</strong>). Tu sesión permanecerá activa de forma segura por <strong>7 días</strong>:</p>
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${magicLink}" style="background-color: #0284c7; color: white; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; font-size: 15px;">Ver Estadísticas de mi Web</a>
+                  </div>
+                  <p style="color: #94a3b8; font-size: 12px; line-height: 1.4;">Si no solicitaste este acceso, podés ignorar este mensaje con tranquilidad. Este enlace expirará automáticamente en 7 días.</p>
+                </div>
+              `
+            })
+          });
+          resendData = await resendRes.json().catch(() => null);
+        }
+
+        if (resendRes.ok) {
+          emailSent = true;
+          emailStatus = 'sent';
+        } else {
+          emailStatus = 'failed';
+          emailError = resendData?.message || `HTTP ${resendRes.status}`;
+          console.warn('[Magic Link] Resend delivery failed:', resendData);
+        }
+      } catch (err: any) {
+        emailStatus = 'failed';
+        emailError = err.message || 'Error de conexión con Resend';
+        console.warn('[Magic Link] Resend exception:', err);
       }
+    } else {
+      emailStatus = 'unconfigured';
+      emailError = 'Variable RESEND_API_KEY no configurada en Vercel';
     }
 
     return NextResponse.json(
       {
         ok: true,
-        message: 'Enlace mágico generado con éxito.',
+        message: emailSent
+          ? 'Enlace mágico enviado con éxito a tu correo electrónico.'
+          : 'Enlace de acceso generado con éxito. Podés ingresar directamente con el botón en pantalla.',
+        emailDelivery: {
+          sent: emailSent,
+          status: emailStatus,
+          error: emailError
+        },
         expiresInDays: 7,
-        magicLink, // Incluido para pruebas inmediatas y previsualización
+        magicLink, // Incluido para acceso directo inmediato
         token
       },
       { headers: corsHeaders }

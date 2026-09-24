@@ -560,7 +560,7 @@ export const RAW_INITIAL_CLIENTS: Array<Partial<Client> & { id: number; name: st
     clientType: 'potential',
     servicePackage: 'mipyme_express',
     billingEmail: 'facturacion@cabanadelarbol.com.py',
-    portalEmail: 'reservas@cabanadelarbol.com.py',
+    portalEmail: 'rodney.estigarribia@outlook.com',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cabana-del-arbol',
     timeline: [

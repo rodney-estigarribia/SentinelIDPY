@@ -334,7 +334,7 @@ const INITIAL_CLIENTS = [
     clientType: 'potential',
     servicePackage: 'mipyme_express',
     billingEmail: 'facturacion@cabanadelarbol.com.py',
-    portalEmail: 'reservas@cabanadelarbol.com.py',
+    portalEmail: 'rodney.estigarribia@outlook.com',
     acquisitionChannel: 'direct',
     driveFolderUrl: 'https://drive.google.com/drive/folders/cabana-del-arbol',
     timeline: [
@@ -912,24 +912,7 @@ async function runMigration() {
         ${client.status || 'active'}, ${client.acquisitionChannel || 'direct'}, ${client.clientType || 'real'}, ${client.servicePackage || 'custom'},
         ${client.billingEmail || null}, ${client.portalEmail || null}, ${client.driveFolderUrl || null}, ${JSON.stringify(client.timeline || [])}, ${JSON.stringify(client.infrastructure || {})}
       )
-      ON CONFLICT (id) DO UPDATE SET
-        name = EXCLUDED.name,
-        legal_name = EXCLUDED.legal_name,
-        ruc = EXCLUDED.ruc,
-        email = EXCLUDED.email,
-        phone = EXCLUDED.phone,
-        company = EXCLUDED.company,
-        notes = EXCLUDED.notes,
-        status = EXCLUDED.status,
-        acquisition_channel = EXCLUDED.acquisition_channel,
-        client_type = EXCLUDED.client_type,
-        service_package = EXCLUDED.service_package,
-        billing_email = EXCLUDED.billing_email,
-        portal_email = EXCLUDED.portal_email,
-        drive_folder_url = EXCLUDED.drive_folder_url,
-        timeline = EXCLUDED.timeline,
-        infrastructure = EXCLUDED.infrastructure,
-        updated_at = NOW();
+      ON CONFLICT (id) DO NOTHING;
     `;
   }
   await sql`SELECT setval('clients_id_seq', (SELECT GREATEST(MAX(id), 1) FROM clients));`;
