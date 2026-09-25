@@ -207,62 +207,78 @@ export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalCl
         {/* State 2: Auth Login Form */}
         {viewState === 'auth' && (
           <div className="max-w-md w-full mx-auto bg-white border border-slate-200/90 rounded-2xl p-8 sm:p-10 text-center shadow-sm">
-            <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-800 flex items-center justify-center">
-              <Mail className="w-7 h-7" />
-            </div>
+            {feedback?.type === 'success' ? (
+              <div className="py-2">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                </div>
 
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">
-              Acceso a estadisticas
-            </h1>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-2">
+                  Te enviamos un enlace de acceso a tu correo
+                </h2>
 
-            <form onSubmit={handleMagicLinkSubmit} className="space-y-4 text-left">
-              <div>
-                <label htmlFor="client-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                  Correo Electrónico
-                </label>
-                <input
-                  id="client-email"
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="tu-correo@ejemplo.com"
-                  required
-                  disabled={isSubmitting}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 text-sm transition-colors bg-white disabled:bg-slate-50 disabled:text-slate-400"
-                />
+                <p className="text-sm text-slate-500 max-w-xs mx-auto mb-6">
+                  Revisá tu bandeja de entrada o spam para acceder a tus estadísticas.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setFeedback(null)}
+                  className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                >
+                  ¿Ingresar otro correo?
+                </button>
               </div>
+            ) : (
+              <>
+                <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Mail className="w-7 h-7" />
+                </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 px-4 bg-[#1c2e1e] hover:bg-[#28422b] text-white font-semibold rounded-xl text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Enviando...</span>
-                  </>
-                ) : (
-                  <span>Acceder</span>
-                )}
-              </button>
-            </form>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">
+                  Acceso a estadisticas
+                </h1>
 
-            {feedback && (
-              <div
-                className={`mt-5 p-3.5 rounded-xl text-sm flex items-start gap-2.5 text-left border ${
-                  feedback.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-rose-50 text-rose-800 border-rose-200'
-                }`}
-              >
-                {feedback.type === 'success' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <form onSubmit={handleMagicLinkSubmit} className="space-y-4 text-left">
+                  <div>
+                    <label htmlFor="client-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                      Correo Electrónico
+                    </label>
+                    <input
+                      id="client-email"
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="tu-correo@ejemplo.com"
+                      required
+                      disabled={isSubmitting}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 text-sm transition-colors bg-white disabled:bg-slate-50 disabled:text-slate-400"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 px-4 bg-[#1c2e1e] hover:bg-[#28422b] text-white font-semibold rounded-xl text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Enviando...</span>
+                      </>
+                    ) : (
+                      <span>Acceder</span>
+                    )}
+                  </button>
+                </form>
+
+                {feedback && feedback.type === 'error' && (
+                  <div className="mt-5 p-3.5 rounded-xl text-sm flex items-start gap-2.5 text-left border bg-rose-50 text-rose-800 border-rose-200">
+                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <span className="font-medium">{feedback.message}</span>
+                  </div>
                 )}
-                <span className="font-medium">{feedback.message}</span>
-              </div>
+              </>
             )}
           </div>
         )}
