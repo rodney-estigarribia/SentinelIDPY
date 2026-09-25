@@ -24,8 +24,8 @@ flowchart TD
 - **Alcance:**
   - Probar la experiencia completa en los 3 clientes activos:
     - [Cabaña del Árbol](https://cabana-del-arbol-demo.vercel.app/portal)
-    - [Terrazas Bungalow](https://terrazasbungalow.com.py/portal)
-    - [Don Mendoza](https://donmendoza.com.py/portal)
+    - [Terrazas Bungalow](https://terrazas-bungalow.vercel.app/portal) (o custom domain https://terrazasbungalow.com.py/portal)
+    - [Don Mendoza](https://pool-cleaner-web.vercel.app/portal) (o custom domain https://donmendoza.com.py/portal)
   - Validar:
     - Recepción del correo vía Resend.
     - Clic en el enlace y visualización del loader *"Accediendo... Validando tu enlace de acceso seguro"*.
