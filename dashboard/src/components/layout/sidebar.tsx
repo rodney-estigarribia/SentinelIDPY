@@ -66,7 +66,7 @@ export function Sidebar({ pendingUpdatesCount = 0, offlineSitesCount = 0, isDbCo
 
   // Bottom Items
   const bottomNavItems = [
-    { label: 'Analítica (6 Meses)', href: '/analytics', icon: BarChart3 },
+    { label: 'Analítica y Telemetría', href: '/analytics', icon: BarChart3 },
     { label: 'Ajustes y Canales', href: '/settings', icon: Settings },
   ];
 

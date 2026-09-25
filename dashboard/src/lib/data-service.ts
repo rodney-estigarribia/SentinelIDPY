@@ -838,6 +838,25 @@ export const dataService = {
     );
   },
 
+  async getAllSiteEvents(days = 30): Promise<SiteEvent[]> {
+    await ensureDbSchema();
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(schema.siteEvents)
+          .orderBy(desc(schema.siteEvents.createdAt));
+        return rows.filter((r) => r.createdAt && new Date(r.createdAt) >= since);
+      } catch (err) {
+        console.warn('Failed to query all siteEvents from DB, falling back to memory:', err);
+      }
+    }
+    return memorySiteEvents.filter(
+      (e) => e.createdAt && new Date(e.createdAt) >= since
+    );
+  },
+
   async getSiteBySlug(slug: string): Promise<Site | undefined> {
     const allSites = await this.getSites({ includeArchived: true });
     return allSites.find((s) => {
