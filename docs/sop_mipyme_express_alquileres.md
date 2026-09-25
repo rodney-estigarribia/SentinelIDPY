@@ -181,6 +181,10 @@ Cada nueva web debe conectarse al motor centralizado de `SentinelIDPY` sin crear
      {
        "source": "/_next/(.*)",
        "destination": "https://idpy-admin.vercel.app/_next/$1"
+     },
+     {
+       "source": "/api/portal/(.*)",
+       "destination": "https://idpy-admin.vercel.app/api/portal/$1"
      }
    ]
    ```
@@ -311,7 +315,8 @@ flowchart TD
    "rewrites": [
      { "source": "/portal", "destination": "https://idpy-admin.vercel.app/portal/[slug]" },
      { "source": "/portal/(.*)", "destination": "https://idpy-admin.vercel.app/portal/[slug]/$1" },
-     { "source": "/_next/(.*)", "destination": "https://idpy-admin.vercel.app/_next/$1" }
+     { "source": "/_next/(.*)", "destination": "https://idpy-admin.vercel.app/_next/$1" },
+     { "source": "/api/portal/(.*)", "destination": "https://idpy-admin.vercel.app/api/portal/$1" }
    ]
    ```
 2. **Seguridad del Magic Link:**
@@ -333,5 +338,5 @@ flowchart TD
 #### Checklist Rápido para Nuevas Implementaciones (2 minutos):
 - [ ] 1. En `SentinelIDPY`: Registrar el cliente en el CRM con su `slug` (ej: `hotel-los-lagos`) y el correo del dueño para autorizar su acceso.
 - [ ] 2. En la web del cliente (`index.html`): Agregar `<script src="https://idpy-admin.vercel.app/telemetry.js" data-site="hotel-los-lagos" defer></script>`.
-- [ ] 3. En la web del cliente (`vercel.json`): Agregar las 3 reglas de `rewrites` apuntando a `https://idpy-admin.vercel.app/portal/hotel-los-lagos`.
+- [ ] 3. En la web del cliente (`vercel.json`): Agregar las 4 reglas de `rewrites` apuntando a `https://idpy-admin.vercel.app/portal/hotel-los-lagos`.
 - [ ] 4. Desplegar (`git push` o `vercel --prod`) y verificar en `https://[dominio]/portal`.

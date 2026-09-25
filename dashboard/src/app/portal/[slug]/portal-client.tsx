@@ -44,6 +44,11 @@ interface PortalStats {
   };
 }
 
+const API_BASE =
+  typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:3000/api/portal'
+    : 'https://idpy-admin.vercel.app/api/portal';
+
 export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalClientProps) {
   const [viewState, setViewState] = useState<'initial-loading' | 'loading' | 'auth' | 'dashboard'>('initial-loading');
   const [loadingText, setLoadingText] = useState('Accediendo...');
@@ -81,7 +86,7 @@ export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalCl
   async function loadStats(token: string) {
     const startTime = Date.now();
     try {
-      const res = await fetch(`/api/portal/stats?siteSlug=${encodeURIComponent(siteSlug)}&token=${encodeURIComponent(token)}&_t=${Date.now()}`, {
+      const res = await fetch(`${API_BASE}/stats?siteSlug=${encodeURIComponent(siteSlug)}&token=${encodeURIComponent(token)}&_t=${Date.now()}`, {
         cache: 'no-store',
       });
 
@@ -123,7 +128,7 @@ export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalCl
     setFeedback(null);
 
     try {
-      const res = await fetch('/api/portal/magic-link', {
+      const res = await fetch(`${API_BASE}/magic-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
