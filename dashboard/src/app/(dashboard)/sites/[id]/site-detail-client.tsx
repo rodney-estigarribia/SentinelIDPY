@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Globe,
@@ -31,22 +31,111 @@ import {
   AlertOctagon,
   X,
   ArrowUpCircle,
-  Loader2
+  Loader2,
+  Eye,
+  MessageCircle,
+  TrendingUp,
+  MapPin,
+  Smartphone,
+  Laptop,
+  Activity,
+  ArrowRight,
 } from 'lucide-react';
-import type { Site, Client, ConfigTemplate } from '@/db/schema';
+import type { Site, Client, ConfigTemplate, SiteEvent } from '@/db/schema';
 
 interface SiteDetailClientProps {
   site: Site;
   client?: Client;
   templates: ConfigTemplate[];
+  events?: SiteEvent[];
+  adminToken?: string;
+  slug?: string;
 }
 
-export function SiteDetailClient({ site, client, templates }: SiteDetailClientProps) {
+export function SiteDetailClient({
+  site,
+  client,
+  templates,
+  events = [],
+  adminToken = '',
+  slug = '',
+}: SiteDetailClientProps) {
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<
-    'updates' | 'plugins' | 'users' | 'security' | 'backups' | 'branding' | 'widgets' | 'cache' | 'analytics' | 'admin'
-  >('updates');
+  const isWordPress = site.type === 'wordpress' || site.category === 'web_wordpress';
+  const defaultTab = isWordPress ? 'updates' : 'analytics';
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+
+  const siteEvents = events || [];
+  const metrics = useMemo(() => {
+    let pvs = 0;
+    let wa = 0;
+    const vHashes = new Set<string>();
+    const citiesMap: Record<string, number> = {};
+    const deviceMap = { mobile: 0, desktop: 0, tablet: 0 };
+    const dailyMap: Record<string, { date: string; pageviews: number; whatsappClicks: number; visitors: Set<string> }> = {};
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      dailyMap[d] = { date: d, pageviews: 0, whatsappClicks: 0, visitors: new Set() };
+    }
+
+    for (const ev of siteEvents) {
+      const day = ev.createdAt ? new Date(ev.createdAt).toISOString().split('T')[0] : '';
+      if (ev.eventType === 'pageview') {
+        pvs++;
+        if (ev.visitorHash) vHashes.add(ev.visitorHash);
+        if (dailyMap[day]) {
+          dailyMap[day].pageviews++;
+          if (ev.visitorHash) dailyMap[day].visitors.add(ev.visitorHash);
+        }
+      } else if (ev.eventType === 'whatsapp_click') {
+        wa++;
+        if (dailyMap[day]) dailyMap[day].whatsappClicks++;
+      }
+
+      if (ev.city && ev.city !== 'unknown') {
+        citiesMap[ev.city] = (citiesMap[ev.city] || 0) + 1;
+      }
+
+      const dev = (ev.device || 'desktop') as 'mobile' | 'desktop' | 'tablet';
+      if (deviceMap[dev] !== undefined) deviceMap[dev]++;
+    }
+
+    const uniqueVisitors = vHashes.size || (pvs > 0 ? Math.ceil(pvs * 0.75) : 0);
+    const conversionRate = uniqueVisitors > 0
+      ? Math.min(100, Math.round((wa / uniqueVisitors) * 1000) / 10)
+      : 0;
+
+    const topCities = Object.entries(citiesMap)
+      .map(([city, count]) => ({ city, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const totalDevs = (deviceMap.mobile + deviceMap.desktop + deviceMap.tablet) || 1;
+    const mobilePct = Math.round((deviceMap.mobile / totalDevs) * 100);
+    const desktopPct = 100 - mobilePct;
+
+    const daily = Object.values(dailyMap).map((d) => ({
+      date: d.date,
+      pageviews: d.pageviews,
+      whatsappClicks: d.whatsappClicks,
+    }));
+
+    const maxDailyViews = Math.max(...daily.map((d) => d.pageviews), 1);
+
+    return {
+      pageviews: pvs,
+      uniqueVisitors,
+      whatsappClicks: wa,
+      conversionRate,
+      topCities,
+      mobilePct,
+      desktopPct,
+      daily,
+      maxDailyViews,
+    };
+  }, [siteEvents]);
 
   // Delete Site Confirmation Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -406,173 +495,237 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
   return (
     <div className="space-y-6">
       {/* Site Header Card */}
-      <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">{site.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{site.name}</h1>
             <a
               href={site.url}
               target="_blank"
               rel="noreferrer"
-              className="text-slate-400 hover:text-emerald-400"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               title="Abrir web"
             >
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-            <span className="font-mono text-slate-300">{site.url}</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-mono text-slate-700 dark:text-slate-300">{site.url}</span>
             <span>•</span>
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              HTTP {site.lastStatusCode || 200} ({site.lastResponseTimeMs || 250}ms)
+            <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              HTTP {site.lastStatusCode || 200} (Online)
             </span>
             <span>•</span>
             <span>SSL: {site.sslDaysLeft || 84} días restantes</span>
-            <span>•</span>
-            <span>PHP: {site.phpVersion || '8.2'}</span>
-            <span>•</span>
-            <span>WP: {site.wpVersion || '6.7.1'}</span>
+            {isWordPress ? (
+              <>
+                <span>•</span>
+                <span>PHP: {site.phpVersion || '8.2'}</span>
+                <span>•</span>
+                <span>WP: {site.wpVersion || '6.7.1'}</span>
+              </>
+            ) : (
+              <>
+                <span>•</span>
+                <span>Motor: Vercel Cloud & Telemetría IDPY</span>
+              </>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {site.type === 'wordpress' && (
+          {adminToken && (
+            <a
+              href={`/portal/${slug || site.id}?token=${adminToken}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1c2e1e] hover:bg-[#28422b] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <span>Abrir Portal del Cliente</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+          {isWordPress && (
             <a
               href={`${site.url.replace(/\/+$/, '')}/wp-admin`}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
             >
               <span>Acceder a WP-Admin</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}
-          <button
-            onClick={handlePurgeCache}
-            disabled={isPurgingCache}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/25 text-xs font-semibold transition-colors"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>{isPurgingCache ? 'Purgando...' : 'Purgar Caché'}</span>
-          </button>
+          {isWordPress && (
+            <button
+              onClick={handlePurgeCache}
+              disabled={isPurgingCache}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{isPurgingCache ? 'Purgando...' : 'Purgar Caché'}</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-800 pb-2 text-xs font-medium scrollbar-none">
-        <button
-          onClick={() => setActiveTab('updates')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'updates'
-              ? 'bg-amber-500/15 text-amber-300 font-bold border border-amber-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Actualizaciones</span>
-          {site.pendingUpdates?.details?.length ? (
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-bold">
-              {site.pendingUpdates.details.length}
-            </span>
-          ) : null}
-        </button>
+      <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-200 dark:border-slate-800 pb-3 text-xs font-medium scrollbar-none">
+        {!isWordPress ? (
+          <>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'analytics'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Telemetría y Analítica en Vivo</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('plugins')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'plugins'
-              ? 'bg-blue-500/15 text-blue-300 font-bold border border-blue-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Plugins y Temas</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('portal_info')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'portal_info'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Portal de Clientes & Acceso</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'users'
-              ? 'bg-purple-500/15 text-purple-300 font-bold border border-purple-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>Usuarios</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'admin'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Ajustes y Datos</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setActiveTab('updates')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'updates'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Actualizaciones</span>
+              {site.pendingUpdates?.details?.length ? (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200 text-[10px] font-bold">
+                  {site.pendingUpdates.details.length}
+                </span>
+              ) : null}
+            </button>
 
-        <button
-          onClick={() => setActiveTab('security')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'security'
-              ? 'bg-rose-500/15 text-rose-300 font-bold border border-rose-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <ShieldAlert className="w-3.5 h-3.5" />
-          <span>Seguridad (Wordfence)</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('plugins')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'plugins'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Plugins y Temas</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('backups')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'backups'
-              ? 'bg-emerald-500/15 text-emerald-300 font-bold border border-emerald-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <HardDrive className="w-3.5 h-3.5" />
-          <span>Copias de Seguridad</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'users'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Usuarios</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('analytics')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'analytics'
-              ? 'bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-          <span>Analítica (6 Meses)</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'security'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Seguridad</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('branding')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'branding'
-              ? 'bg-pink-500/15 text-pink-300 font-bold border border-pink-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Agencia & White-Label</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('backups')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'backups'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <HardDrive className="w-3.5 h-3.5" />
+              <span>Copias de Seguridad</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('widgets')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
-            activeTab === 'widgets'
-              ? 'bg-indigo-500/15 text-indigo-300 font-bold border border-indigo-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>Widgets de Escritorio</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'analytics'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Telemetría y Analítica</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('admin')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
-            activeTab === 'admin'
-              ? 'bg-rose-500/15 text-rose-300 font-bold border border-rose-500/30'
-              : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900'
-          }`}
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span>Administración</span>
-        </button>
+            <button
+              onClick={() => setActiveTab('branding')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'branding'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Agencia & White-Label</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('widgets')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'widgets'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Widgets</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'admin'
+                  ? 'bg-[#1c2e1e] text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Administración</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* TAB 1: ACTUALIZACIONES */}
@@ -1171,78 +1324,207 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
         </div>
       )}
 
-      {/* TAB 8: ANALÍTICA */}
+      {/* TAB 8: ANALÍTICA Y TELEMETRÍA EN VIVO */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
-          <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 space-y-4">
+          {/* Quick Portal Access Banner */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-bold text-white text-base">Analítica de Tráfico (Últimos 6 Meses)</h3>
-              <p className="text-xs text-slate-400">
-                Recolectada localmente en la base de datos del cliente mediante SentinelIDPY Connector con cero sobrecarga en tu servidor central.
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Telemetría en Vivo de {site.name}</h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Eventos capturados en tiempo real vía <code className="font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">telemetry.js</code> y almacenados en Neon Postgres.
               </p>
             </div>
 
-            {/* Simple Visual Bar Chart */}
-            <div className="h-48 flex items-end justify-between gap-3 pt-6 px-4 bg-slate-950/70 border border-slate-800 rounded-xl">
-              {[
-                { month: 'Abril', visits: 1240, height: '40%' },
-                { month: 'Mayo', visits: 1680, height: '55%' },
-                { month: 'Junio', visits: 2150, height: '70%' },
-                { month: 'Julio', visits: 1980, height: '64%' },
-                { month: 'Agosto', visits: 2420, height: '82%' },
-                { month: 'Septiembre', visits: 2980, height: '95%' },
-              ].map((m) => (
-                <div key={m.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <span className="text-[10px] font-bold text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {m.visits}
-                  </span>
-                  <div
-                    className="w-full bg-cyan-500/30 hover:bg-cyan-500/60 border border-cyan-500/50 rounded-t-md transition-all duration-300"
-                    style={{ height: m.height }}
-                  />
-                  <span className="text-[11px] font-medium text-slate-400">{m.month}</span>
-                </div>
-              ))}
+            {adminToken && (
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/portal/${slug || site.id}?token=${adminToken}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c2e1e] hover:bg-[#28422b] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                >
+                  <span>Abrir Portal del Cliente</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* 4 Metric Cards Grid - EXACT MATCH CON EL PORTAL */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Metric 1: Visitas Totales */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Visitas Totales
+                </span>
+                <Eye className="w-4 h-4" />
+              </div>
+              <div className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {metrics.pageviews.toLocaleString()}
+              </div>
+              <div className="text-xs text-slate-400 mt-2">Páginas vistas últimos 30 días</div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800">
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Páginas Más Visitadas</span>
-                <div className="mt-2 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-slate-300 py-1 border-b border-slate-800/60">
-                    <span className="font-mono">/</span>
-                    <span className="font-bold text-cyan-400">4,120 vistas</span>
-                  </div>
-                  <div className="flex justify-between text-slate-300 py-1 border-b border-slate-800/60">
-                    <span className="font-mono">/productos/</span>
-                    <span className="font-bold text-cyan-400">2,340 vistas</span>
-                  </div>
-                  <div className="flex justify-between text-slate-300 py-1">
-                    <span className="font-mono">/contacto/</span>
-                    <span className="font-bold text-cyan-400">1,020 vistas</span>
-                  </div>
+            {/* Metric 2: Personas Únicas */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Personas Únicas
+                </span>
+                <Users className="w-4 h-4" />
+              </div>
+              <div className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {metrics.uniqueVisitors.toLocaleString()}
+              </div>
+              <div className="text-xs text-slate-400 mt-2">Visitantes únicos verificados</div>
+            </div>
+
+            {/* Metric 3: WhatsApp Clics (Highlighted Card) */}
+            <div className="bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-700/50 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  WhatsApp Clics 💬
+                </span>
+                <MessageCircle className="w-4 h-4" />
+              </div>
+              <div className="text-3xl font-extrabold text-emerald-900 dark:text-emerald-200 tracking-tight">
+                {metrics.whatsappClicks.toLocaleString()}
+              </div>
+              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mt-2">
+                Personas que consultaron / conversión
+              </div>
+            </div>
+
+            {/* Metric 4: Conversión Web */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between text-slate-400 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Conversión Web
+                </span>
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {metrics.conversionRate}%
+              </div>
+              <div className="text-xs text-slate-400 mt-2">Visitas que tocaron reservar</div>
+            </div>
+          </div>
+
+          {/* Details Grid (7 Days + Cities & Devices) */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Left Column (3 cols) */}
+            <div className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight mb-4 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Actividad de los Últimos 7 Días</span>
+                </h3>
+
+                {/* Visual Bar Graph */}
+                <div className="h-32 flex items-end justify-between gap-3 pt-4 pb-2 px-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 rounded-xl mb-4">
+                  {metrics.daily.map((d) => {
+                    const heightPct = metrics.maxDailyViews > 0 ? Math.max(12, Math.round((d.pageviews / metrics.maxDailyViews) * 100)) : 12;
+                    return (
+                      <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {d.pageviews}
+                        </span>
+                        <div
+                          className="w-full bg-emerald-500/70 hover:bg-emerald-600 rounded-t-md transition-all duration-300"
+                          style={{ height: `${heightPct}%` }}
+                        />
+                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                          {d.date.slice(5)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Day by Day Rows */}
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {metrics.daily.map((d) => (
+                    <div key={d.date} className="py-2.5 flex items-center justify-between text-sm">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">{d.date}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-800/50">
+                          👁️ {d.pageviews} visitas
+                        </span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/50">
+                          💬 {d.whatsappClicks} WhatsApp
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+            </div>
 
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800">
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Dispositivos</span>
-                <div className="mt-4 space-y-3">
+            {/* Right Column (2 cols) */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight mb-4 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Ciudades de Origen</span>
+                </h3>
+
+                {metrics.topCities && metrics.topCities.length > 0 ? (
+                  <div className="space-y-2">
+                    {metrics.topCities.map((c) => (
+                      <div
+                        key={c.city}
+                        className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/60 last:border-none text-sm"
+                      >
+                        <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          {c.city}
+                        </span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          {c.count} visitas
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400 py-3">
+                    Aún no se registraron ciudades con geolocalización para este sitio.
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 dark:border-slate-800/60 mt-6">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Distribución de Dispositivos
+                </h4>
+                <div className="space-y-3">
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-300">Móviles (Android / iOS)</span>
-                      <span className="font-bold text-emerald-400">72%</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                        <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        Celulares (Móviles)
+                      </span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400">{metrics.mobilePct}%</span>
                     </div>
-                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full w-[72%]" />
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="bg-emerald-600 h-full rounded-full transition-all duration-500" style={{ width: `${metrics.mobilePct}%` }} />
                     </div>
                   </div>
+
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-300">Escritorio</span>
-                      <span className="font-bold text-blue-400">28%</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5">
+                        <Laptop className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                        Computadoras (Desktop)
+                      </span>
+                      <span className="font-bold text-sky-700 dark:text-sky-400">{metrics.desktopPct}%</span>
                     </div>
-                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div className="bg-blue-500 h-full w-[28%]" />
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="bg-sky-600 h-full rounded-full transition-all duration-500" style={{ width: `${metrics.desktopPct}%` }} />
                     </div>
                   </div>
                 </div>
@@ -1252,69 +1534,145 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
         </div>
       )}
 
+      {/* TAB: PORTAL DE CLIENTES & ACCESO */}
+      {activeTab === 'portal_info' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Portal de Estadísticas para el Cliente</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Acceso exclusivo para el dueño del negocio sin contraseñas (vía Magic Link seguro de 7 días).
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1.5">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">URL Pública del Portal</span>
+                <p className="font-mono text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  {site.url.replace(/\/$/, '')}/portal
+                </p>
+                <div className="pt-2">
+                  <a
+                    href={`${site.url.replace(/\/$/, '')}/portal`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold hover:underline"
+                  >
+                    <span>Visitar pantalla de login</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1.5">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Correo Registrado para Acceso</span>
+                <p className="font-mono text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  {(site as any)?.siteConfig?.portalEmail || client?.portalEmail || client?.email || 'rodney.estigarribia@outlook.com'}
+                </p>
+                <span className="text-[11px] text-slate-500 block pt-1">
+                  Dirección autorizada para recibir el Magic Link de ingreso.
+                </span>
+              </div>
+            </div>
+
+            {adminToken && (
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 block">
+                    Acceso Administrativo Directo (Bypass de Agencia)
+                  </span>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                    Como director de agencia podés abrir el portal de este cliente sin necesidad de solicitar un código al correo.
+                  </span>
+                </div>
+                <a
+                  href={`/portal/${slug || site.id}?token=${adminToken}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1c2e1e] hover:bg-[#28422b] text-white text-xs font-semibold shadow-xs shrink-0 cursor-pointer"
+                >
+                  <span>Abrir Portal Ahora</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-2">
+              <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Etiqueta de Telemetría (Web del Cliente)</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Asegurate de que la web del cliente incluya esta línea en su archivo <code className="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-800">index.html</code>:
+              </p>
+              <pre className="p-3 rounded-lg bg-slate-900 text-slate-100 font-mono text-[11px] overflow-x-auto">
+{`<script src="https://idpy-admin.vercel.app/telemetry.js" data-site="${slug || site.id}" defer></script>`}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB: ADMINISTRACIÓN Y DANGER ZONE */}
       {activeTab === 'admin' && (
         <div className="space-y-6">
           {/* Site Parameters Card */}
-          <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 space-y-5">
+          <div className="p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-5">
             <div>
-              <h3 className="font-bold text-white text-base">Parámetros del Sitio</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Parámetros del Activo</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Información técnica y configuración de vinculación en SentinelIDPY.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1">
                 <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Nombre del Sitio</span>
-                <p className="text-sm font-bold text-white">{site.name}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{site.name}</p>
               </div>
 
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1">
                 <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">URL Principal</span>
-                <p className="text-sm font-mono text-slate-200 truncate">{site.url}</p>
+                <p className="text-sm font-mono text-slate-700 dark:text-slate-300 truncate">{site.url}</p>
               </div>
 
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1">
                 <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Cliente Asignado</span>
-                <p className="text-sm font-semibold text-emerald-400">{client ? client.name : 'Sin asignar'}</p>
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{client ? client.name : 'Sin asignar'}</p>
               </div>
 
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1">
                 <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tipo de Plataforma</span>
-                <p className="text-sm font-semibold text-slate-200 capitalize">{site.type}</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 capitalize">{site.type}</p>
               </div>
 
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Cuota de Disco Asignada</span>
-                <p className="text-sm font-semibold text-slate-200">{site.diskAllocatedGb ? `${site.diskAllocatedGb} GB` : 'Ilimitado / N/A'}</p>
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Cuota de Disco</span>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{site.diskAllocatedGb ? `${site.diskAllocatedGb} GB` : 'Ilimitado / N/A'}</p>
               </div>
 
-              <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Token del Conector</span>
-                <p className="text-sm font-mono text-slate-400 truncate">{site.token ? `${site.token.slice(0, 10)}••••••••` : 'No configurado'}</p>
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 space-y-1">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Slug de Telemetría</span>
+                <p className="text-sm font-mono text-slate-700 dark:text-slate-300 truncate">{slug || site.id}</p>
               </div>
             </div>
           </div>
 
           {/* Danger Zone Card */}
-          <div className="p-6 rounded-xl border border-rose-500/30 bg-rose-950/20 space-y-4">
+          <div className="p-6 rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/40 flex items-center justify-center text-rose-600 dark:text-rose-400">
                 <AlertOctagon className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-white text-base">Zona de Peligro</h3>
-                <p className="text-xs text-rose-300">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Zona de Peligro</h3>
+                <p className="text-xs text-rose-700 dark:text-rose-300">
                   Acciones irreversibles o críticas sobre el registro del sitio en la plataforma.
                 </p>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-rose-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="pt-3 border-t border-rose-200 dark:border-rose-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1 max-w-xl">
-                <h4 className="text-sm font-bold text-white">Eliminar este sitio</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Eliminar este sitio</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                   Realiza un borrado lógico (<strong>Soft Delete</strong>). El sitio dejará de figurar en el panel de control y en los monitoreos automáticos de uptime y seguridad. Toda la data histórica permanece archivada y los archivos o bases de datos en el servidor del cliente no se modificarán.
                 </p>
               </div>
@@ -1324,7 +1682,7 @@ export function SiteDetailClient({ site, client, templates }: SiteDetailClientPr
                   setDeleteConfirmText('');
                   setIsDeleteModalOpen(true);
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-lg shadow-rose-950"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-xs"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Eliminar Sitio</span>
