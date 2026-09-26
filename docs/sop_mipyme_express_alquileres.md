@@ -108,7 +108,14 @@ Sin pedirle nada al dueño previamente, recolectar:
 
 ## ⚡ Fase 3: Ensamblado y Despliegue Express (25 a 35 min)
 
-### 1. Parametrización Total vía `config.js`:
+### 1. Clonación Inmediata desde la Plantilla Maestra en SentinelIDPY:
+Desde la terminal en `SentinelIDPY`, ejecutar:
+```bash
+./scripts/create-satellite.sh nombre-del-proyecto
+```
+*(O copiar manualmente la carpeta `templates/mipyme-express/` al nuevo directorio en `~/development/GitHub/nombre-del-proyecto`).*
+
+### 2. Parametrización Total vía `config.js`:
 Nunca se hardcodean números, textos de botones ni precios en el HTML. Todo se centraliza en `config.js`:
 ```javascript
 const SITE_CONFIG = {

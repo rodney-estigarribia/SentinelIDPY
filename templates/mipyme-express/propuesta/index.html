@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cabaña del Árbol — Propuesta de presencia digital</title>
+<meta name="description" content="Propuesta para Cabaña del Árbol: nueva web, ficha en Google Maps y Google Search, mejoras en Instagram, SEO y GEO. Antes y después.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1c2e1e">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Cabaña del Árbol">
+<meta property="og:locale" content="es_PY">
+<meta property="og:url" content="https://cabana-del-arbol-demo.vercel.app/propuesta">
+<meta property="og:title" content="Propuesta para Cabaña del Árbol">
+<meta property="og:description" content="Así se verían en Google, Google Maps e Instagram. Antes y después.">
+<meta property="og:image" content="https://cabana-del-arbol-demo.vercel.app/images/og-cover.jpg">
+<meta property="og:image:secure_url" content="https://cabana-del-arbol-demo.vercel.app/images/og-cover.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cabaña del Árbol: deck con jacuzzi privado frente al Lago Ypacaraí">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Propuesta para Cabaña del Árbol">
+<meta name="twitter:description" content="Así se verían en Google, Google Maps e Instagram. Antes y después.">
+<meta name="twitter:image" content="https://cabana-del-arbol-demo.vercel.app/images/og-cover.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:opsz,wght@9..40,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/demo.css">
+<script src="/config.js"></script>
+<script>
+  // Control de visibilidad: si la propuesta está inactiva en config.js, redirigir al inicio
+  if (typeof SITE_CONFIG !== "undefined" && SITE_CONFIG.proposal && SITE_CONFIG.proposal.active === false) {
+    window.location.replace("/");
+  }
+</script>
+<style>
+  :root{--forest:#1c2e1e;--forest-l:#4a7c4f;--amber:#c8863a;--amber-l:#e4a855;--bone:#f7f3ee;--white:#fdfbf8;--ink:#1a1a18;--muted:#505049;--border:#e5e0d8;--bad:#b3261e}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"DM Sans",-apple-system,sans-serif;font-weight:450;background:var(--white);color:var(--ink);line-height:1.6}
+  .wrap{width:min(1200px,calc(100% - 2.5rem));margin-inline:auto}
+  h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;color:var(--forest);line-height:1.1}
+  .label{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--forest-l)}
+  header{background:var(--forest);color:#fff;padding:4.5rem 0 3.5rem}
+  header .label{color:var(--amber-l)}
+  header h1{color:#fff;font-size:clamp(2.4rem,6vw,4rem);margin:.75rem 0 1rem}
+  header p{max-width:60ch;color:rgba(255,255,255,.82);font-size:1.1rem}
+  nav{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:2rem}
+  nav a{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:100px;padding:.5rem 1.1rem;font-weight:500;font-size:.95rem}
+  .alert{background:#fbeae8;border-left:4px solid var(--bad);border-radius:12px;padding:1.5rem 1.75rem;margin:3rem 0 0}
+  .alert h2{color:var(--bad);font-size:1.7rem;margin-bottom:.5rem}
+  .alert p{max-width:75ch}
+  section{padding:4.5rem 0 1rem}
+  section>.wrap>h2{font-size:clamp(2rem,4vw,3rem);margin:.5rem 0 .75rem}
+  .intro{max-width:65ch;color:var(--muted);font-size:1.05rem}
+  .changes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:2rem 0 2.5rem}
+  .change{background:var(--bone);border-radius:16px;padding:1.25rem 1.4rem}
+  .change h3{font-family:"DM Sans",sans-serif;font-size:1rem;font-weight:700;color:var(--forest);margin-bottom:.35rem}
+  .change p{font-size:.95rem;color:var(--muted)}
+  .device{margin:2.5rem 0 1rem;font-weight:700;color:var(--forest);display:flex;align-items:center;gap:.6rem}
+  .device::after{content:"";flex:1;height:1px;background:var(--border)}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start}
+  .pair.mobile{grid-template-columns:repeat(2,minmax(0,340px));justify-content:center;gap:2.5rem}
+  figure{margin:0}
+  figcaption{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.6rem}
+  figcaption.antes{color:var(--bad)}
+  figcaption.despues{color:var(--forest-l)}
+  figcaption span{font-weight:450;text-transform:none;letter-spacing:0;color:var(--muted)}
+  .shot{border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 8px 32px rgba(28,46,30,.12);background:#fff}
+  .shot img{display:block;width:100%;height:auto}
+  .mobile .shot{border-radius:28px}
+  .empty{min-height:16rem;display:flex;align-items:center;justify-content:center;text-align:center;padding:2rem;background:var(--bone);color:var(--muted);font-size:.95rem;border-radius:28px;border:1px dashed #cfc8bd}
+  .note{font-size:.85rem;color:var(--muted);margin-top:.75rem;font-style:italic}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:2rem}
+  .col{border-radius:16px;padding:1.4rem 1.6rem}
+  .col h3{font-family:"DM Sans",sans-serif;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:.6rem}
+  .col ul{padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem;font-size:.97rem}
+  .col.bad{background:#fbeae8}.col.bad h3{color:var(--bad)}
+  .col.good{background:#e7f1e6}.col.good h3{color:var(--forest-l)}
+  #seo .changes{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:760px){.compare,#seo .changes{grid-template-columns:1fr}}
+  footer{margin-top:5rem;background:var(--ink);color:rgba(255,255,255,.7);padding:3rem 0;text-align:center}
+  footer h2{color:#fff;font-size:2rem;margin-bottom:.75rem}
+  footer p{max-width:60ch;margin:0 auto .5rem}
+  footer a{color:var(--amber-l)}
+  @media (max-width:760px){
+    .pair,.pair.mobile{grid-template-columns:1fr}
+    .pair.mobile{justify-items:center}
+    .pair.mobile figure{width:min(340px,100%)}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="label">Propuesta · Presencia digital</p>
+    <h1>Cabaña del Árbol,<br>fácil de encontrar</h1>
+    <p>Hoy la mayoría de los huéspedes busca en Google o Instagram antes de escribir por WhatsApp. Estas son las mejoras que proponemos y cómo se verían, comparadas con lo que aparece hoy.</p>
+    <nav><a href="#google">Google Search</a><a href="#maps">Google Maps</a><a href="#instagram">Instagram</a><a href="#seo">SEO y GEO</a></nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="alert">
+    <h2>Lo más importante: hoy Google muestra otro negocio</h2>
+    <p>Al buscar “cabaña del árbol”, Google y Google Maps muestran la ficha de <strong>Cabañas Los Árboles</strong>, que es otro alojamiento, con otro teléfono (0991 854746) y sus propias 119 reseñas. Cabaña del Árbol no tiene ficha propia, así que quien los busca puede terminar llamando a otro lugar.</p>
+  </div>
+</div>
+
+<section id="google">
+  <div class="wrap">
+    <p class="label">Google Search</p>
+    <h2>Aparecer primero, con su propia ficha</h2>
+    <p class="intro">Con el Perfil de Empresa de Google y la web nueva, la búsqueda muestra a Cabaña del Árbol con fotos, botones para llamar o llegar, y la web en primer lugar con accesos directos a tarifas y preguntas frecuentes.</p>
+    <div class="changes">
+      <div class="change"><h3>Ficha propia a la derecha</h3><p>Fotos, descripción, check-in y check-out, teléfono, servicios y enlace a Instagram.</p></div>
+      <div class="change"><h3>La web, primer resultado</h3><p>Título y descripción pensados para búsquedas como “cabaña con jacuzzi Lago Ypacaraí”.</p></div>
+      <div class="change"><h3>Accesos directos</h3><p>Tarifas, galería, preguntas frecuentes y ubicación, directo desde Google.</p></div>
+    </div>
+    <p class="device">Computadora</p>
+    <div class="pair">
+      <figure><figcaption class="antes">Hoy <span>· aparece otro negocio</span></figcaption><div class="shot"><img src="/propuesta/web/antes/google-search-desktop.jpg" alt="Búsqueda actual en Google" loading="lazy"></div></figure>
+      <figure><figcaption class="despues">Propuesta <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/google-search-desktop.jpg" alt="Simulación de la búsqueda con ficha propia" loading="lazy"></div></figure>
+    </div>
+    <p class="device">Celular</p>
+    <div class="pair mobile">
+      <figure><figcaption class="antes">Hoy</figcaption><div class="empty">Sin ficha propia pasa lo mismo que en la computadora: la ficha que aparece es la de otro negocio.</div></figure>
+      <figure><figcaption class="despues">Propuesta <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/google-search-mobile.jpg" alt="Simulación de la búsqueda en celular" loading="lazy"></div></figure>
+    </div>
+  </div>
+</section>
+
+<section id="maps">
+  <div class="wrap">
+    <p class="label">Google Maps</p>
+    <h2>Estar en el mapa del lago</h2>
+    <p class="intro">Hoy, al buscarlos en Maps aparecen Cabañas Los Árboles, La Casa del Árbol y Casa Entre el Árbol, pero no Cabaña del Árbol. Con la ficha creada, el huésped encuentra el lugar, ve fotos y toca “Cómo llegar”, “Llamar” o “Sitio web”.</p>
+    <div class="changes">
+      <div class="change"><h3>Pin propio en el mapa</h3><p>Con la ubicación exacta de la cabaña, para llegar sin preguntar por WhatsApp.</p></div>
+      <div class="change"><h3>Reservar desde Maps</h3><p>Botones para llamar, abrir la web o escribir por WhatsApp.</p></div>
+      <div class="change"><h3>Reseñas propias</h3><p>La ficha arranca sin reseñas. La idea es pedírselas a cada huésped al hacer el check-out.</p></div>
+    </div>
+    <p class="device">Computadora</p>
+    <div class="pair">
+      <figure><figcaption class="antes">Hoy <span>· no aparece</span></figcaption><div class="shot"><img src="/propuesta/web/antes/google-maps-desktop.jpg" alt="Búsqueda actual en Google Maps" loading="lazy"></div></figure>
+      <figure><figcaption class="despues">Propuesta <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/google-maps-desktop.jpg" alt="Simulación de la ficha en Google Maps" loading="lazy"></div></figure>
+    </div>
+    <p class="device">Celular</p>
+    <div class="pair mobile">
+      <figure><figcaption class="antes">Hoy</figcaption><div class="shot"><img src="/propuesta/web/antes/google-maps-mobile.jpg" alt="Búsqueda actual en Google Maps desde el celular" loading="lazy"></div></figure>
+      <figure><figcaption class="despues">Propuesta <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/google-maps-mobile.jpg" alt="Simulación de la ficha en Google Maps desde el celular" loading="lazy"></div></figure>
+    </div>
+    <p class="note">La ubicación en el mapa de la simulación es aproximada; en la ficha real va la ubicación exacta de la cabaña.</p>
+  </div>
+</section>
+
+<section id="instagram">
+  <div class="wrap">
+    <p class="label">Instagram</p>
+    <h2>El mismo perfil, más claro y que lleve a reservar</h2>
+    <p class="intro">Con 74 mil seguidores, Instagram ya es la vidriera principal. Proponemos ajustes en el perfil para que quien llega entienda en segundos qué es, dónde queda y cómo reservar.</p>
+    <div class="changes">
+      <div class="change"><h3>Nombre con palabras clave</h3><p>“Cabaña del Árbol · Lago Ypacaraí”: el nombre aparece en el buscador de Instagram.</p></div>
+      <div class="change"><h3>Categoría “Hotel”</h3><p>En lugar de “Community”, para que se entienda que es un alojamiento.</p></div>
+      <div class="change"><h3>Descripción ordenada</h3><p>Qué es, para quién, qué incluye y dónde queda. Sin el número repetido y sin el error de tipeo en “WhatsAap”.</p></div>
+      <div class="change"><h3>Enlace a la web + WhatsApp</h3><p>La web muestra tarifas, fotos y preguntas frecuentes antes de escribir. WhatsApp queda como segundo enlace y como botón del perfil.</p></div>
+      <div class="change"><h3>Historias destacadas</h3><p>Tarifas, La Cabaña, La Casona, Desayuno, Cómo llegar y Reseñas: responden las dudas más comunes.</p></div>
+      <div class="change"><h3>Tres publicaciones fijadas</h3><p>Una de tarifas, una de la experiencia y una de comentarios de huéspedes.</p></div>
+    </div>
+    <p class="device">Computadora</p>
+    <div class="pair">
+      <figure><figcaption class="antes">Hoy</figcaption><div class="shot"><img src="/propuesta/web/antes/instagram-desktop.jpg" alt="Perfil actual de Instagram" loading="lazy"></div></figure>
+      <figure><figcaption class="despues">Propuesta <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/instagram-desktop.jpg" alt="Simulación del perfil de Instagram mejorado" loading="lazy"></div></figure>
+    </div>
+    <p class="device">Celular</p>
+    <div class="pair mobile">
+      <figure><figcaption class="antes">Hoy</figcaption><div class="shot"><img src="/propuesta/web/antes/instagram-mobile.jpg" alt="Perfil actual de Instagram en el celular" loading="lazy"></div></figure>
+      <figure><figcaption class="despues">Propuesta <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/instagram-mobile.jpg" alt="Simulación del perfil de Instagram en el celular" loading="lazy"></div></figure>
+    </div>
+  </div>
+</section>
+
+<section id="seo">
+  <div class="wrap">
+    <p class="label">SEO y GEO · La web</p>
+    <h2>Que Google y los asistentes de IA los recomienden</h2>
+    <p class="intro">Cada vez más gente le pregunta a ChatGPT, Gemini o Perplexity dónde alojarse. Esos asistentes recomiendan lo que pueden leer y verificar. La web nueva viene preparada para Google (<strong>SEO</strong>) y para los asistentes de IA (<strong>GEO</strong>).</p>
+    <div class="compare">
+      <div class="col bad"><h3>Hoy</h3><ul>
+        <li>No hay web: Google muestra a otro negocio y a sitios de terceros.</li>
+        <li>Los asistentes de IA solo saben lo que otros escribieron de ustedes.</li>
+        <li>Tarifas, horarios y condiciones solo se consiguen preguntando por WhatsApp.</li>
+      </ul></div>
+      <div class="col good"><h3>Con la web nueva</h3><ul>
+        <li>Una página oficial con toda la información, pensada para aparecer en búsquedas como “cabaña con jacuzzi Lago Ypacaraí”.</li>
+        <li>Tarifas, horarios, servicios y preguntas frecuentes en un formato que Google y los asistentes entienden.</li>
+        <li>El link se ve con foto y descripción cuando se comparte por WhatsApp.</li>
+      </ul></div>
+    </div>
+    <div class="changes">
+      <div class="change"><h3>Título y descripción para búsquedas locales</h3><p>Con las palabras que usa la gente: cabaña, jacuzzi, Lago Ypacaraí, San Bernardino.</p></div>
+      <div class="change"><h3>Ficha de datos para Google</h3><p>Tipo de alojamiento, tarifas de La Cabaña y La Casona, check-in, formas de pago y servicios.</p></div>
+      <div class="change"><h3>Preguntas frecuentes</h3><p>8 respuestas visibles en la web que Google y los asistentes pueden citar directamente.</p></div>
+      <div class="change"><h3>Abierta a los asistentes de IA</h3><p>Permiso explícito para ChatGPT, Claude, Perplexity y Gemini, más un resumen en texto simple pensado para ellos.</p></div>
+      <div class="change"><h3>Vista previa al compartir</h3><p>Foto, título y descripción al mandar el link por WhatsApp, Instagram o Facebook.</p></div>
+      <div class="change"><h3>Mapa del sitio para Google</h3><p>Para que Google encuentre la página y sus fotos apenas se publique.</p></div>
+    </div>
+    <p class="device">Así se vería</p>
+    <div class="pair mobile">
+      <figure><figcaption class="despues">WhatsApp <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/whatsapp-preview.jpg" alt="Simulación del link de la web compartido por WhatsApp" loading="lazy"></div></figure>
+      <figure><figcaption class="despues">ChatGPT (Búsqueda IA) <span>· simulación</span></figcaption><div class="shot"><img src="/propuesta/web/despues/asistente-ia.jpg" alt="Simulación de ChatGPT recomendando Cabaña del Árbol con enlace oficial" loading="lazy"></div></figure>
+    </div>
+    <p class="note">Ningún asistente de IA garantiza qué recomienda. Lo que hace la web es darles información oficial, clara y verificable, que es lo que usan para responder.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h2>Todo conectado</h2>
+    <p>La web nueva, la ficha de Google y el perfil de Instagram se enlazan entre sí y llevan al mismo lugar: una reserva por WhatsApp.</p>
+    <p>Propuesta preparada por <a href="https://impulsosdigitales.com.py/" target="_blank" rel="noopener noreferrer">Impulsos Digitales</a></p>
+  </div>
+</footer>
+
+<script src="/js/demo.js"></script>
+</body>
+</html>
