@@ -1327,33 +1327,6 @@ export function SiteDetailClient({
       {/* TAB 8: ANALÍTICA Y TELEMETRÍA EN VIVO */}
       {activeTab === 'analytics' && (
         <div className="space-y-6">
-          {/* Quick Portal Access Banner */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <h3 className="font-bold text-slate-900 dark:text-white text-base">Telemetría en Vivo de {site.name}</h3>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Eventos capturados en tiempo real vía <code className="font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">telemetry.js</code> y almacenados en Neon Postgres.
-              </p>
-            </div>
-
-            {adminToken && (
-              <div className="flex items-center gap-2">
-                <a
-                  href={`/portal/${slug || site.id}?token=${adminToken}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c2e1e] hover:bg-[#28422b] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                >
-                  <span>Abrir Portal del Cliente</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            )}
-          </div>
-
           {/* 4 Metric Cards Grid - EXACT MATCH CON EL PORTAL */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Metric 1: Visitas Totales */}
