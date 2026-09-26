@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataService } from '@/lib/data-service';
 
+export const dynamic = 'force-dynamic';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
@@ -11,11 +13,16 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { slug } = await params;
-    const site = await dataService.getSiteBySlug(slug);
+    const { id } = await params;
+    const isNum = !isNaN(parseInt(id, 10)) && !id.includes('-');
+    let site = isNum ? await dataService.getSiteById(parseInt(id, 10)) : await dataService.getSiteBySlug(id);
+    if (!site && isNum) {
+      site = await dataService.getSiteBySlug(id);
+    }
 
+    const slug = (site as any)?.siteConfig?.slug || (site?.url ? site.url.replace(/https?:\/\//, '').split('.')[0] : id);
     const isCabana = slug === 'cabana-del-arbol';
     const isBought = slug === 'don-mendoza' || slug === 'terrazas-bungalow';
 
@@ -62,17 +69,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { slug } = await params;
+    const { id } = await params;
     const body = await req.json();
-    const site = await dataService.getSiteBySlug(slug);
+    const isNum = !isNaN(parseInt(id, 10)) && !id.includes('-');
+    let site = isNum ? await dataService.getSiteById(parseInt(id, 10)) : await dataService.getSiteBySlug(id);
+    if (!site && isNum) {
+      site = await dataService.getSiteBySlug(id);
+    }
 
     if (!site) {
       return NextResponse.json({ error: 'Sitio no encontrado' }, { status: 404, headers: corsHeaders });
     }
 
     const currentConfig = (site as any).siteConfig || {};
+    const slug = (site as any).siteConfig?.slug || id;
     const updatedConfig = { ...currentConfig, ...body, slug, updatedAt: new Date().toISOString() };
 
     await dataService.updateSite(site.id, {
