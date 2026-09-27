@@ -1,55 +1,153 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataService } from '@/lib/data-service';
+import { securityLimiter } from '@/lib/rate-limiter';
+import {
+  standardSecurityHeaders,
+  validateEmailSecurity,
+  validateSiteSlugSecurity,
+} from '@/lib/security-validation';
 import crypto from 'node:crypto';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+export const dynamic = 'force-dynamic';
 
 const SECRET = process.env.SESSION_SECRET || 'sentinel-portal-secret-key-2026-very-secure';
 
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+  return NextResponse.json({}, { headers: standardSecurityHeaders });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { siteSlug, email, returnUrl } = await req.json();
+    // 1. Detección de IP del cliente
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      req.headers.get('x-real-ip') ||
+      '127.0.0.1';
 
-    if (!siteSlug || !email) {
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
       return NextResponse.json(
-        { error: 'Debe proporcionar el slug del sitio y un correo electrónico válido.' },
-        { status: 400, headers: corsHeaders }
+        { error: 'Cuerpo de solicitud JSON inválido.' },
+        { status: 400, headers: standardSecurityHeaders }
       );
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const site = await dataService.getSiteBySlug(siteSlug);
+    const { siteSlug, email, returnUrl, hp } = body || {};
+
+    // 2. Trampa Honeypot: Si un bot rellena el campo oculto "hp", se descarta silenciosamente
+    if (hp && typeof hp === 'string' && hp.trim().length > 0) {
+      return NextResponse.json(
+        {
+          ok: true,
+          message: 'Te enviamos un enlace de acceso a tu correo.',
+          emailDelivery: {
+            sent: false,
+            status: 'honeypot_trapped',
+          },
+        },
+        { headers: standardSecurityHeaders }
+      );
+    }
+
+    // 3. Rate Limiting por IP (Sliding Window: Máx 5 peticiones cada 10 minutos)
+    const ipCheck = securityLimiter.checkIpLimit(ip, 5, 10 * 60 * 1000);
+    if (!ipCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Demasiadas solicitudes desde tu dirección IP. Por favor esperá ${ipCheck.retryAfterSec} segundos antes de reintentar.`,
+        },
+        {
+          status: 429,
+          headers: {
+            ...standardSecurityHeaders,
+            'Retry-After': String(ipCheck.retryAfterSec),
+          },
+        }
+      );
+    }
+
+    // 4. Validación y Sanitización Estricta de Parámetros
+    const slugValidation = validateSiteSlugSecurity(siteSlug);
+    if (!slugValidation.valid) {
+      return NextResponse.json(
+        { error: slugValidation.error || 'Slug de sitio no válido.' },
+        { status: 400, headers: standardSecurityHeaders }
+      );
+    }
+
+    const emailValidation = validateEmailSecurity(email);
+    if (!emailValidation.valid) {
+      return NextResponse.json(
+        { error: emailValidation.error || 'Correo electrónico no válido.' },
+        { status: 400, headers: standardSecurityHeaders }
+      );
+    }
+
+    const cleanSlug = slugValidation.cleanSlug!;
+    const cleanEmail = emailValidation.cleanEmail!;
+
+    // 5. Cooldown por Email (Mínimo 60 segundos entre envíos a la misma casilla)
+    const cooldownCheck = securityLimiter.checkEmailCooldown(cleanEmail, 60 * 1000);
+    if (!cooldownCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `Ya enviamos un enlace recientemente a esta casilla. Por favor esperá ${cooldownCheck.remainingSec} segundos antes de solicitar otro.`,
+        },
+        {
+          status: 429,
+          headers: {
+            ...standardSecurityHeaders,
+            'Retry-After': String(cooldownCheck.remainingSec),
+          },
+        }
+      );
+    }
+
+    // 6. Búsqueda y Validación de Autorización en Base de Datos
+    const site = await dataService.getSiteBySlug(cleanSlug);
     let client = null;
 
     if (site && site.clientId) {
       client = await dataService.getClientById(site.clientId);
     }
 
-    // Si no se encuentra cliente por site.clientId, buscar directamente por email
     if (!client) {
       client = await dataService.getClientByEmail(cleanEmail);
     }
 
-    // Validación: El correo debe coincidir con portalEmail, email de cliente, facturación, o ser admin de la agencia
     const cfgEmail = (site as any)?.siteConfig?.portalEmail?.trim().toLowerCase();
-    const isConfigAuthorized = cfgEmail && cfgEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+    const isConfigAuthorized =
+      cfgEmail &&
+      cfgEmail
+        .split(',')
+        .map((e: string) => e.trim().toLowerCase())
+        .includes(cleanEmail);
 
     const clientPortalEmail = (client as any)?.portalEmail?.trim().toLowerCase();
-    const isClientPortalAuthorized = clientPortalEmail && clientPortalEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+    const isClientPortalAuthorized =
+      clientPortalEmail &&
+      clientPortalEmail
+        .split(',')
+        .map((e: string) => e.trim().toLowerCase())
+        .includes(cleanEmail);
 
     const clientGeneralEmail = (client as any)?.email?.trim().toLowerCase();
-    const isClientGeneralAuthorized = clientGeneralEmail && clientGeneralEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+    const isClientGeneralAuthorized =
+      clientGeneralEmail &&
+      clientGeneralEmail
+        .split(',')
+        .map((e: string) => e.trim().toLowerCase())
+        .includes(cleanEmail);
 
     const clientBillingEmail = (client as any)?.billingEmail?.trim().toLowerCase();
-    const isClientBillingAuthorized = clientBillingEmail && clientBillingEmail.split(',').map((e: string) => e.trim().toLowerCase()).includes(cleanEmail);
+    const isClientBillingAuthorized =
+      clientBillingEmail &&
+      clientBillingEmail
+        .split(',')
+        .map((e: string) => e.trim().toLowerCase())
+        .includes(cleanEmail);
 
     const isAgencyAdmin =
       cleanEmail.includes('impulsosdigitales') ||
@@ -65,30 +163,37 @@ export async function POST(req: NextRequest) {
       isClientBillingAuthorized ||
       isAgencyAdmin;
 
+    // 7. Mitigación de Timing-Attacks y Enumeración de Correos
     if (!isAuthorized && (client || cfgEmail)) {
+      // Artificial delay (200ms) para homogeneizar tiempos de respuesta
+      await new Promise((resolve) => setTimeout(resolve, 200));
       return NextResponse.json(
-        { error: 'El correo ingresado no coincide con el correo autorizado para el portal de analítica de este cliente.' },
-        { status: 403, headers: corsHeaders }
+        {
+          error:
+            'El correo ingresado no coincide con el correo autorizado para el portal de analítica de este cliente.',
+        },
+        { status: 403, headers: standardSecurityHeaders }
       );
     }
 
-    // Generar Token con 7 Días de Vigencia (604,800,000 ms)
+    // 8. Generación de Token con 7 Días de Vigencia Criptográfica
     const exp = Date.now() + 7 * 24 * 60 * 60 * 1000;
-    const payload = JSON.stringify({ siteSlug, email: cleanEmail, exp });
+    const payload = JSON.stringify({ siteSlug: cleanSlug, email: cleanEmail, exp });
     const payloadB64 = Buffer.from(payload).toString('base64url');
     const signature = crypto.createHmac('sha256', SECRET).update(payloadB64).digest('base64url');
     const token = `${payloadB64}.${signature}`;
 
-    const baseUrl = returnUrl || (site?.url ? `${site.url.replace(/\/$/, '')}/portal` : `https://${siteSlug}.vercel.app/portal`);
+    const baseUrl =
+      returnUrl ||
+      (site?.url ? `${site.url.replace(/\/$/, '')}/portal` : `https://${cleanSlug}.vercel.app/portal`);
     const magicLink = `${baseUrl}?token=${token}`;
 
-    // Envío por correo vía Resend si existe la clave de API
+    // 9. Envío de correo vía Resend
     const resendKey = process.env.RESEND_API_KEY;
     let emailSent = false;
     let emailStatus = 'unconfigured'; // 'sent' | 'failed' | 'unconfigured'
-    let emailError: string | null = null;
 
-    const siteTitle = site?.name || siteSlug;
+    const siteTitle = site?.name || cleanSlug;
     const emailSubject = `Acceso a ${siteTitle}`;
     const emailHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 14px; background: #ffffff;">
@@ -109,39 +214,47 @@ export async function POST(req: NextRequest) {
 
     if (resendKey) {
       try {
-        const primaryFrom = process.env.RESEND_FROM || 'Impulsos Digitales <notificaciones@impulsosdigitales.com.py>';
+        const primaryFrom =
+          process.env.RESEND_FROM || 'Impulsos Digitales <notificaciones@impulsosdigitales.com.py>';
 
         let resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${resendKey}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${resendKey}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             from: primaryFrom,
             to: cleanEmail,
             subject: emailSubject,
             html: emailHtml,
-          })
+          }),
         });
 
         let resendData = await resendRes.json().catch(() => null);
 
         // Si falló por dominio no verificado, reintentar con remitente de testing de Resend
-        if (!resendRes.ok && (resendData?.message?.toLowerCase().includes('domain') || resendData?.name === 'validation_error')) {
-          console.warn('[Magic Link] Resend primary domain failed, retrying with onboarding@resend.dev:', resendData);
+        if (
+          !resendRes.ok &&
+          (resendData?.message?.toLowerCase().includes('domain') ||
+            resendData?.name === 'validation_error')
+        ) {
+          console.warn(
+            '[Magic Link] Resend primary domain failed, retrying with onboarding@resend.dev:',
+            resendData
+          );
           resendRes = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${resendKey}`,
-              'Content-Type': 'application/json'
+              Authorization: `Bearer ${resendKey}`,
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               from: 'Impulsos Digitales <onboarding@resend.dev>',
               to: cleanEmail,
               subject: emailSubject,
               html: emailHtml,
-            })
+            }),
           });
           resendData = await resendRes.json().catch(() => null);
         }
@@ -151,17 +264,14 @@ export async function POST(req: NextRequest) {
           emailStatus = 'sent';
         } else {
           emailStatus = 'failed';
-          emailError = resendData?.message || `HTTP ${resendRes.status}`;
           console.warn('[Magic Link] Resend delivery failed:', resendData);
         }
       } catch (err: any) {
         emailStatus = 'failed';
-        emailError = err.message || 'Error de conexión con Resend';
         console.warn('[Magic Link] Resend exception:', err);
       }
     } else {
       emailStatus = 'unconfigured';
-      emailError = 'Variable RESEND_API_KEY no configurada en Vercel';
     }
 
     return NextResponse.json(
@@ -170,13 +280,16 @@ export async function POST(req: NextRequest) {
         message: 'Te enviamos un enlace de acceso a tu correo.',
         emailDelivery: {
           sent: emailSent,
-          status: emailStatus
-        }
+          status: emailStatus,
+        },
       },
-      { headers: corsHeaders }
+      { headers: standardSecurityHeaders }
     );
   } catch (error) {
     console.error('[API Magic Link] Error generating link:', error);
-    return NextResponse.json({ error: 'Error al procesar la solicitud de enlace.' }, { status: 500, headers: corsHeaders });
+    return NextResponse.json(
+      { error: 'Error al procesar la solicitud de enlace.' },
+      { status: 500, headers: standardSecurityHeaders }
+    );
   }
 }

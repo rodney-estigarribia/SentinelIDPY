@@ -44,15 +44,13 @@ interface PortalStats {
   };
 }
 
-const API_BASE =
-  typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:3000/api/portal'
-    : 'https://idpy-admin.vercel.app/api/portal';
+const API_BASE = typeof window !== 'undefined' ? '/api/portal' : 'https://idpy-admin.vercel.app/api/portal';
 
 export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalClientProps) {
   const [viewState, setViewState] = useState<'initial-loading' | 'loading' | 'auth' | 'dashboard'>('initial-loading');
   const [loadingText, setLoadingText] = useState('Accediendo...');
   const [emailInput, setEmailInput] = useState('');
+  const [hpValue, setHpValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [stats, setStats] = useState<PortalStats | null>(null);
@@ -135,6 +133,7 @@ export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalCl
           siteSlug,
           email: emailInput.trim(),
           returnUrl: window.location.origin + window.location.pathname,
+          hp: hpValue,
         }),
       });
 
@@ -240,6 +239,32 @@ export function PortalClient({ siteSlug, siteName, subtitle, siteUrl }: PortalCl
                 </h1>
 
                 <form onSubmit={handleMagicLinkSubmit} className="space-y-4 text-left">
+                  {/* Campo Honeypot invisible: oculto para humanos, trampa para bots */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '-9999px',
+                      top: '-9999px',
+                      opacity: 0,
+                      height: 0,
+                      width: 0,
+                      overflow: 'hidden',
+                    }}
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  >
+                    <label htmlFor="website_url_hp">No completar este campo</label>
+                    <input
+                      id="website_url_hp"
+                      type="text"
+                      name="hp"
+                      value={hpValue}
+                      onChange={(e) => setHpValue(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+                  </div>
+
                   <div>
                     <label htmlFor="client-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                       Correo Electrónico

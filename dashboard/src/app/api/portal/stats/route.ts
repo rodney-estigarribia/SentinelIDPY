@@ -1,52 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dataService } from '@/lib/data-service';
+import { standardSecurityHeaders, validateSiteSlugSecurity } from '@/lib/security-validation';
 import crypto from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-  'Pragma': 'no-cache',
-  'Expires': '0',
-};
-
 const SECRET = process.env.SESSION_SECRET || 'sentinel-portal-secret-key-2026-very-secure';
 
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+  return NextResponse.json({}, { headers: standardSecurityHeaders });
 }
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const siteSlug = searchParams.get('siteSlug');
+    const rawSiteSlug = searchParams.get('siteSlug');
     const token = searchParams.get('token') || req.headers.get('authorization')?.replace('Bearer ', '');
 
-    if (!siteSlug || !token) {
-      return NextResponse.json({ error: 'Falta siteSlug o token de autenticación.' }, { status: 401, headers: corsHeaders });
+    if (!rawSiteSlug || !token) {
+      return NextResponse.json(
+        { error: 'Falta siteSlug o token de autenticación.' },
+        { status: 401, headers: standardSecurityHeaders }
+      );
     }
 
-    // 1. Validar Token HMAC y Expiración
-    const [payloadB64, signature] = token.split('.');
-    if (!payloadB64 || !signature) {
-      return NextResponse.json({ error: 'Formato de token inválido.' }, { status: 401, headers: corsHeaders });
+    const slugValidation = validateSiteSlugSecurity(rawSiteSlug);
+    if (!slugValidation.valid) {
+      return NextResponse.json(
+        { error: 'Slug de sitio no válido.' },
+        { status: 400, headers: standardSecurityHeaders }
+      );
     }
+    const siteSlug = slugValidation.cleanSlug!;
+
+    // 1. Validar Token HMAC y Expiración
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 2) {
+      return NextResponse.json(
+        { error: 'Formato de token inválido.' },
+        { status: 401, headers: standardSecurityHeaders }
+      );
+    }
+
+    const [payloadB64, signature] = tokenParts;
 
     const expectedSig = crypto.createHmac('sha256', SECRET).update(payloadB64).digest('base64url');
     if (signature !== expectedSig) {
-      return NextResponse.json({ error: 'Firma de token inválida o adulterada.' }, { status: 403, headers: corsHeaders });
+      return NextResponse.json(
+        { error: 'Firma de token inválida o adulterada.' },
+        { status: 403, headers: standardSecurityHeaders }
+      );
     }
 
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    let payload: any;
+    try {
+      payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    } catch {
+      return NextResponse.json(
+        { error: 'Payload de token ilegible.' },
+        { status: 401, headers: standardSecurityHeaders }
+      );
+    }
+
     if (!payload || !payload.exp || Date.now() > payload.exp) {
-      return NextResponse.json({ error: 'Tu enlace de acceso ha expirado. Por favor solicitá uno nuevo.' }, { status: 401, headers: corsHeaders });
+      return NextResponse.json(
+        { error: 'Tu enlace de acceso ha expirado. Por favor solicitá uno nuevo.' },
+        { status: 401, headers: standardSecurityHeaders }
+      );
     }
 
     if (payload.siteSlug !== siteSlug) {
-      return NextResponse.json({ error: 'El token no corresponde a este sitio web.' }, { status: 403, headers: corsHeaders });
+      return NextResponse.json(
+        { error: 'El token no corresponde a este sitio web.' },
+        { status: 403, headers: standardSecurityHeaders }
+      );
     }
 
     // 2. Extraer eventos de los últimos 30 días
@@ -93,35 +120,40 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const dailyStats = Object.values(dailyMap).map(d => ({
+    const dailyStats = Object.values(dailyMap).map((d) => ({
       date: d.date,
       pageviews: d.pageviews,
       whatsappClicks: d.whatsappClicks,
-      uniqueVisitors: d.visitors.size
+      uniqueVisitors: d.visitors.size,
     }));
 
     const daysRemaining = Math.max(0, Math.ceil((payload.exp - Date.now()) / (24 * 60 * 60 * 1000)));
 
-    return NextResponse.json({
-      siteName: site?.name || siteSlug,
-      siteUrl: site?.url || '',
-      summary: {
-        totalPageviews: pageviews,
-        uniqueVisitors: visitorHashes.size,
-        whatsappClicks: whatsappClicks,
-        conversionRate: pageviews > 0 ? Number(((whatsappClicks / pageviews) * 100).toFixed(1)) : 0
+    return NextResponse.json(
+      {
+        siteName: site?.name || siteSlug,
+        siteUrl: site?.url || '',
+        summary: {
+          totalPageviews: pageviews,
+          uniqueVisitors: visitorHashes.size,
+          whatsappClicks: whatsappClicks,
+          conversionRate: pageviews > 0 ? Number(((whatsappClicks / pageviews) * 100).toFixed(1)) : 0,
+        },
+        topCities,
+        devices: deviceMap,
+        daily: dailyStats,
+        session: {
+          email: payload.email,
+          expiresInDays: daysRemaining,
+        },
       },
-      topCities,
-      devices: deviceMap,
-      daily: dailyStats,
-      session: {
-        email: payload.email,
-        expiresInDays: daysRemaining
-      }
-    }, { headers: corsHeaders });
-
+      { headers: standardSecurityHeaders }
+    );
   } catch (error) {
     console.error('[API Portal Stats] Error fetching stats:', error);
-    return NextResponse.json({ error: 'Error al obtener estadísticas.' }, { status: 500, headers: corsHeaders });
+    return NextResponse.json(
+      { error: 'Error al obtener estadísticas.' },
+      { status: 500, headers: standardSecurityHeaders }
+    );
   }
 }

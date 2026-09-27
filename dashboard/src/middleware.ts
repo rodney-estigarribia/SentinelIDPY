@@ -76,7 +76,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/', request.url));
       }
     }
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    return response;
   }
 
   // Check session cookie
@@ -84,14 +88,21 @@ export async function middleware(request: NextRequest) {
 
   if (!sessionCookie || !(await verifyTokenEdge(sessionCookie, SESSION_SECRET))) {
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'No autorizado: Sesión requerida.' }, { status: 401 });
+      const response = NextResponse.json({ error: 'No autorizado: Sesión requerida.' }, { status: 401 });
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+      return response;
     }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  return response;
 }
 
 export const config = {
