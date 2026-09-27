@@ -342,8 +342,28 @@ flowchart TD
    * Desglose diario de los últimos 7 días con badges visuales.
    * Ciudades de origen de los visitantes y proporción de dispositivos (Celulares vs. Computadoras).
 
+#### 🛡️ Blindaje de Ciberseguridad Activo (v1 Oficial):
+Toda la arquitectura del portal y la telemetría cuenta con capas de protección anti-abuso, anti-spam y mitigación de ataques:
+1. **Rate Limiting por IP (Sliding Window):** Máximo 5 solicitudes cada 10 minutos por IP en `/api/portal/magic-link`. Excesos son bloqueados inmediatamente con código HTTP `429 Too Many Requests` y cabecera `Retry-After`.
+2. **Cooldown por Email:** Espera mínima de 60 segundos entre solicitudes hacia una misma casilla de correo. Previene saturar la bandeja del cliente con envíos masivos.
+3. **Trampa Honeypot Invisible (`hp`):** Campo señuelo imperceptible para humanos pero completado por bots automatizados. Las solicitudes con este campo lleno se descartan en silencio sin consultar la base de datos ni consumir cuota de Resend.
+4. **Sanitización Estricta & RFC 5322:** Protección contra inyecciones de cabeceras SMTP (`\r`, `\n`) y validación estricta de longitud (máx. 120 caracteres).
+5. **Mitigación de Timing-Attacks y Enumeración:** Retardo artificial homogéneo en consultas no autorizadas para impedir que atacantes deduzcan qué correos existen en el CRM.
+6. **Tracker con Hash Anonimizado:** El endpoint `/api/tracker` genera un identificador anónimo diario mediante hashing SHA-256 (`IP + Fecha + Slug`), cumpliendo estrictamente con privacidad sin almacenar IPs de los visitantes en la base de datos.
+7. **Cabeceras de Seguridad OWASP:** Respuestas protegidas con `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN` y `Referrer-Policy: strict-origin-when-cross-origin`.
+
+#### 🧪 Suite de Automatización de Pruebas (Test Suite de Regresión):
+Para certificar que futuras actualizaciones o parches nunca rompan los caminos validados, SentinelIDPY cuenta con una suite automatizada ejecutable desde la terminal:
+```bash
+cd dashboard && npm test
+```
+* **Comportamiento:** Levanta automáticamente un servidor de pruebas local, ejecuta **19 pruebas de integración y seguridad** en menos de 300 ms y apaga el entorno limpiamente.
+* **Cobertura:** Valida caminos felices de solicitud y lectura de métricas, rechazo de tokens adulterados o expirados, detección de honeypot, cooldown por email, bloqueo por inyecciones SMTP y verificación de cabeceras de seguridad.
+* **Regla Mandatoria:** Ningún cambio de código en SentinelIDPY se envía a producción sin que `npm test` reporte 100% de tests aprobados (código de salida `0`).
+
 #### Checklist Rápido para Nuevas Implementaciones (2 minutos):
 - [ ] 1. En `SentinelIDPY`: Registrar el cliente en el CRM con su `slug` (ej: `hotel-los-lagos`) y el correo del dueño para autorizar su acceso.
 - [ ] 2. En la web del cliente (`index.html`): Agregar `<script src="https://idpy-admin.vercel.app/telemetry.js" data-site="hotel-los-lagos" defer></script>`.
 - [ ] 3. En la web del cliente (`vercel.json`): Agregar las 4 reglas de `rewrites` apuntando a `https://idpy-admin.vercel.app/portal/hotel-los-lagos`.
 - [ ] 4. Desplegar (`git push` o `vercel --prod`) y verificar en `https://[dominio]/portal`.
+
