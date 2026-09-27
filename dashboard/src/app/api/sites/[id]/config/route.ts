@@ -25,19 +25,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const slug = (site as any)?.siteConfig?.slug || (site?.url ? site.url.replace(/https?:\/\//, '').split('.')[0] : id);
     const isCabana = slug === 'cabana-del-arbol';
     const isBought = slug === 'don-mendoza' || slug === 'terrazas-bungalow';
+    const isAlquimia = slug === 'alquimia-cafe';
+
+    const defaultPhone = isCabana
+      ? '595982957509'
+      : isAlquimia
+      ? '595971688400'
+      : slug === 'don-mendoza'
+      ? '595981438296'
+      : '595981000000';
+
+    const defaultMsg = isCabana
+      ? '¡Hola! Quisiera consultar disponibilidad en Cabaña del Árbol.'
+      : isAlquimia
+      ? '¡Hola Alquimia Café! Estuve viendo su web y quisiera hacerles una consulta. ☕'
+      : slug === 'don-mendoza'
+      ? 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.'
+      : '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.';
 
     if (!site) {
       return NextResponse.json({
         slug,
         demo: { active: !isBought, startDate: new Date().toISOString().split('T')[0], days: 7 },
-        proposal: { active: isCabana },
+        proposal: { active: isCabana || isAlquimia },
         whatsapp: {
-          phone: isCabana ? '595982957509' : slug === 'don-mendoza' ? '595981438296' : '595981000000',
-          defaultMessage: isCabana
-            ? '¡Hola! Quisiera consultar disponibilidad en Cabaña del Árbol.'
-            : slug === 'don-mendoza'
-            ? 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.'
-            : '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.'
+          phone: defaultPhone,
+          defaultMessage: defaultMsg
         },
         pricing: {}
       }, { headers: corsHeaders });
@@ -46,20 +59,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const config = (site as any).siteConfig || {
       slug,
       demo: { active: !isBought, startDate: new Date().toISOString().split('T')[0], days: 7 },
-      proposal: { active: isCabana },
+      proposal: { active: isCabana || isAlquimia },
       whatsapp: {
-        phone: isCabana ? '595982957509' : slug === 'don-mendoza' ? '595981438296' : '595981000000',
-        defaultMessage: isCabana
-          ? '¡Hola! Quisiera consultar disponibilidad en Cabaña del Árbol.'
-          : slug === 'don-mendoza'
-          ? 'Hola Don Mendoza, quisiera consultar disponibilidad para un diagnóstico técnico en mi piscina.'
-          : '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.'
+        phone: defaultPhone,
+        defaultMessage: defaultMsg
       },
       pricing: {}
     };
 
     if (config.proposal === undefined) {
-      config.proposal = { active: isCabana };
+      config.proposal = { active: isCabana || isAlquimia };
     }
 
     return NextResponse.json(config, { headers: corsHeaders });

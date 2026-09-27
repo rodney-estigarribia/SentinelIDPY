@@ -12,7 +12,7 @@ export async function ensureDbSchema(force = false): Promise<boolean> {
     return false;
   }
 
-  const SCHEMA_VERSION_TARGET = 6;
+  const SCHEMA_VERSION_TARGET = 7;
 
   initPromise = (async () => {
     try {

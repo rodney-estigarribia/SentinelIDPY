@@ -13,6 +13,7 @@ function getSiteSlug(site: any): string {
   if (cleanName.includes('cabana') || cleanName.includes('arbol')) return 'cabana-del-arbol';
   if (cleanName.includes('terraza')) return 'terrazas-bungalow';
   if (cleanName.includes('mendoza') || cleanName.includes('piscina') || cleanName.includes('cleaner')) return 'don-mendoza';
+  if (cleanName.includes('alquimia')) return 'alquimia-cafe';
   return cleanName || `site-${site.id}`;
 }
 

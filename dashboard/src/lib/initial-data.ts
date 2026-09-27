@@ -645,6 +645,39 @@ export const RAW_INITIAL_CLIENTS: Array<Partial<Client> & { id: number; name: st
     },
     createdAt: new Date(),
     updatedAt: new Date(),
+  },
+  {
+    id: 18,
+    name: 'Alquimia Café',
+    legalName: 'Alquimia Café',
+    ruc: '80168400-5',
+    email: 'alquimiacafe@outlook.com',
+    phone: '+595 971 688 400',
+    company: 'Alquimia Café',
+    notes: 'Café de especialidad y pastelería artesanal en Paseo 1811 (Fernando de la Mora) y Paseo Alameda (Mariano Roque Alonso). Web satélite express desplegada en Vercel con demo de 7 días, propuesta comercial interactiva y carta digital.',
+    status: 'lead',
+    clientType: 'potential',
+    servicePackage: 'mipyme_express',
+    billingEmail: 'alquimiacafe@outlook.com',
+    portalEmail: 'alquimiacafe@outlook.com',
+    acquisitionChannel: 'direct',
+    driveFolderUrl: 'https://drive.google.com/drive/folders/alquimia-cafe',
+    timeline: [
+      {
+        id: 't-18-1',
+        year: '2026',
+        title: 'Lanzamiento Web Satélite Express & Propuesta',
+        description: 'Despliegue de web satélite express en Vercel con carta digital interactiva, propuesta comercial y telemetría activa.',
+        category: 'milestone',
+        actor: 'rodney'
+      }
+    ],
+    infrastructure: {
+      domain: { provider: 'Vercel / nic.py (Propuesto)', renewer: 'agency', expiryDate: '2027-09-27', annualCost: 150000, currency: 'PYG' },
+      hosting: { provider: 'Vercel Edge', plan: 'Hobby/Impulsos Digitales', annualCost: 0, currency: 'USD' }
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
   }
 ];
 
@@ -1366,6 +1399,51 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
       whatsapp: {
         phone: '595981000000',
         defaultMessage: '¡Hola! Quisiera consultar disponibilidad en Terrazas Bungalow.'
+      },
+      pricing: {}
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 14,
+    clientId: 18,
+    name: 'Alquimia Café',
+    type: 'vercel',
+    url: 'https://alquimia-cafe.vercel.app',
+    token: '',
+    diskAllocatedGb: 0.15,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: 85,
+    lastCheckedAt: new Date(),
+    lastBackupAt: null,
+    wpVersion: null,
+    phpVersion: null,
+    siteHealthScore: null,
+    pendingUpdates: null,
+    wordfenceStats: null,
+    performanceInfo: null,
+    sslDaysLeft: 90,
+    metadata: { notes: 'Demo Express 7 Días con banner, carta digital interactiva y propuesta comercial.' },
+    category: 'web_app',
+    provider: 'Vercel',
+    serviceGroup: 'General',
+    siteConfig: {
+      slug: 'alquimia-cafe',
+      portalEmail: 'alquimiacafe@outlook.com',
+      demo: { active: true, startDate: '2026-09-27', days: 7 },
+      proposal: { active: true },
+      whatsapp: {
+        phone: '595971688400',
+        phoneDisplay: '+595 971 688 400',
+        defaultMessage: '¡Hola Alquimia Café! Estuve viendo su web y quisiera hacerles una consulta. ☕',
+        menuMessage: '¡Hola Alquimia Café! Quisiera consultar sobre el menú del día y disponibilidad. 🍰',
+        orderMessage: '¡Hola Alquimia Café! Quisiera hacer un pedido para retirar:\n\n',
+        redVelvetMessage: '¡Hola Alquimia Café! Vi su Torta Red Velvet en la web y quisiera consultar porciones o encargo de torta entera. 🍰✨',
+        tableMessage: '¡Hola Alquimia Café! Quisiera consultar disponibilidad de mesas para merendar / trabajar hoy. ☕💻',
+        fdmMessage: '¡Hola! Quisiera consultar sobre la sucursal de Paseo 1811 (Fernando de la Mora). 📍',
+        mraMessage: '¡Hola! Quisiera consultar sobre la sucursal de Paseo Alameda (Mariano Roque Alonso). 📍'
       },
       pricing: {}
     },

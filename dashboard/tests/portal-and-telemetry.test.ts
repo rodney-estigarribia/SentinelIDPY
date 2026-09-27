@@ -79,6 +79,21 @@ describe('Portal de Clientes & Telemetría - Test Suite de Regresión (v1)', () 
         '10.1.1.3'
       );
       assert.equal(resMendoza.status, 200);
+
+      // Alquimia Café
+      const resAlquimia = await fetchWithIp(
+        `${BASE_URL}/api/portal/magic-link`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            siteSlug: 'alquimia-cafe',
+            email: 'alquimiacafe@outlook.com',
+          }),
+        },
+        '10.1.1.14'
+      );
+      assert.equal(resAlquimia.status, 200);
     });
 
     it('[TC-03] Seguridad: Rechazo estricto de correo no autorizado (403 Forbidden)', async () => {

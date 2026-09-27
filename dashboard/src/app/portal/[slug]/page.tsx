@@ -19,6 +19,10 @@ const KNOWN_SLUGS: Record<string, { name: string; subtitle?: string }> = {
     name: 'Don Mendoza Piscinas',
     subtitle: 'Métricas de visitas y consultas de limpieza de piscinas'
   },
+  'alquimia-cafe': {
+    name: 'Alquimia Café',
+    subtitle: 'Métricas de visitas, pedidos y consultas de especialidad'
+  },
 };
 
 function formatSlugName(slug: string): string {
