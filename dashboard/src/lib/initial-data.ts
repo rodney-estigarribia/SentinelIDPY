@@ -484,7 +484,7 @@ export const RAW_INITIAL_CLIENTS: Array<Partial<Client> & { id: number; name: st
     email: 'contacto@mercopar.com.py',
     phone: '+595 981 777666',
     company: 'Mercopar S.A.',
-    notes: 'Portal corporativo e importaciones',
+    notes: 'Cliente corporativo e importaciones - Alojado en GoDaddy (cPanel /home/horamar)',
     status: 'active',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/mercopar',
@@ -496,12 +496,21 @@ export const RAW_INITIAL_CLIENTS: Array<Partial<Client> & { id: number; name: st
         description: 'Presencia corporativa y estructura de catálogo.',
         category: 'milestone',
         actor: 'martin'
+      },
+      {
+        id: 't-13-2',
+        year: '2026',
+        title: 'Alta de Monitoreo & Plugin SentinelIDPY',
+        description: 'Conector SentinelIDPY instalado en hosting GoDaddy cPanel.',
+        category: 'upgrade',
+        actor: 'rodney'
       }
     ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-11-15', annualCost: 150000, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 5GB', annualCost: 350000, currency: 'PYG' },
-      dns: { provider: 'cPanel Host' }
+      domain: { provider: 'GoDaddy', renewer: 'client', expiryDate: '2026-11-15', annualCost: 150000, currency: 'PYG', notes: 'mercopar.com.py' },
+      hosting: { provider: 'GoDaddy (cPanel)', plan: 'cPanel Hosting', annualCost: 450000, currency: 'PYG', notes: 'Alojado en GoDaddy (cPanel /home/horamar)' },
+      dns: { provider: 'GoDaddy DNS' },
+      email: { provider: 'cPanel Host', accountsCount: 5, annualCost: 0, currency: 'PYG' }
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -1449,6 +1458,33 @@ export const RAW_INITIAL_SITES: Array<Partial<Site> & { id: number; name: string
     },
     createdAt: new Date(),
     updatedAt: new Date()
+  },
+  {
+    id: 130,
+    clientId: 13,
+    name: 'Mercopar Corporativo',
+    type: 'wordpress',
+    url: 'https://mercopar.com.py',
+    token: process.env.WF_REPORT_TOKEN || '905f4c6ec85e34726dd33b787535874217a05ce5e3f430b27afaaf34c839ab6895d197be1dfd13ebd433233998213ea85e6d4dd6fed20a76854a60bc8ba3516f',
+    diskAllocatedGb: 5.0,
+    status: 'online',
+    lastStatusCode: 200,
+    lastResponseTimeMs: 320,
+    lastCheckedAt: new Date(),
+    lastBackupAt: new Date(Date.now() - 24 * 3600 * 1000),
+    wpVersion: '6.7.1',
+    phpVersion: '8.4.25',
+    sslDaysLeft: 75,
+    siteHealthScore: { status: 'good', good: 15, recommended: 2, critical: 0 },
+    pendingUpdates: { plugins: 0, themes: 0, wordpress: 0, details: [] },
+    wordfenceStats: { totalAttacks: 450, rulesOk: true },
+    performanceInfo: { siteSizeGb: 1.8, diskFreeGb: 3.2 },
+    category: 'web_wordpress',
+    provider: 'GoDaddy',
+    serviceGroup: 'General',
+    metadata: { notes: 'Alojado en GoDaddy (cPanel /home/horamar)' },
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
 ];
 
@@ -1719,6 +1755,23 @@ export const INITIAL_PROJECTS: Array<Project> = [
     notes: 'Gestión y administración de cuentas corporativas Microsoft 365 y licencias Office.',
     driveUrl: 'https://drive.google.com/drive/folders/dagda-eventos-2026/ofimatica',
     assignedRole: 'ana',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 11,
+    clientId: 13, // Mercopar
+    name: 'Mantenimiento & Soporte Mercopar',
+    category: 'web_corp',
+    status: 'in_progress',
+    waitingOn: 'agency',
+    budget: 2500000,
+    currency: 'PYG',
+    advancePaid: 1250000,
+    targetDeliveryDate: '2026-11-15',
+    notes: 'Mantenimiento preventivo, soporte y monitoreo en GoDaddy (cPanel /home/horamar).',
+    driveUrl: 'https://drive.google.com/drive/folders/mercopar',
+    assignedRole: 'martin',
     createdAt: new Date(),
     updatedAt: new Date(),
   }

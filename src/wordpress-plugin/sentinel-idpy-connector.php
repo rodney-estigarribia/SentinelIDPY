@@ -3,7 +3,7 @@
  * Plugin Name: SentinelIDPY Connector
  * Description: Conector REST API para reportes de mantenimiento, infraestructura y seguridad personalizados de SentinelIDPY.
  * Author: Rodney Estigarribia - Impulsos Digitales
- * Version: 4.7
+ * Version: 4.8
  */
 
 // Evitar acceso directo
@@ -22,7 +22,7 @@ register_activation_hook( __FILE__, function() {
 } );
 
 // --- Auto-update via GitHub Releases ---
-define( 'SENTINEL_PLUGIN_VERSION', '4.7' );
+define( 'SENTINEL_PLUGIN_VERSION', '4.8' );
 define( 'SENTINEL_GITHUB_REPO', 'rodney-estigarribia/SentinelIDPY' );
 
 add_filter( 'pre_set_site_transient_update_plugins', 'sentinel_check_for_update' );
@@ -298,7 +298,6 @@ function sentinel_render_settings_page() {
 function sentinel_render_token_field() {
     $token = esc_attr(get_option('sentinel_idpy_report_token', ''));
     echo '<input type="password" name="sentinel_idpy_report_token" value="' . $token . '" size="70" />';
-    echo '<p class="description">Debe coincidir con el WF_REPORT_TOKEN configurado en tu bot. Mínimo 32 caracteres.</p>';
 }
 
 /**
@@ -2076,23 +2075,52 @@ function sentinel_apply_config( WP_REST_Request $request ) {
 function sentinel_create_analytics_table() {
     global $wpdb;
     $table = $wpdb->prefix . 'sentinel_analytics';
-    $charset = $wpdb->get_charset_collate();
+    $charset_collate = $wpdb->get_charset_collate();
 
-    $sql = "CREATE TABLE IF NOT EXISTS {$table} (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        hit_date DATE NOT NULL,
-        path VARCHAR(255) NOT NULL,
-        referrer VARCHAR(255) NULL,
-        is_mobile TINYINT(1) DEFAULT 0,
-        ip_hash CHAR(32) NOT NULL,
-        KEY hit_date_idx (hit_date),
-        KEY path_idx (path(191))
-    ) {$charset};";
+    // Estructura estricta para máxima compatibilidad con dbDelta() de WordPress
+    $sql = "CREATE TABLE {$table} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  hit_date date NOT NULL,
+  path varchar(255) NOT NULL,
+  referrer varchar(255) DEFAULT NULL,
+  is_mobile tinyint(1) DEFAULT 0,
+  ip_hash char(32) NOT NULL,
+  PRIMARY KEY  (id),
+  KEY hit_date_idx (hit_date),
+  KEY path_idx (path(191))
+) {$charset_collate};";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta( $sql );
+
+    // Fallback garantizado: si dbDelta no creó la tabla, crearla directamente
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) !== $table ) {
+        $direct_sql = "CREATE TABLE IF NOT EXISTS `{$table}` (
+            `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            `hit_date` date NOT NULL,
+            `path` varchar(255) NOT NULL,
+            `referrer` varchar(255) DEFAULT NULL,
+            `is_mobile` tinyint(1) DEFAULT 0,
+            `ip_hash` char(32) NOT NULL,
+            PRIMARY KEY (`id`),
+            KEY `hit_date_idx` (`hit_date`),
+            KEY `path_idx` (`path`(191))
+        ) {$charset_collate};";
+        $wpdb->query( $direct_sql );
+    }
+
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table ) {
+        update_option( 'sentinel_analytics_installed', '1.1' );
+    }
 }
 register_activation_hook( __FILE__, 'sentinel_create_analytics_table' );
+
+// Auto-crear tabla en inicialización si aún no existe (para sitios actualizados sin reactivar)
+add_action( 'init', function () {
+    if ( ! get_option( 'sentinel_analytics_installed' ) ) {
+        sentinel_create_analytics_table();
+    }
+}, 5 );
 
 // Registro ligero de visitas en frontend
 add_action( 'template_redirect', function () {
@@ -2106,10 +2134,32 @@ add_action( 'template_redirect', function () {
         return;
     }
 
+    $path = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( strtok( $_SERVER['REQUEST_URI'], '?' ) ) : '/';
+
+    // Ignorar assets y peticiones automáticas de sistema que saturan logs
+    if ( preg_match( '/\.(jpg|jpeg|png|gif|ico|webp|svg|css|js|woff|woff2|ttf|xml|txt)$/i', $path ) ||
+         strpos( $path, 'autodiscover' ) !== false ||
+         strpos( $path, '.well-known' ) !== false ) {
+        return;
+    }
+
     global $wpdb;
     $table = $wpdb->prefix . 'sentinel_analytics';
 
-    $path      = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( strtok( $_SERVER['REQUEST_URI'], '?' ) ) : '/';
+    // Verificación segura en memoria: asegurar que la tabla existe antes de ejecutar INSERT
+    static $table_exists = null;
+    if ( $table_exists === null ) {
+        $table_exists = ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table );
+        if ( ! $table_exists ) {
+            sentinel_create_analytics_table();
+            $table_exists = ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table );
+        }
+    }
+
+    if ( ! $table_exists ) {
+        return; // Evitar lanzar error SQL al log si la tabla todavía no pudo crearse
+    }
+
     $ref       = isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( parse_url( $_SERVER['HTTP_REFERER'], PHP_URL_HOST ) ) : null;
     $is_mobile = wp_is_mobile() ? 1 : 0;
     $ip        = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
@@ -2129,11 +2179,20 @@ function sentinel_get_analytics_summary() {
     // Asegurar que la tabla exista
     sentinel_create_analytics_table();
 
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) !== $table ) {
+        return array(
+            'status'    => 'success',
+            'monthly'   => array(),
+            'top_pages' => array(),
+            'devices'   => array(),
+        );
+    }
+
     // 1. Visitas por mes (últimos 6 meses)
     $monthly = $wpdb->get_results(
         "SELECT DATE_FORMAT(hit_date, '%Y-%m') as month, COUNT(*) as visits, COUNT(DISTINCT ip_hash) as unique_visitors 
          FROM {$table} 
-         WHERE hit_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+         WHERE hit_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) 
          GROUP BY DATE_FORMAT(hit_date, '%Y-%m') 
          ORDER BY month ASC"
     );
@@ -2157,9 +2216,9 @@ function sentinel_get_analytics_summary() {
 
     return array(
         'status'    => 'success',
-        'monthly'   => $monthly,
-        'top_pages' => $top_pages,
-        'devices'   => $devices,
+        'monthly'   => $monthly ?: array(),
+        'top_pages' => $top_pages ?: array(),
+        'devices'   => $devices ?: array(),
     );
 }
 
@@ -2170,6 +2229,8 @@ if ( ! wp_next_scheduled( 'sentinel_analytics_prune_cron' ) ) {
 add_action( 'sentinel_analytics_prune_cron', function () {
     global $wpdb;
     $table = $wpdb->prefix . 'sentinel_analytics';
-    $wpdb->query( "DELETE FROM {$table} WHERE hit_date < DATE_SUB(CURDATE(), INTERVAL 180 DAY)" );
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table ) {
+        $wpdb->query( "DELETE FROM {$table} WHERE hit_date < DATE_SUB(CURDATE(), INTERVAL 180 DAY)" );
+    }
 } );
 

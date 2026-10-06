@@ -283,17 +283,19 @@ const INITIAL_CLIENTS = [
     email: 'contacto@mercopar.com.py',
     phone: '+595 981 777666',
     company: 'Mercopar S.A.',
-    notes: 'Portal corporativo e importaciones',
+    notes: 'Cliente corporativo e importaciones - Alojado en GoDaddy (cPanel /home/horamar)',
     status: 'active',
     acquisitionChannel: 'referral',
     driveFolderUrl: 'https://drive.google.com/drive/folders/mercopar',
     timeline: [
-      { id: 't-13-1', year: '2024', title: 'Desarrollo Web y Catálogo', description: 'Presencia corporativa y estructura de catálogo.', category: 'milestone', actor: 'martin' }
+      { id: 't-13-1', year: '2024', title: 'Desarrollo Web y Catálogo', description: 'Presencia corporativa y estructura de catálogo.', category: 'milestone', actor: 'martin' },
+      { id: 't-13-2', year: '2026', title: 'Alta de Monitoreo & Plugin SentinelIDPY', description: 'Conector SentinelIDPY instalado en hosting GoDaddy cPanel.', category: 'upgrade', actor: 'rodney' }
     ],
     infrastructure: {
-      domain: { provider: 'nic.py', renewer: 'client', expiryDate: '2026-11-15', annualCost: 150000, currency: 'PYG' },
-      hosting: { provider: 'Hosting Paraguay (cPanel)', plan: 'Shared 5GB', annualCost: 350000, currency: 'PYG' },
-      dns: { provider: 'cPanel Host' }
+      domain: { provider: 'GoDaddy', renewer: 'client', expiryDate: '2026-11-15', annualCost: 150000, currency: 'PYG', notes: 'mercopar.com.py' },
+      hosting: { provider: 'GoDaddy (cPanel)', plan: 'cPanel Hosting', annualCost: 450000, currency: 'PYG', notes: 'Alojado en GoDaddy (cPanel /home/horamar)' },
+      dns: { provider: 'GoDaddy DNS' },
+      email: { provider: 'cPanel Host', accountsCount: 5, annualCost: 0, currency: 'PYG' }
     }
   },
   {
@@ -569,6 +571,21 @@ const INITIAL_PROJECTS = [
     notes: 'Gestión y administración de cuentas corporativas Microsoft 365 y licencias Office.',
     driveUrl: 'https://drive.google.com/drive/folders/dagda-eventos-2026/ofimatica',
     assignedRole: 'ana'
+  },
+  {
+    id: 11,
+    clientId: 13,
+    name: 'Mantenimiento & Soporte Mercopar',
+    category: 'web_corp',
+    status: 'in_progress',
+    waitingOn: 'agency',
+    budget: 2500000,
+    currency: 'PYG',
+    advancePaid: 1250000,
+    targetDeliveryDate: '2026-11-15',
+    notes: 'Mantenimiento preventivo, soporte y monitoreo en GoDaddy (cPanel /home/horamar).',
+    driveUrl: 'https://drive.google.com/drive/folders/mercopar',
+    assignedRole: 'martin'
   }
 ];
 
@@ -695,6 +712,16 @@ const INITIAL_SITES = [
     serviceGroup: 'Ecosistema Digital CGA',
     type: 'sistema',
     url: 'https://outlook.office.com'
+  },
+  {
+    id: 130,
+    clientId: 13,
+    name: 'Mercopar Corporativo',
+    type: 'wordpress',
+    url: 'https://mercopar.com.py',
+    category: 'web_wordpress',
+    provider: 'GoDaddy',
+    serviceGroup: 'General'
   }
 ];
 
