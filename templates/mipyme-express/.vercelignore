@@ -1,0 +1,38 @@
+# Vercel deploy — ignorar archivos de desarrollo y documentación
+
+# Scripts de desarrollo / descarga de fotos
+scripts/
+
+# Propuesta: se publica en /propuesta solo la página y sus JPG livianas (propuesta/web/).
+# Los originales en PNG y las fuentes de las simulaciones quedan fuera.
+propuesta/antes/
+propuesta/despues/
+propuesta/fuentes/
+
+# Documentación interna
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+
+# Entornos
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+Thumbs.db
+
+# Screenshots de cliente (fuente de datos, no de producción)
+Screenshot*.png
+Screenshot*.jpg
+
+# Node (por si acaso se agrega después)
+node_modules/

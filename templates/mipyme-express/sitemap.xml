@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://cabana-del-arbol-demo.vercel.app/</loc>
+    <lastmod>2026-09-22</lastmod>
+    <image:image><image:loc>https://cabana-del-arbol-demo.vercel.app/images/hero_lake_deck.jpg</image:loc></image:image>
+    <image:image><image:loc>https://cabana-del-arbol-demo.vercel.app/images/bedroom_panoramic.jpg</image:loc></image:image>
+    <image:image><image:loc>https://cabana-del-arbol-demo.vercel.app/images/jacuzzi_exterior.jpg</image:loc></image:image>
+    <image:image><image:loc>https://cabana-del-arbol-demo.vercel.app/images/panoramic_view.jpg</image:loc></image:image>
+  </url>
+</urlset>

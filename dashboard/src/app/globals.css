@@ -1,0 +1,328 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  ==========================================================================
+  SentinelIDPY Semantic Design Tokens (shadcn/ui compatible)
+  ==========================================================================
+*/
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/* 1. LIGHT MODE (Default / System Light / Explicit .light) */
+:root,
+html.light,
+html:not(.dark) {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #0284c7;
+}
+
+/* 2. DARK MODE (System Dark or Explicit .dark) */
+html.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
+
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+
+  --primary: #38bdf8;
+  --primary-foreground: #020617;
+
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #f1f5f9;
+
+  --border: #1e293b;
+  --input: #334155;
+  --ring: #38bdf8;
+}
+
+/* Automatic System Preference Detection before JS hydration */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #020617;
+    --foreground: #f1f5f9;
+
+    --card: #0f172a;
+    --card-foreground: #f1f5f9;
+
+    --popover: #0f172a;
+    --popover-foreground: #f1f5f9;
+
+    --primary: #38bdf8;
+    --primary-foreground: #020617;
+
+    --secondary: #1e293b;
+    --secondary-foreground: #f1f5f9;
+
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+
+    --accent: #1e293b;
+    --accent-foreground: #f1f5f9;
+
+    --destructive: #dc2626;
+    --destructive-foreground: #f1f5f9;
+
+    --border: #1e293b;
+    --input: #334155;
+    --ring: #38bdf8;
+  }
+}
+
+/*
+  ==========================================================================
+  Light Mode Semantic Bridges & Contrast Protections
+  ==========================================================================
+*/
+
+/* Slate text utilities retain high contrast in light mode */
+html:not(.dark) .text-slate-900,
+html.light .text-slate-900 {
+  color: #0f172a !important;
+}
+html:not(.dark) .text-slate-800,
+html.light .text-slate-800 {
+  color: #1e293b !important;
+}
+html:not(.dark) .text-slate-700,
+html.light .text-slate-700 {
+  color: #334155 !important;
+}
+html:not(.dark) .text-slate-600,
+html.light .text-slate-600 {
+  color: #475569 !important;
+}
+html:not(.dark) .text-slate-500,
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Light backgrounds in light mode */
+html:not(.dark) .bg-slate-50,
+html.light .bg-slate-50 {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) .bg-slate-100,
+html.light .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) .bg-slate-950,
+html.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+/* Automatic mapping for card containers written with bg-slate-900 */
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/40,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/50,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/60,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/80,
+html:not(.dark) :where(div, section, article, main, aside, nav).bg-slate-900\/90,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/40,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/50,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/60,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/80,
+html.light :where(div, section, article, main, aside, nav).bg-slate-900\/90 {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure dark buttons in light mode stay dark with white text */
+html:not(.dark) button.bg-slate-900,
+html.light button.bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* Automatic mapping for borders written with border-slate-800 */
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/60,
+html:not(.dark) .border-slate-800\/80,
+html.light .border-slate-800,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/80 {
+  border-color: #e2e8f0;
+}
+
+/* Automatic mapping for borders written with border-slate-700 */
+html:not(.dark) .border-slate-700,
+html.light .border-slate-700 {
+  border-color: #cbd5e1;
+}
+
+/* Headings with text-white automatically adapt to dark slate in light mode */
+html:not(.dark) :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, select, textarea).text-white,
+html.light :where(h1, h2, h3, h4, h5, h6, th, td, dt, dd, label, input, select, textarea).text-white,
+html:not(.dark) span.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]),
+html.light span.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]),
+html:not(.dark) div.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]),
+html.light div.text-white:not([class*="bg-emerald-6"]):not([class*="bg-sky-6"]):not([class*="bg-blue-6"]):not([class*="bg-indigo-6"]):not([class*="bg-rose-6"]):not([class*="bg-red-6"]):not([class*="bg-[#0f172a]"]):not([class*="bg-slate-900"]) {
+  color: #0f172a;
+}
+
+/* Hover background on cards / table rows / lists in light mode */
+html:not(.dark) tbody tr:hover,
+html.light tbody tr:hover,
+html:not(.dark) tbody tr:hover > td,
+html.light tbody tr:hover > td,
+html:not(.dark) tr[class*="hover:bg-slate"]:hover,
+html.light tr[class*="hover:bg-slate"]:hover,
+html:not(.dark) [class*="hover:bg-slate-800/"]:hover,
+html.light [class*="hover:bg-slate-800/"]:hover,
+html:not(.dark) [class*="hover:bg-slate-900/"]:hover,
+html.light [class*="hover:bg-slate-900/"]:hover,
+html:not(.dark) [class*="hover:bg-slate-950/"]:hover,
+html.light [class*="hover:bg-slate-950/"]:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Light button and link hovers */
+html:not(.dark) button[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html.light button[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html:not(.dark) a[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html.light a[class*="hover:bg-slate"]:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html:not(.dark) .hover\:bg-slate-800:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html.light .hover\:bg-slate-800:hover:not([class*="bg-emerald-"]):not([class*="bg-sky-"]):not([class*="bg-blue-"]):not([class*="bg-indigo-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-[#0f172a]"]),
+html:not(.dark) .hover\:bg-slate-900:hover,
+html:not(.dark) [class*="hover:bg-slate-900"]:hover,
+html.light .hover\:bg-slate-900:hover,
+html.light [class*="hover:bg-slate-900"]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Hover text in light mode */
+html:not(.dark) .hover\:text-white:hover,
+html:not(.dark) [class*="hover:text-white"]:hover,
+html.light .hover\:text-white:hover,
+html.light [class*="hover:text-white"]:hover {
+  color: #0f172a;
+}
+
+/* Inputs and dialogs */
+html:not(.dark) header input {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+html:not(.dark) header input::placeholder {
+  color: #94a3b8;
+}
+
+/* Table headers & rows in light mode */
+html:not(.dark) thead,
+html.light thead {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) thead th,
+html.light thead th {
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) tbody tr:hover,
+html.light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Fallback for any container with bg-slate-950 opacities in light mode (excluding modal backdrops) */
+html:not(.dark) [class*="bg-slate-950/"]:not(.fixed),
+html.light [class*="bg-slate-950/"]:not(.fixed) {
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) .fixed.inset-0.bg-slate-950\/80,
+html:not(.dark) .fixed.inset-0.bg-slate-950\/70,
+html.light .fixed.inset-0.bg-slate-950\/80,
+html.light .fixed.inset-0.bg-slate-950\/70 {
+  background-color: rgba(15, 23, 42, 0.45);
+}
+
+/* Solid action buttons retain pure white text */
+.bg-emerald-600,
+.bg-sky-600,
+.bg-blue-600,
+.bg-indigo-600,
+.bg-rose-600,
+.bg-red-600,
+.bg-\[\#0f172a\] {
+  color: #ffffff !important;
+}
+.bg-emerald-600 *,
+.bg-sky-600 *,
+.bg-blue-600 *,
+.bg-indigo-600 *,
+.bg-rose-600 *,
+.bg-red-600 *,
+.bg-\[\#0f172a\] * {
+  color: #ffffff !important;
+}
+
+/* Base Body Styles */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

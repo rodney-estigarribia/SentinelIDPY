@@ -1,22 +1,25 @@
 # macOS
 .DS_Store
 
+# Next.js & Dashboard local builds
+dashboard/.next/
+dashboard/node_modules/
+dashboard/.env*.local
+
+# Subproject repos / bot (managed locally)
+plugin/
+bot/
+maintenance_bot/
+reportes/
+
 # Python
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 
-# IDE
+# IDE & Misc
 .vscode/
-
-# Bot (kept locally, not tracked here)
-maintenance_bot/
-src/uptime/
-src/reporting/
-requirements.txt
-Makefile
-docs/
-reportes/
-mock_sentinel_server.py
+.idea/
 .planning/
+mock_sentinel_server.py

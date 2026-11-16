@@ -1,0 +1,107 @@
+/* =====================================================================
+   DEMO — banner con cuenta regresiva y pantalla de vencida
+   Compartido por la web (/) y la propuesta (/propuesta).
+   Se controla en config.js → SITE_CONFIG.demo
+   ===================================================================== */
+:root {
+  --demo-bar-h: 2.25rem;
+}
+
+.demo-bar {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  height: var(--demo-bar-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-inline: 1rem;
+  background: #1a1a18;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.demo-bar-time {
+  color: #e4a855;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+body.has-demo-bar {
+  padding-top: var(--demo-bar-h);
+}
+
+body.has-demo-bar .navbar {
+  top: calc(var(--demo-bar-h) + 1rem);
+}
+
+/* Demo vencida: pantalla completa, sin acceso al contenido */
+html.demo-expired,
+html.demo-expired body {
+  overflow: hidden;
+  height: 100%;
+}
+
+html.demo-expired body > :not(.demo-expired-screen) {
+  display: none !important;
+}
+
+.demo-expired-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  background: #1c2e1e;
+  color: rgba(255,255,255,0.8);
+  text-align: center;
+}
+
+.demo-expired-logo {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.demo-expired-logo span {
+  color: #e4a855;
+}
+
+.demo-expired-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: #fff;
+  max-width: 18ch;
+}
+
+.demo-expired-text {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  max-width: 42ch;
+  line-height: 1.6;
+}
+
+.demo-expired-text a {
+  color: #e4a855;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .demo-bar-long {
+    display: none;
+  }
+}
